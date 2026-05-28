@@ -6,7 +6,9 @@ import lombok.*;
 import java.time.ZonedDateTime;
 
 @Entity
-@Table(name = "booking_history")
+@Table(name = "booking_history", indexes = {
+        @Index(name = "idx_booking_history_booking", columnList = "booking_id")
+})
 @Getter
 @Setter
 @NoArgsConstructor

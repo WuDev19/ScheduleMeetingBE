@@ -1,7 +1,7 @@
 package com.example.schedulemeetingbe.entity;
 
-import com.example.schedulemeeting.model.enumeration.type.BookingStatus;
-import com.example.schedulemeeting.model.enumeration.type.RecurrenceType;
+import com.example.schedulemeetingbe.constant.enums.BookingStatus;
+import com.example.schedulemeetingbe.constant.enums.RecurrenceType;
 import jakarta.persistence.*;
 import lombok.*;
 
