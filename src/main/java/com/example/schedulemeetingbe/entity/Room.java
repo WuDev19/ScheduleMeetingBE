@@ -6,7 +6,12 @@ import lombok.*;
 import java.time.ZonedDateTime;
 
 @Entity
-@Table(name = "rooms", uniqueConstraints = {@UniqueConstraint(columnNames = {"room_name", "building_id"})})
+@Table(
+        name = "rooms",
+        uniqueConstraints = {@UniqueConstraint(columnNames = {"room_name", "building_id"})},
+        indexes = {
+                @Index(name = "idx_rooms_building", columnList = "building_id")
+        })
 @Getter
 @Setter
 @NoArgsConstructor

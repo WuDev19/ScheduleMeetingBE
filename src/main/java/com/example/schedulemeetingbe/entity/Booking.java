@@ -1,5 +1,6 @@
 package com.example.schedulemeetingbe.entity;
 
+import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -7,7 +8,11 @@ import java.time.ZonedDateTime;
 import java.util.Set;
 
 @Entity
-@Table(name = "bookings")
+@Table(name = "bookings", indexes = {
+        @Index(name = "idx_bookings_room_time", columnList = "room_id, start_time, end_time"),
+        @Index(name = "idx_bookings_user_status", columnList = "booked_by, status"),
+        @Index(name = "idx_bookings_start_status", columnList = "start_time, status")
+})
 @Getter
 @Setter
 @NoArgsConstructor
