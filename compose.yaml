@@ -1,13 +1,59 @@
 services:
-  postgres:
-    image: 'postgres:latest'
+
+  postgres-db:
+    image: postgres:16
+    container_name: postgres-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+      - POSTGRES_DB=${DB_NAME_POSTGRES}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-cache:
+    image: redis:7.2-alpine
+    container_name: redis-cache
+    restart: unless-stopped
     ports:
-      - '5432'
-  redis:
-    image: 'redis:latest'
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    command: redis-server /usr/local/etc/redis/redis.conf --requirepass ${REDIS_PASS}
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "${REDIS_PASS}", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  schedule-meeting-app:
+    build: .
+    container_name: schedule-meeting
     ports:
-      - '6379'
+      - "8080:8080"
+    restart: unless-stopped
+    environment:
+      - DB_NAME_POSTGRES=${DB_NAME_POSTGRES}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST_POSTGRES=${DB_HOST_POSTGRES}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PASS=${REDIS_PASS}
+      - APP_EMAIL_PASSWORD=${APP_EMAIL_PASSWORD}
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+      redis-cache:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
