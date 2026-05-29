@@ -1,0 +1,40 @@
+package com.example.schedulemeetingbe.config;
+
+import com.example.schedulemeetingbe.constant.StringCommon;
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.security.SecurityScheme;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class OpenApiConfig {
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title(StringCommon.APP_NAME_UPPER_CASE)
+                        .version("1.0.0")
+                        .description("Tài liệu hướng dẫn và thử nghiệm API dành cho " + StringCommon.APP_NAME_LOWER_CASE)
+                        .contact(new Contact()
+                                .name("Người phát triển - Nguyễn Văn Vũ")
+                                .email("nguyenvu19a19@gmail.com")
+                                .name("Mentor - Nguyễn Hồng Quân")
+                        )
+                )
+                .components(
+                        new Components()
+                                .addSecuritySchemes(
+                                        StringCommon.SECURITY_SCHEME,
+                                        new SecurityScheme()
+                                                .name(StringCommon.AUTHORIZATION)
+                                                .type(SecurityScheme.Type.HTTP)
+                                                .scheme("bearer")
+                                                .bearerFormat("JWT")
+                                )
+                );
+    }
+}

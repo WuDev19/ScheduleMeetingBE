@@ -1,6 +1,6 @@
 package com.example.schedulemeetingbe.dto.common;
 
-import com.example.schedulemeetingbe.constant.strings.StringCommon;
+import com.example.schedulemeetingbe.constant.StringCommon;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
