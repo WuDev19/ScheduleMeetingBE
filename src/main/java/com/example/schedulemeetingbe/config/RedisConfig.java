@@ -58,10 +58,10 @@ public class RedisConfig implements CachingConfigurer {
     @Bean
     public RedisCacheManager cacheManager(
             RedisConnectionFactory connectionFactory,
-            GenericJacksonJsonRedisSerializer genericJacksonJsonRedisSerializer
+            RedisCacheConfiguration redisCacheConfiguration
     ) {
         return RedisCacheManager.builder(connectionFactory)
-                .cacheDefaults(redisCacheConfiguration(genericJacksonJsonRedisSerializer))
+                .cacheDefaults(redisCacheConfiguration)
                 .build();
     }
 

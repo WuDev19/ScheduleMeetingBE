@@ -8,17 +8,17 @@ import com.example.schedulemeetingbe.dto.request.LogoutRequest;
 import com.example.schedulemeetingbe.dto.request.SignUpWithUsernameRequest;
 import com.example.schedulemeetingbe.dto.response.LoginResponse;
 import com.example.schedulemeetingbe.entity.*;
-import com.example.schedulemeetingbe.payload.UserRegisteredPayload;
+import com.example.schedulemeetingbe.entity.payload.UserRegisteredPayload;
 import com.example.schedulemeetingbe.exception.BusinessException;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.repository.*;
 import com.example.schedulemeetingbe.service.base.IAuthenticationService;
 import com.example.schedulemeetingbe.service.base.IJwtService;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
@@ -35,7 +35,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     private final OutboxEventRepository outboxEventRepository;
     private final IJwtService iJwtService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
-    private final ObjectMapper objectMapper;
+    private final JsonMapper jsonMapper;
 
     @Override
     public boolean checkAccessTokenInBlacklist(String tokenId) {
@@ -52,7 +52,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     public LoginResponse login(LoginByUsernameRequest loginRequest) {
         String username = loginRequest.username();
         String password = loginRequest.password();
-        User user = userRepository.findByUserName(username).orElseThrow(() ->
+        User user = userRepository.findByUsername(username).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         boolean isMatch = bCryptPasswordEncoder.matches(password, user.getPasswordHash());
         if (!isMatch) {
@@ -91,15 +91,15 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
                 .build();
         verificationTokenRepository.save(verificationToken);
 
-        // tạo event phục vụ cho lưu dạng jsonb trong postgres
-        UserRegisteredPayload event = new UserRegisteredPayload(
+        // tạo payload phục vụ cho lưu dạng jsonb trong postgres
+        UserRegisteredPayload payload = new UserRegisteredPayload(
                 userSaved.getUserId(),
                 userSaved.getEmail(),
                 verificationToken.getToken()
         );
         OutboxEvent outboxEvent = OutboxEvent.builder()
                 .eventType(EVENT_TYPE.USER_REGISTER.name())
-                .payload(objectMapper.valueToTree(event))
+                .payload(jsonMapper.valueToTree(payload))
                 .status(OutboxStatus.PENDING)
                 .build();
         outboxEventRepository.save(outboxEvent);
@@ -145,18 +145,21 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         VerificationToken verification =
                 verificationTokenRepository.findByToken(token)
                         .orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        if (verification.getRevoked()) {
-            throw new BusinessException(ErrorResponse.VERIFY_TOKEN_REVOKED);
-        }
         if (verification.getVerified()) {
             return;
         }
+        if (verification.getRevoked()) {
+            throw new BusinessException(ErrorResponse.VERIFY_TOKEN_REVOKED);
+        }
         if (verification.getExpiresAt()
                 .isBefore(ZonedDateTime.now())) {
+            verification.setRevoked(true);
             throw new BusinessException(ErrorResponse.VERIFY_TOKEN_EXPIRED);
         }
         verification.setVerified(true);
+        verification.setRevoked(true);
         User user = verification.getUser();
         user.setIsActive(true);
+        verificationTokenRepository.revokeAllVerificationTokenOfUser(user.getUserId(), verification.getId());
     }
 }

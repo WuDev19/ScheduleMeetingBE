@@ -22,18 +22,21 @@ import java.util.stream.Stream;
 public class SecurityConfig {
     private final MyJwtDecoder myJwtDecoder;
     private final String END_POINT = "/api/v1/";
-    private final String[] publicEndpoint = {
+    private final String[] publicEndpoints = {
             END_POINT + "auth/**",
-            END_POINT + "public/**"
+            END_POINT + "public/**",
+            END_POINT + "swagger-ui.html",
+            END_POINT + "api-docs/**",
+            END_POINT + "swagger-ui/**"
     };
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) {
         return httpSecurity.csrf(AbstractHttpConfigurer::disable)
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(authorize ->
                         authorize
-                                .requestMatchers(publicEndpoint).permitAll()
+                                .requestMatchers(publicEndpoints).permitAll()
                                 .anyRequest().authenticated()
                 )
                 .sessionManagement(session ->

@@ -6,6 +6,7 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -22,7 +23,6 @@ public class OpenApiConfig {
                         .contact(new Contact()
                                 .name("Người phát triển - Nguyễn Văn Vũ")
                                 .email("nguyenvu19a19@gmail.com")
-                                .name("Mentor - Nguyễn Hồng Quân")
                         )
                 )
                 .components(
@@ -37,4 +37,13 @@ public class OpenApiConfig {
                                 )
                 );
     }
+
+    @Bean
+    public GroupedOpenApi authGroup() {
+        return GroupedOpenApi.builder()
+                .group("Authentication")
+                .pathsToMatch("/api/v1/auth/**")
+                .build();
+    }
+
 }

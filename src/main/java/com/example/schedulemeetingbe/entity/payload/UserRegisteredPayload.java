@@ -1,4 +1,4 @@
-package com.example.schedulemeetingbe.payload;
+package com.example.schedulemeetingbe.entity.payload;
 
 public record UserRegisteredPayload(
         Long userId,

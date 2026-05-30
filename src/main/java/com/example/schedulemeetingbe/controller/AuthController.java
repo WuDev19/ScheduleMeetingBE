@@ -65,8 +65,10 @@ public class AuthController {
         );
     }
 
-    @PostMapping("/verify")
-    public ResponseEntity<?> verifyEmail(@RequestParam String token){
-
+    @GetMapping("/verify")
+    public String verifyEmail(@RequestParam String token){
+        iAuthenticationService.verifyEmail(token);
+        return "Verified Successfully";
     }
+
 }

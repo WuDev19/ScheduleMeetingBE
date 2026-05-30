@@ -1,11 +1,14 @@
 package com.example.schedulemeetingbe.entity;
 
 import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
-import com.fasterxml.jackson.databind.JsonNode;
+import com.example.schedulemeetingbe.entity.converter.Jackson3JsonNodeConverter;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcType;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.hibernate.type.descriptor.jdbc.JsonJdbcType;
+import tools.jackson.databind.JsonNode;
 
 import java.time.ZonedDateTime;
 import java.util.UUID;
@@ -31,6 +34,7 @@ public class OutboxEvent {
             length = 100)
     private String eventType;
 
+    @Convert(converter = Jackson3JsonNodeConverter.class) //jackson 3 mới chưa ổn định, phải tự viết converter
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "payload",
             nullable = false,
