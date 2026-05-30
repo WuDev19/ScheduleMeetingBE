@@ -15,17 +15,13 @@ public class EmailServiceImpl implements IEmailService {
 
     @Override
     public void sendEmailActiveAccount(String email, String token) {
-        String verifyUrl = "https://nonliberal-blossom-unkilned.ngrok-free.dev/api/v1/auth/verify?token=" + token;
+        String verifyUrl = StringCommon.BASE_URL_APP + "/api/v1/auth/verify?token=" + token;
         SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
         simpleMailMessage.setTo(email);
         simpleMailMessage.setSubject(StringCommon.APP_NAME_UPPER_CASE);
-        simpleMailMessage.setText( "Chạm vào link này để kích hoạt tài khoản:\n"
+        simpleMailMessage.setText("Chạm vào link này để kích hoạt tài khoản:\n"
                 + verifyUrl);
         javaMailSender.send(simpleMailMessage);
     }
 
-    @Override
-    public void resendEmailActiveAccount() {
-
-    }
 }

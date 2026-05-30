@@ -22,7 +22,7 @@ public class VerificationToken {
             updatable = false)
     private UUID id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE)
     @JoinColumn(name = "user_id",
             nullable = false)
     private User user;

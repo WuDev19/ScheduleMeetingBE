@@ -1,6 +1,8 @@
 package com.example.schedulemeetingbe.exception;
 
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
+import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
+import com.example.schedulemeetingbe.exception.custom_exception.CooldownResendException;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
@@ -33,7 +35,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<?> handleException(Exception e){
+    public ResponseEntity<?> handleException(Exception e) {
         return ApiResponse.error(e.getMessage(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
                 HttpStatus.INTERNAL_SERVER_ERROR);
@@ -47,6 +49,15 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 errorResponse.getMessage(),
                 errorResponse.getCode(),
                 HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(CooldownResendException.class)
+    public ResponseEntity<?> handleCooldownResendException(CooldownResendException e) {
+        return ApiResponse.error(
+                e.getMessage(),
+                HttpStatus.TOO_MANY_REQUESTS.value(),
+                HttpStatus.TOO_MANY_REQUESTS
         );
     }
 

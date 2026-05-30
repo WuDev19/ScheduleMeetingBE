@@ -4,6 +4,7 @@ import com.example.schedulemeetingbe.constant.Constants;
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
 import com.example.schedulemeetingbe.dto.request.LoginByUsernameRequest;
 import com.example.schedulemeetingbe.dto.request.LogoutRequest;
+import com.example.schedulemeetingbe.dto.request.ResendEmailVerifyRequest;
 import com.example.schedulemeetingbe.dto.request.SignUpWithUsernameRequest;
 import com.example.schedulemeetingbe.service.base.IAuthenticationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -23,7 +24,7 @@ public class AuthController {
 
     @Operation(summary = "Đăng kí tài khoản bằng username password")
     @PostMapping("/sign-up")
-    public ResponseEntity<?> signUpWithUsername(@Valid @RequestBody SignUpWithUsernameRequest request){
+    public ResponseEntity<?> signUpWithUsername(@Valid @RequestBody SignUpWithUsernameRequest request) {
         return ApiResponse.success(
                 iAuthenticationService.signUpWithUsername(request),
                 "Đăng kí tài khoản thành công",
@@ -65,10 +66,21 @@ public class AuthController {
         );
     }
 
+    @Operation(summary = "API dành cho khi người dùng bấm vào link xác nhân khi gửi qua email")
     @GetMapping("/verify")
-    public String verifyEmail(@RequestParam String token){
+    public String verifyEmail(@RequestParam String token) {
         iAuthenticationService.verifyEmail(token);
         return "Verified Successfully";
+    }
+
+    @Operation(summary = "API gửi lại link verify account")
+    @PostMapping("/resend-verification")
+    public ResponseEntity<?> resendEmailVerify(@RequestBody ResendEmailVerifyRequest request) {
+        return ApiResponse.success(
+                iAuthenticationService.resendEmail(request),
+                "Gửi lại link xác nhận thành công",
+                Constants.SUCCESS_CODE
+        );
     }
 
 }

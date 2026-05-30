@@ -1,7 +1,7 @@
 package com.example.schedulemeetingbe.security;
 
 import com.example.schedulemeetingbe.constant.StringCommon;
-import com.example.schedulemeetingbe.exception.BusinessException;
+import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.service.base.IAuthenticationService;
 import com.example.schedulemeetingbe.service.base.IJwtService;

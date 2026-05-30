@@ -1,5 +1,6 @@
-package com.example.schedulemeetingbe.exception;
+package com.example.schedulemeetingbe.exception.custom_exception;
 
+import com.example.schedulemeetingbe.exception.ErrorResponse;
 import lombok.Getter;
 
 @Getter

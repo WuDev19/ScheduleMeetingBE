@@ -19,8 +19,7 @@ public interface VerificationTokenRepository extends JpaRepository<VerificationT
             SET vt.revoked = true
             WHERE vt.user.userId = :userId
             AND vt.revoked = false
-            AND vt.id <> :currentTokenId
             """)
-    void revokeAllVerificationTokenOfUser(@Param("userId") Long userId, @Param("currentTokenId") UUID currentTokenId);
+    void revokeAllVerificationTokenOfUser(@Param("userId") Long userId);
 
 }

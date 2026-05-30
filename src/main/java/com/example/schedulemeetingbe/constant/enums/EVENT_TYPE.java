@@ -1,5 +1,6 @@
 package com.example.schedulemeetingbe.constant.enums;
 
 public enum EVENT_TYPE {
-    USER_REGISTER
+    USER_REGISTER,
+    RESEND_EMAIL
 }

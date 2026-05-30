@@ -4,7 +4,7 @@ import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.entity.RefreshToken;
 import com.example.schedulemeetingbe.entity.Role;
 import com.example.schedulemeetingbe.entity.User;
-import com.example.schedulemeetingbe.exception.BusinessException;
+import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.repository.RefreshTokenRepository;
 import com.example.schedulemeetingbe.service.base.IJwtService;
