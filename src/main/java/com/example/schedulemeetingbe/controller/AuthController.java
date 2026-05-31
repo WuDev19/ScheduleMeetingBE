@@ -2,10 +2,7 @@ package com.example.schedulemeetingbe.controller;
 
 import com.example.schedulemeetingbe.constant.Constants;
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
-import com.example.schedulemeetingbe.dto.request.LoginByUsernameRequest;
-import com.example.schedulemeetingbe.dto.request.LogoutRequest;
-import com.example.schedulemeetingbe.dto.request.ResendEmailVerifyRequest;
-import com.example.schedulemeetingbe.dto.request.SignUpWithUsernameRequest;
+import com.example.schedulemeetingbe.dto.request.*;
 import com.example.schedulemeetingbe.service.base.IAuthenticationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -75,10 +72,20 @@ public class AuthController {
 
     @Operation(summary = "API gửi lại link verify account")
     @PostMapping("/resend-verification")
-    public ResponseEntity<?> resendEmailVerify(@RequestBody ResendEmailVerifyRequest request) {
+    public ResponseEntity<?> resendEmailVerifyAccount(@Valid @RequestBody SendEmailRequest request) {
         return ApiResponse.success(
-                iAuthenticationService.resendEmail(request),
+                iAuthenticationService.resendEmailVerifyAccount(request),
                 "Gửi lại link xác nhận thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @Operation(summary = "API cho quên mật khẩu", description = "Người dùng bấm quên mật khẩu sau đó nhập email đẵ đăng kí để nhận link mật khẩu mới")
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody SendEmailRequest request) {
+        return ApiResponse.success(
+                iAuthenticationService.sendEmailResetPassword(request),
+                "Gửi email reset mật khẩu thành công",
                 Constants.SUCCESS_CODE
         );
     }

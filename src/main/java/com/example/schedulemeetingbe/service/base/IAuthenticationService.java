@@ -1,9 +1,6 @@
 package com.example.schedulemeetingbe.service.base;
 
-import com.example.schedulemeetingbe.dto.request.LoginByUsernameRequest;
-import com.example.schedulemeetingbe.dto.request.LogoutRequest;
-import com.example.schedulemeetingbe.dto.request.ResendEmailVerifyRequest;
-import com.example.schedulemeetingbe.dto.request.SignUpWithUsernameRequest;
+import com.example.schedulemeetingbe.dto.request.*;
 import com.example.schedulemeetingbe.dto.response.LoginResponse;
 
 import java.util.Map;
@@ -23,6 +20,7 @@ public interface IAuthenticationService {
 
     void verifyEmail(String token);
 
-    Map<String, Object> resendEmail(ResendEmailVerifyRequest request);
+    Map<String, Object> resendEmailVerifyAccount(SendEmailRequest request);
 
+    Map<String, Object> sendEmailResetPassword(SendEmailRequest request);
 }

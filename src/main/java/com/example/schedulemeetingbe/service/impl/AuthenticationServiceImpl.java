@@ -5,13 +5,14 @@ import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
 import com.example.schedulemeetingbe.dto.request.LoginByUsernameRequest;
 import com.example.schedulemeetingbe.dto.request.LogoutRequest;
-import com.example.schedulemeetingbe.dto.request.ResendEmailVerifyRequest;
+import com.example.schedulemeetingbe.dto.request.SendEmailRequest;
 import com.example.schedulemeetingbe.dto.request.SignUpWithUsernameRequest;
 import com.example.schedulemeetingbe.dto.response.LoginResponse;
 import com.example.schedulemeetingbe.entity.*;
 import com.example.schedulemeetingbe.entity.payload.UserRegisteredPayload;
-import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
+import com.example.schedulemeetingbe.entity.payload.UserResetPasswordPayload;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
+import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.exception.custom_exception.CooldownResendException;
 import com.example.schedulemeetingbe.repository.*;
 import com.example.schedulemeetingbe.service.base.IAuthenticationService;
@@ -43,6 +44,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     private final JsonMapper jsonMapper;
     private final RedisTemplate<String, Object> redisTemplate;
     private static final long COOLDOWN_RESEND_EMAIL_TIME = 60;
+    private static final long COOLDOWN_EMAIL_RESET_PASSWORD_TIME = 120;
 
     @Override
     public boolean checkAccessTokenInBlacklist(String tokenId) {
@@ -96,7 +98,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
                 .user(userSaved)
                 .expiresAt(ZonedDateTime.now().plusHours(1))
                 .build();
-        return createVerificationTokenAndOutboxEvent(userSaved, verificationToken, EVENT_TYPE.USER_REGISTER);
+        return createUserRegisterVerificationTokenAndOutboxEvent(userSaved, verificationToken, EVENT_TYPE.USER_REGISTER);
     }
 
     @Transactional
@@ -138,7 +140,12 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         VerificationToken verification =
                 verificationTokenRepository.findByToken(token)
                         .orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        if (verification.getVerified()) {
+        User user = verification.getUser();
+        if (verification.getVerified()) { //nếu bấm lại link xác nhận cũ
+            return;
+        }
+        if (user.getIsActive()) { //nếu xác nhận bằng verification token khác
+            verification.setRevoked(true);
             return;
         }
         if (verification.getRevoked()) {
@@ -151,14 +158,13 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         }
         verification.setVerified(true);
         verification.setRevoked(true);
-        User user = verification.getUser();
         user.setIsActive(true);
         verificationTokenRepository.revokeAllVerificationTokenOfUser(user.getUserId());
     }
 
     @Transactional
     @Override
-    public Map<String, Object> resendEmail(ResendEmailVerifyRequest request) {
+    public Map<String, Object> resendEmailVerifyAccount(SendEmailRequest request) {
         String redisKey = "email:resend_cooldown:" + request.email();
         Boolean isFirstRequest = redisTemplate.opsForValue()
                 .setIfAbsent(redisKey, "locked", COOLDOWN_RESEND_EMAIL_TIME, TimeUnit.SECONDS);
@@ -169,7 +175,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         }
         User user = userRepository.findByEmail(request.email()).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        if(user.getIsActive()){
+        if (user.getIsActive()) {
             throw new BusinessException(ErrorResponse.USER_ALREADY_ACTIVE);
         }
         verificationTokenRepository.revokeAllVerificationTokenOfUser(user.getUserId()); // revoke tất cả những token cũ
@@ -178,11 +184,34 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
                 .token(UUID.randomUUID().toString())
                 .user(user)
                 .build();
-        return createVerificationTokenAndOutboxEvent(user, verificationToken, EVENT_TYPE.RESEND_EMAIL);
+        return createUserRegisterVerificationTokenAndOutboxEvent(user, verificationToken, EVENT_TYPE.RESEND_EMAIL);
+    }
+
+    @Transactional
+    @Override
+    public Map<String, Object> sendEmailResetPassword(SendEmailRequest request) {
+        User user = userRepository.findByEmailAndIsActiveIsTrue(request.email()).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        String redisKey = "email-reset-password:send_cooldown:" + request.email();
+        Boolean isFirstRequest = redisTemplate.opsForValue()
+                .setIfAbsent(redisKey, "locked", COOLDOWN_EMAIL_RESET_PASSWORD_TIME, TimeUnit.SECONDS);
+        // tránh null pointer exception
+        if (Boolean.FALSE.equals(isFirstRequest)) {
+            Long expireTime = redisTemplate.getExpire(redisKey, TimeUnit.SECONDS);
+            throw new CooldownResendException("Vui lòng đợi " + expireTime + " giây nữa để tiếp tục gửi lại mail.");
+        }
+        UserResetPasswordPayload payload = new UserResetPasswordPayload(user.getUserId(), request.email());
+        OutboxEvent outboxEvent = OutboxEvent.builder()
+                .eventType(EVENT_TYPE.RESET_PASSWORD.name())
+                .payload(jsonMapper.valueToTree(payload))
+                .status(OutboxStatus.PENDING)
+                .build();
+        outboxEventRepository.save(outboxEvent);
+        return CRUDResponseHelper.createSuccess();
     }
 
     @NonNull
-    private Map<String, Object> createVerificationTokenAndOutboxEvent(User user, VerificationToken verificationToken, EVENT_TYPE eventType) {
+    private Map<String, Object> createUserRegisterVerificationTokenAndOutboxEvent(User user, VerificationToken verificationToken, EVENT_TYPE eventType) {
         verificationTokenRepository.save(verificationToken);
         UserRegisteredPayload payload = new UserRegisteredPayload(
                 user.getUserId(),
