@@ -17,7 +17,12 @@ public enum ErrorResponse {
     REFRESH_TOKEN_REVOKED("Refresh token đã bị thay đổi, vui lòng đăng nhập lại", 1010),
     VERIFY_TOKEN_EXPIRED("Thời gian xác nhận tài khoản đã hết hạn", 1011),
     VERIFY_TOKEN_REVOKED("Token không còn khả dụng", 1012),
-    USER_ALREADY_ACTIVE("Tài khoản đã được kích hoạt, vui lòng đăng nhập", 1013);
+    USER_ALREADY_ACTIVE("Tài khoản đã được kích hoạt, vui lòng đăng nhập", 1013),
+    EMAIL_AUTH_ERROR("Sai tài khoản, mật khẩu SMTP", 1014),
+    SMTP_CONFIG_ERROR("Cấu hình SMTP không chính xác hoặc sai thông tin đăng nhập", 1015),
+    INVALID_RECIPIENT("Địa chỉ email người nhận không hợp lệ hoặc không tồn tại", 1016),
+    ATTACHMENT_ERROR("Tệp đính kèm không hợp lệ hoặc vượt quá dung lượng cho phép", 1017),
+    SYSTEM_UNKNOWN_ERROR("Gửi email thất bại do lỗi hệ thống chưa xác định", 1018);
 
     private final String message;
     private final int code;
