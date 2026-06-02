@@ -6,7 +6,7 @@ import jakarta.validation.constraints.*;
 
 public record SignUpWithUsernameRequest(
         @NotNull(message = StringCommon.NOT_NULL + "username")
-        @Size(min = 6, max = 50, message = "Vui lòng nhập từ 6 đến 50 kí tự")
+        @Size(min = 3, max = 50, message = "Vui lòng nhập từ 3 đến 50 kí tự")
         String username,
 
         @Email(message = "Email không hợp lệ")
