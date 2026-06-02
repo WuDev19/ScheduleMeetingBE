@@ -17,6 +17,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Random;
 
@@ -54,7 +55,7 @@ public class EmailServiceImpl implements IEmailService {
         }
         String newPassword = sb.toString() + random.nextInt(1000);
         user.setPasswordHash(bCryptPasswordEncoder.encode(newPassword));
-        user.setPasswordChangedAt(ZonedDateTime.now());
+        user.setPasswordChangedAt(ZonedDateTime.now(ZoneOffset.UTC));
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         try {
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");

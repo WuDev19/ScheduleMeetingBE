@@ -47,8 +47,12 @@ services:
       - DB_HOST_POSTGRES=${DB_HOST_POSTGRES}
       - REDIS_HOST=${REDIS_HOST}
       - REDIS_PASS=${REDIS_PASS}
+      - APP_EMAIL=${APP_EMAIL}
       - APP_EMAIL_PASSWORD=${APP_EMAIL_PASSWORD}
       - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - ADMIN_USERNAME=${ADMIN_USERNAME}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
     depends_on:
       postgres-db:
         condition: service_healthy

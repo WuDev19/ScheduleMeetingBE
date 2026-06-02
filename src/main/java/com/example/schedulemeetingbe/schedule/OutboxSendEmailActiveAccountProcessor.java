@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 
@@ -35,7 +36,7 @@ public class OutboxSendEmailActiveAccountProcessor {
                 UserRegisteredPayload payload = jsonMapper.treeToValue(event.getPayload(), UserRegisteredPayload.class);
                 iEmailService.sendEmailActiveAccount(payload.email(), payload.token());
                 event.setStatus(OutboxStatus.SUCCESS);
-                event.setProcessedAt(ZonedDateTime.now());
+                event.setProcessedAt(ZonedDateTime.now(ZoneOffset.UTC));
             } catch (Exception e) {
                 event.setRetryCount(event.getRetryCount() + 1);
                 if (event.getRetryCount() >= 5)

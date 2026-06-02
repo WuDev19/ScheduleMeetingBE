@@ -4,8 +4,8 @@ import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.entity.RefreshToken;
 import com.example.schedulemeetingbe.entity.Role;
 import com.example.schedulemeetingbe.entity.User;
-import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
+import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.repository.RefreshTokenRepository;
 import com.example.schedulemeetingbe.service.base.IJwtService;
 import io.jsonwebtoken.Claims;
@@ -16,8 +16,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.*;
 
 @Component
@@ -57,7 +58,7 @@ public class JwtServiceImpl implements IJwtService {
         return RefreshToken.builder()
                 .userRefreshToken(user)
                 .refreshToken(token)
-                .expireDate(LocalDateTime.now().plusDays(7))
+                .expireDate(ZonedDateTime.now(ZoneOffset.UTC).plusDays(7))
                 .build();
     }
 
@@ -67,7 +68,7 @@ public class JwtServiceImpl implements IJwtService {
             refreshTokenRepository.deleteByUserRefreshToken(refreshToken.getUserRefreshToken());
             throw new BusinessException(ErrorResponse.REFRESH_TOKEN_REVOKED);
         }
-        if (refreshToken.getExpireDate().isBefore(LocalDateTime.now())) {
+        if (refreshToken.getExpireDate().isBefore(ZonedDateTime.now(ZoneOffset.UTC))) {
             throw new BusinessException(ErrorResponse.JWT_EXCEPTION);
         }
         return refreshToken;
@@ -95,11 +96,10 @@ public class JwtServiceImpl implements IJwtService {
     }
 
     @Override
-    public LocalDateTime extractJwtExpire(String token) {
+    public ZonedDateTime extractJwtExpire(String token) {
         return extractJwtClaims(token)
                 .getExpiration()
                 .toInstant()
-                .atZone(ZoneId.of(StringCommon.TIME_ZONE_VN))
-                .toLocalDateTime();
+                .atZone(ZoneId.of(StringCommon.TIME_ZONE_VN));
     }
 }

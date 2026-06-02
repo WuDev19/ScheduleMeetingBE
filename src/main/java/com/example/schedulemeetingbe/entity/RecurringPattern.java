@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 @Entity
@@ -38,7 +39,7 @@ public class RecurringPattern {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private BookingStatus status = BookingStatus.pending;
+    private BookingStatus status = BookingStatus.PENDING;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")
@@ -49,6 +50,6 @@ public class RecurringPattern {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = ZonedDateTime.now();
+        createdAt = ZonedDateTime.now(ZoneOffset.UTC);
     }
 }
