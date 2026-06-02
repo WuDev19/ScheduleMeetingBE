@@ -1,9 +1,13 @@
 package com.example.schedulemeetingbe.entity;
 
+import com.example.schedulemeetingbe.constant.StringCommon;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 
 @Entity
 @Table(name = "refresh_token")
@@ -27,13 +31,17 @@ public class RefreshToken {
     private String refreshToken;
 
     @Column(name = "expire_date", nullable = false)
-    private LocalDateTime expireDate;
+    private ZonedDateTime expireDate;
 
     @Builder.Default
     @Column(name = "is_revoked", nullable = false)
     private Boolean isRevoked = false;
 
-    @Builder.Default
     @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private ZonedDateTime createdAt;
+
+    @PrePersist
+    public void onCreate(){
+        this.createdAt = ZonedDateTime.now(ZoneOffset.UTC);
+    }
 }

@@ -25,7 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.UUID;
@@ -67,7 +67,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         if (!isMatch) {
             throw new BusinessException(ErrorResponse.PASSWORD_NOT_TRUE);
         }
-        user.setLastLoginAt(ZonedDateTime.now());
+        user.setLastLoginAt(ZonedDateTime.now(ZoneOffset.UTC));
         String token = iJwtService.generateToken(username, user.getUserId(), user.getRoles());
         RefreshToken refreshToken = iJwtService.generateRefreshToken(user);
         refreshTokenRepository.save(refreshToken);
@@ -96,7 +96,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         VerificationToken verificationToken = VerificationToken.builder()
                 .token(UUID.randomUUID().toString())
                 .user(userSaved)
-                .expiresAt(ZonedDateTime.now().plusHours(1))
+                .expiresAt(ZonedDateTime.now(ZoneOffset.UTC).plusHours(1))
                 .build();
         return createUserRegisterVerificationTokenAndOutboxEvent(userSaved, verificationToken, EVENT_TYPE.USER_REGISTER);
     }
@@ -124,7 +124,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         refreshToken.setIsRevoked(true);
         String jwtId = iJwtService.extractJwtId(logoutRequest.accessToken());
-        LocalDateTime expire = iJwtService.extractJwtExpire(logoutRequest.accessToken());
+        ZonedDateTime expire = iJwtService.extractJwtExpire(logoutRequest.accessToken());
         BlackListAccessToken blacklistAccessToken = BlackListAccessToken.builder()
                 .tokenId(jwtId)
                 .expireDate(expire)
@@ -152,7 +152,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
             throw new BusinessException(ErrorResponse.VERIFY_TOKEN_REVOKED);
         }
         if (verification.getExpiresAt()
-                .isBefore(ZonedDateTime.now())) {
+                .isBefore(ZonedDateTime.now(ZoneOffset.UTC))) {
             verification.setRevoked(true);
             throw new BusinessException(ErrorResponse.VERIFY_TOKEN_EXPIRED);
         }
@@ -180,7 +180,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         }
         verificationTokenRepository.revokeAllVerificationTokenOfUser(user.getUserId()); // revoke tất cả những token cũ
         VerificationToken verificationToken = VerificationToken.builder()
-                .expiresAt(ZonedDateTime.now().plusHours(1))
+                .expiresAt(ZonedDateTime.now(ZoneOffset.UTC).plusHours(1))
                 .token(UUID.randomUUID().toString())
                 .user(user)
                 .build();

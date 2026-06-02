@@ -1,8 +1,11 @@
 package com.example.schedulemeetingbe.entity;
 
+import com.example.schedulemeetingbe.constant.StringCommon;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 @Entity
@@ -29,6 +32,6 @@ public class Equipment {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = ZonedDateTime.now();
+        createdAt = ZonedDateTime.now(ZoneOffset.UTC);
     }
 }

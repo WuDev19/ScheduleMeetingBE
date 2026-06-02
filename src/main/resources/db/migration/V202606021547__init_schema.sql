@@ -307,9 +307,9 @@ CREATE TABLE refresh_token
     refresh_token_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, -- Đổi từ id
     user_id          BIGINT          NOT NULL,
     refresh_token    VARCHAR(500) NOT NULL,
-    ngay_het_han     TIMESTAMPTZ    NOT NULL,
-    da_thu_hoi       BOOLEAN          NOT NULL DEFAULT FALSE,
-    tao_luc          TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
+    expire_date      TIMESTAMPTZ    NOT NULL,
+    is_revoked       BOOLEAN          NOT NULL DEFAULT FALSE,
+    created_at       TIMESTAMPTZ    NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_rt_token UNIQUE (refresh_token),
     CONSTRAINT fk_rt_user FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
 );
@@ -318,8 +318,8 @@ CREATE TABLE black_list_access_token
 (
     blacklist_token_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY, -- Đổi từ id
     token_id           VARCHAR(36) NOT NULL,
-    ngay_het_han       TIMESTAMPTZ   NOT NULL,
-    tao_luc            TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+    expire_date         TIMESTAMPTZ   NOT NULL,
+    created_at          TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_bat_token UNIQUE (token_id)
 );
 

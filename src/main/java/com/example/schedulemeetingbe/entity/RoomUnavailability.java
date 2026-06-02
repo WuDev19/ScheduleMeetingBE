@@ -3,6 +3,7 @@ package com.example.schedulemeetingbe.entity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 @Entity
@@ -36,6 +37,6 @@ public class RoomUnavailability {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = ZonedDateTime.now();
+        createdAt = ZonedDateTime.now(ZoneOffset.UTC);
     }
 }

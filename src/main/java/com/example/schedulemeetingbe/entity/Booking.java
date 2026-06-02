@@ -4,6 +4,7 @@ import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Set;
 
@@ -95,12 +96,12 @@ public class Booking {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = ZonedDateTime.now();
-        updatedAt = ZonedDateTime.now();
+        createdAt = ZonedDateTime.now(ZoneOffset.UTC);
+        updatedAt = ZonedDateTime.now(ZoneOffset.UTC);
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = ZonedDateTime.now();
+        updatedAt = ZonedDateTime.now(ZoneOffset.UTC);
     }
 }

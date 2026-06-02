@@ -3,7 +3,6 @@ package com.example.schedulemeetingbe.schedule;
 import com.example.schedulemeetingbe.constant.enums.EVENT_TYPE;
 import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.entity.OutboxEvent;
-import com.example.schedulemeetingbe.entity.payload.UserRegisteredPayload;
 import com.example.schedulemeetingbe.entity.payload.UserResetPasswordPayload;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.service.base.IEmailService;
@@ -13,6 +12,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 
@@ -35,7 +35,7 @@ public class OutboxSendEmailResetPasswordProcessor {
                 UserResetPasswordPayload payload = jsonMapper.treeToValue(event.getPayload(), UserResetPasswordPayload.class);
                 iEmailService.sendEmailResetPassword(payload.email());
                 event.setStatus(OutboxStatus.SUCCESS);
-                event.setProcessedAt(ZonedDateTime.now());
+                event.setProcessedAt(ZonedDateTime.now(ZoneOffset.UTC));
             } catch (Exception e) {
                 event.setRetryCount(event.getRetryCount() + 1);
                 if (event.getRetryCount() >= 5)
