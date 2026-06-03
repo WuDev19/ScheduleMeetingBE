@@ -3,7 +3,7 @@ package com.example.schedulemeetingbe.dto.request;
 import com.example.schedulemeetingbe.constant.StringCommon;
 import jakarta.validation.constraints.*;
 
-public record CreateUserRequest (
+public record CreateUserRequest(
         @NotNull(message = StringCommon.NOT_NULL + "username")
         @Size(min = 3, max = 50, message = "Vui lòng nhập từ 3 đến 50 kí tự")
         String username,
@@ -20,6 +20,9 @@ public record CreateUserRequest (
 
         @NotNull(message = StringCommon.NOT_NULL + "fullName")
         @NotBlank(message = "Dữ liệu fullName " + StringCommon.NOT_BLANK)
-        String fullName
+        String fullName,
+
+        @Pattern(regexp = "^(03|05|07|08|09)\\d{8}$", message = "Số điện thoại không hợp lệ")
+        String phone
 ) {
 }

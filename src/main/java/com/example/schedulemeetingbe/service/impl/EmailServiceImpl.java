@@ -60,34 +60,79 @@ public class EmailServiceImpl implements IEmailService {
         try {
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
             String html = """
-                <div style="font-family: Arial, sans-serif;">
-                    <p>Mật khẩu mới của quý khách là:</p>
-                
-                    <div style="
-                            padding:12px;
-                            background:#f4f4f4;
-                            border:1px solid #ccc;
-                            border-radius:8px;
-                            font-size:20px;
-                            font-weight:bold;
-                            color:#d32f2f;
-                            width:fit-content;
-                            user-select:all;
-                    ">
-                        %s
+                    <div style="font-family: Arial, sans-serif;">
+                        <p>Mật khẩu mới của quý khách là:</p>
+                    
+                        <div style="
+                                padding:12px;
+                                background:#f4f4f4;
+                                border:1px solid #ccc;
+                                border-radius:8px;
+                                font-size:20px;
+                                font-weight:bold;
+                                color:#d32f2f;
+                                width:fit-content;
+                                user-select:all;
+                        ">
+                            %s
+                        </div>
+                    
+                        <p style="margin-top:16px;">
+                            Vui lòng đăng nhập sau đó đổi mật khẩu ngay.
+                        </p>
                     </div>
-                
-                    <p style="margin-top:16px;">
-                        Vui lòng đăng nhập sau đó đổi mật khẩu ngay.
-                    </p>
-                </div>
-                """.formatted(newPassword);
+                    """.formatted(newPassword);
             helper.setTo(email);
-            helper.setSubject("Mật khẩu mới");
+            helper.setSubject(StringCommon.APP_NAME_UPPER_CASE);
             helper.setText(html, true);
             javaMailSender.send(mimeMessage);
+        } catch (MessagingException e) {
+            throw new BusinessException(EmailErrorParser.parseException(e));
         }
-        catch (MessagingException e){
+    }
+
+    @Override
+    public void sendEmailUsernamePassword(String email, String username, String password) {
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        try {
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            String html = """
+                    <div style="font-family: Arial, sans-serif;">
+                        <p>Thông tin đăng nhập của quý khách:</p>
+                    
+                        <div style="
+                                padding:12px;
+                                background:#f4f4f4;
+                                border:1px solid #ccc;
+                                border-radius:8px;
+                                width:fit-content;
+                        ">
+                            <p style="margin:0;">
+                                <strong>Tên đăng nhập:</strong> %s
+                            </p>
+                    
+                            <p style="margin:8px 0 0 0;">
+                                <strong>Mật khẩu:</strong>
+                                <span style="
+                                        font-size:20px;
+                                        font-weight:bold;
+                                        color:#d32f2f;
+                                ">
+                                    %s
+                                </span>
+                            </p>
+                        </div>
+                    
+                        <p style="margin-top:16px;">
+                            Vui lòng đăng nhập và đổi mật khẩu ngay sau lần đăng nhập đầu tiên.
+                        </p>
+                    </div>
+                    """.formatted(username, password);
+            helper.setTo(email);
+            helper.setSubject(StringCommon.APP_NAME_UPPER_CASE);
+            helper.setText(html, true);
+            javaMailSender.send(mimeMessage);
+        } catch (MessagingException e) {
             throw new BusinessException(EmailErrorParser.parseException(e));
         }
     }
