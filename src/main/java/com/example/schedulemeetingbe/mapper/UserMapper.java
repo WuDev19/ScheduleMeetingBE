@@ -16,7 +16,7 @@ public class UserMapper {
                 user.getEmail(),
                 user.getFullName(),
                 user.getPhone(),
-                mapToDepartmentResponse(user.getDepartment())
+                user.getDepartment() != null ? mapToDepartmentResponse(user.getDepartment()) : null
         );
     }
 

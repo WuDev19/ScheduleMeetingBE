@@ -6,7 +6,6 @@ import com.example.schedulemeetingbe.dto.common.ApiResponse;
 import com.example.schedulemeetingbe.dto.request.CreateUserRequest;
 import com.example.schedulemeetingbe.service.base.IUserService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -39,7 +38,7 @@ public class UserController {
     @Operation(summary = "Api cho admin tạo tài khoản người dùng")
     @PostMapping
     @PreAuthorize("hasAuthority('USER:CREATE')")
-    public ResponseEntity<?> createAccount(@Valid @RequestBody CreateUserRequest request){
+    public ResponseEntity<?> createAccount(@Valid @RequestBody CreateUserRequest request) {
         return ApiResponse.success(
                 iUserService.createUser(request),
                 "Tạo tài khoản cho người dùng thành công",

@@ -13,9 +13,7 @@ import com.example.schedulemeetingbe.exception.custom_exception.BusinessExceptio
 import com.example.schedulemeetingbe.mapper.UserMapper;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.repository.UserRepository;
-import com.example.schedulemeetingbe.service.base.IEmailService;
 import com.example.schedulemeetingbe.service.base.IUserService;
-import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
