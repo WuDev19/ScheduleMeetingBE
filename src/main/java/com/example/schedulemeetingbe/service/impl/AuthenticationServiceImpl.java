@@ -71,6 +71,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
             throw new BusinessException(ErrorResponse.PASSWORD_NOT_TRUE);
         }
         user.setLastLoginAt(ZonedDateTime.now(ZoneOffset.UTC));
+        user.setIsActive(true);
         String token = iJwtService.generateToken(username, user.getUserId(), user.getRoles());
         RefreshToken refreshToken = iJwtService.generateRefreshToken(user);
         refreshTokenRepository.save(refreshToken);

@@ -4,7 +4,9 @@ import com.example.schedulemeetingbe.constant.enums.EVENT_TYPE;
 import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
 import com.example.schedulemeetingbe.dto.request.CreateUserRequest;
+import com.example.schedulemeetingbe.dto.request.UpdateAvatarRequest;
 import com.example.schedulemeetingbe.dto.request.UpdateUserRequest;
+import com.example.schedulemeetingbe.dto.response.UploadSignatureResponse;
 import com.example.schedulemeetingbe.dto.response.UserDetailResponse;
 import com.example.schedulemeetingbe.entity.OutboxEvent;
 import com.example.schedulemeetingbe.entity.Role;
@@ -20,15 +22,19 @@ import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.repository.RoleRepository;
 import com.example.schedulemeetingbe.repository.UserRepository;
 import com.example.schedulemeetingbe.repository.VerificationTokenRepository;
+import com.example.schedulemeetingbe.service.base.ICloudinaryService;
 import com.example.schedulemeetingbe.service.base.IUserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +51,7 @@ public class UserServiceImpl implements IUserService {
     private final OutboxEventRepository outboxEventRepository;
     private final VerificationTokenRepository verificationTokenRepository;
     private final RoleRepository roleRepository;
+    private final ICloudinaryService iCloudinaryService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final JsonMapper jsonMapper;
     private final RedisTemplate<String, Object> redisTemplate;
@@ -87,6 +94,7 @@ public class UserServiceImpl implements IUserService {
         return UserMapper.mapToUserDetailResponse(user);
     }
 
+    @CacheEvict(value = "user-detail", key = "#id")
     @Transactional
     @Override
     public Map<String, Object> updateUser(Long id, UpdateUserRequest request) {
@@ -103,10 +111,11 @@ public class UserServiceImpl implements IUserService {
         return CRUDResponseHelper.updateSuccess();
     }
 
+    @CacheEvict(value = "user-detail", key = "#id")
     @Transactional
     @Override
     public Map<String, Object> updateEmail(Long id, String newEmail) {
-        String redisKey = "update_email:cooldown:" + id + ":" + newEmail;
+        String redisKey = "update_email:cooldown:" + id;
         Boolean isFirstRequest = redisTemplate.opsForValue()
                 .setIfAbsent(redisKey, "locked", COOLDOWN_UPDATE_EMAIL, TimeUnit.SECONDS);
         if (Boolean.FALSE.equals(isFirstRequest)) {
@@ -131,4 +140,66 @@ public class UserServiceImpl implements IUserService {
         outboxEventRepository.save(event);
         return CRUDResponseHelper.updateSuccess();
     }
+
+    @Transactional
+    @Override
+    public Map<String, Object> lockAccount(Long id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        user.setIsActive(false);
+        return CRUDResponseHelper.deleteSuccess();
+    }
+
+    @Transactional
+    @Override
+    public Map<String, Object> unlockAccount(Long id) {
+        User user = userRepository.findById(id).orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        user.setIsActive(true);
+        return CRUDResponseHelper.updateSuccess();
+    }
+
+    @Transactional
+    @Override
+    public Map<String, Object> deleteForever(Long id) {
+        boolean exist = userRepository.existsById(id);
+        if (!exist) {
+            throw new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND);
+        }
+        userRepository.deleteById(id);
+        return CRUDResponseHelper.deleteSuccess();
+    }
+
+    @Override
+    public UploadSignatureResponse generateUploadSignature(Long id) {
+        User user = userRepository.findById(id).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        String publicId = "user_" + user.getUserId() + "_" + user.getUsername() + "_avatar";
+        return iCloudinaryService.generateUploadSignature(publicId);
+    }
+
+    @Transactional
+    @Override
+    public Map<String, Object> updateAvatar(Long id, UpdateAvatarRequest request) {
+        User user = userRepository.findById(id).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        user.setAvatarUrl(request.avtUrl());
+        user.setPublicUrlId(request.avtUrlId());
+        return CRUDResponseHelper.updateSuccess();
+    }
+
+    @Transactional
+    @Override
+    public Map<String, Object> deleteAvatar(Long id) {
+        User user = userRepository.findById(id).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        try {
+            Map deleteResponse = iCloudinaryService.delete(user.getPublicUrlId());
+            user.setAvatarUrl(null);
+            user.setPublicUrlId(null);
+        } catch (IOException e) {
+            throw new BusinessException(ErrorResponse.FILE_ACCESS_ERROR);
+
+        }
+        return CRUDResponseHelper.deleteSuccess();
+    }
+
 }

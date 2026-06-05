@@ -22,7 +22,9 @@ public enum ErrorResponse {
     SMTP_CONFIG_ERROR("Cấu hình SMTP không chính xác hoặc sai thông tin đăng nhập", 1015),
     INVALID_RECIPIENT("Địa chỉ email người nhận không hợp lệ hoặc không tồn tại", 1016),
     ATTACHMENT_ERROR("Tệp đính kèm không hợp lệ hoặc vượt quá dung lượng cho phép", 1017),
-    SYSTEM_UNKNOWN_ERROR("Gửi email thất bại do lỗi hệ thống chưa xác định", 1018);
+    SYSTEM_UNKNOWN_ERROR("Gửi email thất bại do lỗi hệ thống chưa xác định", 1018),
+    FILE_ACCESS_ERROR("Lỗi không thể truy cập file", 1019),
+    FILE_EXCEED_MEMORY("File vượt quá dung lượng cho phép", 1020);
 
     private final String message;
     private final int code;

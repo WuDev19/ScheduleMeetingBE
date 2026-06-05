@@ -4,6 +4,7 @@ import com.example.schedulemeetingbe.constant.Constants;
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
 import com.example.schedulemeetingbe.dto.request.CreateUserRequest;
+import com.example.schedulemeetingbe.dto.request.UpdateAvatarRequest;
 import com.example.schedulemeetingbe.dto.request.UpdateUserRequest;
 import com.example.schedulemeetingbe.service.base.IUserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/v1/user")
@@ -67,6 +69,78 @@ public class UserController {
         return ApiResponse.success(
                 iUserService.updateEmail(id, newEmail),
                 "Cập nhật email mới thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho xóa mềm tài khoản")
+    @PatchMapping("/lock/{id}")
+    @PreAuthorize("hasAuthority('USER:LOCK')")
+    public ResponseEntity<?> lockAccount(@PathVariable Long id) {
+        return ApiResponse.success(
+            iUserService.lockAccount(id),
+            "Xóa tài khoản thành công",
+            Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho khôi phục lại tài khoản")
+    @PatchMapping("/unlock/{id}")
+    @PreAuthorize("hasAuthority('USER:UNLOCK')")
+    public ResponseEntity<?> unlockAccount(@PathVariable Long id) {
+        return ApiResponse.success(
+                iUserService.unlockAccount(id),
+                "Khôi phục tài khoản thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho xóa vĩnh viễn tài khoản")
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('USER:DELETE')")
+    public ResponseEntity<?> deleteAccount(@PathVariable Long id) {
+        return ApiResponse.success(
+                iUserService.deleteForever(id),
+                "Xóa tài khoản vĩnh viễn thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho tạo chữ kí để client upload lên cloudinary")
+    @PostMapping("/{id}/avatar/upload-signature")
+    @PreAuthorize("hasAuthority('USER:UPDATE')")
+    public ResponseEntity<?> generateUploadSignature(@PathVariable Long id) {
+        return ApiResponse.success(
+                iUserService.generateUploadSignature(id),
+                "Tạo chữ ký thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho cập nhật avatar")
+    @PatchMapping("/{id}/avatar/upload")
+    @PreAuthorize("hasAuthority('USER:UPDATE')")
+    public ResponseEntity<?> updateAvatar(@PathVariable Long id, @RequestBody UpdateAvatarRequest request) {
+        return ApiResponse.success(
+                iUserService.updateAvatar(id, request),
+                "Cập nhật avatar thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho xóa avatar")
+    @DeleteMapping("/{id}/avatar")
+    @PreAuthorize("hasAuthority('USER:UPDATE')")
+    public ResponseEntity<?> deleteAvatar(@PathVariable Long id) {
+        return ApiResponse.success(
+                iUserService.deleteAvatar(id),
+                "Xóa avatar thành công",
                 Constants.SUCCESS_CODE
         );
     }
