@@ -47,10 +47,26 @@ public class OpenApiConfig {
     }
 
     @Bean
-    public GroupedOpenApi userGroup(){
+    public GroupedOpenApi userGroup() {
         return GroupedOpenApi.builder()
-                .group("User API")
+                .group("User")
                 .pathsToMatch("/api/v1/user/**")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi buildingGroup() {
+        return GroupedOpenApi.builder()
+                .group("Building")
+                .pathsToMatch("/api/v1/building/**")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi roomGroup() {
+        return GroupedOpenApi.builder()
+                .group("Room")
+                .pathsToMatch("/api/v1/room/**")
                 .build();
     }
 
