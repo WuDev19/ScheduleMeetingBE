@@ -4,6 +4,7 @@ import com.example.schedulemeetingbe.constant.Constants;
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
 import com.example.schedulemeetingbe.dto.request.CreateUserRequest;
+import com.example.schedulemeetingbe.dto.request.UpdateUserRequest;
 import com.example.schedulemeetingbe.service.base.IUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -45,4 +46,29 @@ public class UserController {
                 Constants.SUCCESS_CODE
         );
     }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho cập nhật tài khoản người dùng")
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasAuthority('USER:UPDATE')")
+    public ResponseEntity<?> updateAccount(@PathVariable Long id, @Valid @ModelAttribute UpdateUserRequest request) {
+        return ApiResponse.success(
+                iUserService.updateUser(id, request),
+                "Cập nhật tài khoản thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho cập nhật email mới cho người dùng")
+    @PatchMapping("/{id}/email")
+    @PreAuthorize("hasAuthority('USER:UPDATE')")
+    public ResponseEntity<?> updateEmail(@PathVariable Long id, @RequestParam String newEmail) {
+        return ApiResponse.success(
+                iUserService.updateEmail(id, newEmail),
+                "Cập nhật email mới thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
 }

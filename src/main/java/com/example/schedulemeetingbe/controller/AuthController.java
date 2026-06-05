@@ -63,10 +63,17 @@ public class AuthController {
         );
     }
 
-    @Operation(summary = "API dành cho khi người dùng bấm vào link xác nhân khi gửi qua email")
+    @Operation(summary = "API dành cho khi người dùng bấm vào link xác nhân đăng kí tài khoản khi gửi qua email")
     @GetMapping("/verify")
     public String verifyEmail(@RequestParam String token) {
         iAuthenticationService.verifyEmail(token);
+        return "Verified Successfully";
+    }
+
+    @Operation(summary = "API dành cho khi người dùng bấm vào link xác nhân cập nhật email mới khi gửi qua email")
+    @GetMapping("/verify/new-email")
+    public String verifyNewEmail(@RequestParam String token, @RequestParam String email) {
+        iAuthenticationService.verifyUpdateEmail(token, email);
         return "Verified Successfully";
     }
 

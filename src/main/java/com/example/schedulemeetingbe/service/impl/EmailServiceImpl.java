@@ -105,10 +105,16 @@ public class EmailServiceImpl implements IEmailService {
                                 background:#f4f4f4;
                                 border:1px solid #ccc;
                                 border-radius:8px;
-                                width:fit-content;
-                        ">
+                         ">
                             <p style="margin:0;">
-                                <strong>Tên đăng nhập:</strong> %s
+                                <strong>Tên đăng nhập:</strong>
+                                <span style="
+                                        font-size:20px;
+                                        font-weight:bold;
+                                        color:#d32f2f;
+                                ">
+                                    %s
+                                </span>
                             </p>
                     
                             <p style="margin:8px 0 0 0;">
@@ -137,4 +143,19 @@ public class EmailServiceImpl implements IEmailService {
         }
     }
 
+    @Override
+    public void sendEmailUpdateEmail(String newEmail, String token) {
+        String verifyUrl = StringCommon.BASE_URL_APP +
+                "/api/v1/auth/verify/new-email?token=" +
+                token +
+                "&" +
+                "email=" +
+                newEmail;
+        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
+        simpleMailMessage.setTo(newEmail);
+        simpleMailMessage.setSubject(StringCommon.APP_NAME_UPPER_CASE);
+        simpleMailMessage.setText("Chạm vào link này để xác nhận email thay đổi:\n"
+                + verifyUrl);
+        javaMailSender.send(simpleMailMessage);
+    }
 }

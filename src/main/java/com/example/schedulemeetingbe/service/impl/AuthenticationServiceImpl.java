@@ -28,8 +28,12 @@ import tools.jackson.databind.json.JsonMapper;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+
+import static com.example.schedulemeetingbe.constant.Constants.COOLDOWN_EMAIL_RESET_PASSWORD_TIME;
+import static com.example.schedulemeetingbe.constant.Constants.COOLDOWN_RESEND_EMAIL_TIME;
 
 @Service
 @AllArgsConstructor
@@ -39,12 +43,11 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     private final RefreshTokenRepository refreshTokenRepository;
     private final VerificationTokenRepository verificationTokenRepository;
     private final OutboxEventRepository outboxEventRepository;
+    private final RoleRepository roleRepository;
     private final IJwtService iJwtService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final JsonMapper jsonMapper;
     private final RedisTemplate<String, Object> redisTemplate;
-    private static final long COOLDOWN_RESEND_EMAIL_TIME = 60;
-    private static final long COOLDOWN_EMAIL_RESET_PASSWORD_TIME = 120;
 
     @Override
     public boolean checkAccessTokenInBlacklist(String tokenId) {
@@ -83,12 +86,14 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         if (!password.equals(passwordConfirm)) {
             throw new BusinessException(ErrorResponse.PASSWORD_NOT_MATCH);
         }
+        Role role = roleRepository.findByRoleName(request.role()).orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         User user = User.builder()
                 .username(request.username())
                 .email(request.email())
                 .passwordHash(bCryptPasswordEncoder.encode(password))
                 .fullName(request.fullName())
                 .phone(request.phone())
+                .roles(Set.of(role))
                 .build();
         User userSaved = userRepository.save(user);
 
@@ -148,17 +153,23 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
             verification.setRevoked(true);
             return;
         }
-        if (verification.getRevoked()) {
-            throw new BusinessException(ErrorResponse.VERIFY_TOKEN_REVOKED);
-        }
-        if (verification.getExpiresAt()
-                .isBefore(ZonedDateTime.now(ZoneOffset.UTC))) {
-            verification.setRevoked(true);
-            throw new BusinessException(ErrorResponse.VERIFY_TOKEN_EXPIRED);
-        }
-        verification.setVerified(true);
-        verification.setRevoked(true);
+        checkVerifyToken(verification);
         user.setIsActive(true);
+        verificationTokenRepository.revokeAllVerificationTokenOfUser(user.getUserId());
+    }
+
+    @Transactional
+    @Override
+    public void verifyUpdateEmail(String token, String newEmail) {
+        VerificationToken verification =
+                verificationTokenRepository.findByToken(token)
+                        .orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        User user = verification.getUser();
+        if (verification.getVerified()) {
+            return;
+        }
+        checkVerifyToken(verification);
+        user.setEmail(newEmail);
         verificationTokenRepository.revokeAllVerificationTokenOfUser(user.getUserId());
     }
 
@@ -225,6 +236,19 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
                 .build();
         outboxEventRepository.save(outboxEvent);
         return CRUDResponseHelper.createSuccess();
+    }
+
+    private void checkVerifyToken(VerificationToken verification) {
+        if (verification.getRevoked()) {
+            throw new BusinessException(ErrorResponse.VERIFY_TOKEN_REVOKED);
+        }
+        if (verification.getExpiresAt()
+                .isBefore(ZonedDateTime.now(ZoneOffset.UTC))) {
+            verification.setRevoked(true);
+            throw new BusinessException(ErrorResponse.VERIFY_TOKEN_EXPIRED);
+        }
+        verification.setVerified(true);
+        verification.setRevoked(true);
     }
 
 }

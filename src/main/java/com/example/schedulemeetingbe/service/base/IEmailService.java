@@ -4,4 +4,5 @@ public interface IEmailService {
     void sendEmailActiveAccount(String email, String token);
     void sendEmailResetPassword(String email);
     void sendEmailUsernamePassword(String email, String username, String password);
+    void sendEmailUpdateEmail(String newEmail, String token);
 }

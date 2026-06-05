@@ -20,6 +20,8 @@ public interface IAuthenticationService {
 
     void verifyEmail(String token);
 
+    void verifyUpdateEmail(String token, String newEmail);
+
     Map<String, Object> resendEmailVerifyAccount(SendEmailRequest request);
 
     Map<String, Object> sendEmailResetPassword(SendEmailRequest request);

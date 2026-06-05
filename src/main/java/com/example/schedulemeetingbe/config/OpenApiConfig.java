@@ -46,4 +46,12 @@ public class OpenApiConfig {
                 .build();
     }
 
+    @Bean
+    public GroupedOpenApi userGroup(){
+        return GroupedOpenApi.builder()
+                .group("User API")
+                .pathsToMatch("/api/v1/user/**")
+                .build();
+    }
+
 }

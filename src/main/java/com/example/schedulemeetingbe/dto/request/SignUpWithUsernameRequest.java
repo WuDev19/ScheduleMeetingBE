@@ -32,6 +32,9 @@ public record SignUpWithUsernameRequest(
         @Pattern(regexp = "^(03|05|07|08|09)\\d{8}$", message = "Số điện thoại không hợp lệ")
         @NotNull(message = StringCommon.NOT_NULL + "phone")
         @Size(min = Constants.PHONE_SIZE, max = Constants.PHONE_SIZE)
-        String phone
+        String phone,
+
+        @NotNull(message = StringCommon.NOT_NULL + "role")
+        String role
 ) {
 }
