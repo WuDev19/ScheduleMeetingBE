@@ -1,4 +1,4 @@
-package com.example.schedulemeetingbe.dto.request;
+package com.example.schedulemeetingbe.dto.request.auth;
 
 import com.example.schedulemeetingbe.constant.StringCommon;
 import jakarta.validation.constraints.NotBlank;

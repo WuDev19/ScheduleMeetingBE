@@ -1,8 +1,8 @@
 package com.example.schedulemeetingbe.service.base;
 
-import com.example.schedulemeetingbe.dto.request.CreateUserRequest;
-import com.example.schedulemeetingbe.dto.request.UpdateAvatarRequest;
-import com.example.schedulemeetingbe.dto.request.UpdateUserRequest;
+import com.example.schedulemeetingbe.dto.request.user.CreateUserRequest;
+import com.example.schedulemeetingbe.dto.request.user.UpdateAvatarRequest;
+import com.example.schedulemeetingbe.dto.request.user.UpdateUserRequest;
 import com.example.schedulemeetingbe.dto.response.UploadSignatureResponse;
 import com.example.schedulemeetingbe.dto.response.UserDetailResponse;
 

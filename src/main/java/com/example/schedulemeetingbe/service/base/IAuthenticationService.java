@@ -1,6 +1,9 @@
 package com.example.schedulemeetingbe.service.base;
 
-import com.example.schedulemeetingbe.dto.request.*;
+import com.example.schedulemeetingbe.dto.request.auth.LoginByUsernameRequest;
+import com.example.schedulemeetingbe.dto.request.auth.LogoutRequest;
+import com.example.schedulemeetingbe.dto.request.auth.SendEmailRequest;
+import com.example.schedulemeetingbe.dto.request.auth.SignUpWithUsernameRequest;
 import com.example.schedulemeetingbe.dto.response.LoginResponse;
 
 import java.util.Map;
