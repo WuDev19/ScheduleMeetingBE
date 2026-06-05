@@ -14,6 +14,7 @@ import com.example.schedulemeetingbe.entity.User;
 import com.example.schedulemeetingbe.entity.VerificationToken;
 import com.example.schedulemeetingbe.entity.payload.UserChangeEmailPayload;
 import com.example.schedulemeetingbe.entity.payload.UserCreatePayload;
+import com.example.schedulemeetingbe.entity.payload.UserDeleteAvatarPayload;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.exception.custom_exception.CooldownResendException;
@@ -31,7 +32,6 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.io.IOException;
@@ -191,14 +191,15 @@ public class UserServiceImpl implements IUserService {
     public Map<String, Object> deleteAvatar(Long id) {
         User user = userRepository.findById(id).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        try {
-            Map deleteResponse = iCloudinaryService.delete(user.getPublicUrlId());
-            user.setAvatarUrl(null);
-            user.setPublicUrlId(null);
-        } catch (IOException e) {
-            throw new BusinessException(ErrorResponse.FILE_ACCESS_ERROR);
-
-        }
+        UserDeleteAvatarPayload payload = new UserDeleteAvatarPayload(user.getPublicUrlId());
+        OutboxEvent event = OutboxEvent.builder()
+                .payload(jsonMapper.valueToTree(payload))
+                .eventType(EVENT_TYPE.DELETE_AVATAR.name())
+                .status(OutboxStatus.PENDING)
+                .build();
+        outboxEventRepository.save(event);
+        user.setAvatarUrl(null);
+        user.setPublicUrlId(null);
         return CRUDResponseHelper.deleteSuccess();
     }
 

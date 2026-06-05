@@ -6,6 +6,6 @@ public record UploadSignatureResponse (
         String api_key,
         long timestamp,
         String public_id,
-        boolean override
+        boolean overwrite
 ) {
 }

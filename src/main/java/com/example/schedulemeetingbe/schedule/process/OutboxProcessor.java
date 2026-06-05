@@ -2,11 +2,9 @@ package com.example.schedulemeetingbe.schedule.process;
 
 import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.entity.OutboxEvent;
-import com.example.schedulemeetingbe.entity.payload.UserChangeEmailPayload;
-import com.example.schedulemeetingbe.entity.payload.UserCreatePayload;
-import com.example.schedulemeetingbe.entity.payload.UserRegisteredPayload;
-import com.example.schedulemeetingbe.entity.payload.UserResetPasswordPayload;
+import com.example.schedulemeetingbe.entity.payload.*;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
+import com.example.schedulemeetingbe.service.base.ICloudinaryService;
 import com.example.schedulemeetingbe.service.base.IEmailService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
@@ -25,6 +23,7 @@ public class OutboxProcessor {
 
     private final JsonMapper jsonMapper;
     private final IEmailService iEmailService;
+    private final ICloudinaryService iCloudinaryService;
     private final OutboxEventRepository outboxEventRepository;
 
     @Async("outboxExecutor")
@@ -75,6 +74,14 @@ public class OutboxProcessor {
                                     UserChangeEmailPayload.class
                             );
                     iEmailService.sendEmailUpdateEmail(payload.newEmail(), payload.token());
+                }
+                case "DELETE_AVATAR" -> {
+                    UserDeleteAvatarPayload payload =
+                            jsonMapper.treeToValue(
+                                    event.getPayload(),
+                                    UserDeleteAvatarPayload.class
+                            );
+                    iCloudinaryService.delete(payload.publicId());
                 }
             }
             event.setStatus(OutboxStatus.SUCCESS);

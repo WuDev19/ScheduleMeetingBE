@@ -46,8 +46,8 @@ public class CloudinaryServiceImpl implements ICloudinaryService {
     }
 
     @Override
-    public Map delete(String publicId) throws IOException {
-        return cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+    public void delete(String publicId) throws IOException {
+        cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
     }
 
 }
