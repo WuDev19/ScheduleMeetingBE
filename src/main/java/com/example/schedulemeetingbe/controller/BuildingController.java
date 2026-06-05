@@ -4,11 +4,10 @@ import com.example.schedulemeetingbe.constant.Constants;
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
 import com.example.schedulemeetingbe.dto.common.ApiResult;
-import com.example.schedulemeetingbe.dto.request.building.BuildingResponse;
+import com.example.schedulemeetingbe.dto.response.BuildingResponse;
 import com.example.schedulemeetingbe.dto.request.building.CreateBuildingRequest;
 import com.example.schedulemeetingbe.dto.request.building.UpdateBuildingRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
-import com.example.schedulemeetingbe.dto.response.building.CreateBuildingResponse;
 import com.example.schedulemeetingbe.service.base.IBuildingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
@@ -94,8 +93,8 @@ public class BuildingController {
             @RequestParam(defaultValue = "10") int size
     ) {
         return ApiResponse.success(
-                iBuildingService.getBuildings(page, size),
-                "Lấy danh sách building thành công",
+                iBuildingService.search(keyword, page, size),
+                "Tìm kiếm danh sách building thành công",
                 Constants.SUCCESS_CODE
         );
     }

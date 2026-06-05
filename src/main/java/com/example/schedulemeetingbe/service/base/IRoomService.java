@@ -1,7 +1,8 @@
 package com.example.schedulemeetingbe.service.base;
 
-import java.util.Map;
+import com.example.schedulemeetingbe.dto.request.room.CreateRoomRequest;
+import com.example.schedulemeetingbe.dto.response.RoomResponse;
 
 public interface IRoomService {
-    Map<String, Object> createRoom();
+    RoomResponse createRoom(CreateRoomRequest request);
 }

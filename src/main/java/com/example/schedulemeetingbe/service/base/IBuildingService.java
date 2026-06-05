@@ -1,6 +1,6 @@
 package com.example.schedulemeetingbe.service.base;
 
-import com.example.schedulemeetingbe.dto.request.building.BuildingResponse;
+import com.example.schedulemeetingbe.dto.response.BuildingResponse;
 import com.example.schedulemeetingbe.dto.request.building.CreateBuildingRequest;
 import com.example.schedulemeetingbe.dto.request.building.UpdateBuildingRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;

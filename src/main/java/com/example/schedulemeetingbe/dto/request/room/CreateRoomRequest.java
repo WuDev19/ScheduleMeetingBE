@@ -18,6 +18,9 @@ public record CreateRoomRequest(
         @Min(value = 0)
         Integer floorNumber,
 
-        String description
+        String description,
+
+        @NotNull(message = StringCommon.NOT_NULL + "buildingId")
+        Long buildingId
 ) {
 }

@@ -5,7 +5,7 @@ VALUES ('BUILDING:CREATE', 'Tạo thông tin building'),
        ('BUILDING:DELETE', 'Xóa thông tin tòa nhà');
 
 INSERT INTO role_permissions(role_id, permission_id)
-SELECT r.role_id, p.permission_code
+SELECT r.role_id, p.permission_id
 FROM roles r
          JOIN permissions p
               ON p.permission_code IN (
@@ -17,14 +17,14 @@ FROM roles r
 WHERE r.role_name = 'ADMIN';
 
 INSERT INTO role_permissions(role_id, permission_id)
-SELECT r.role_id, p.permission_code
+SELECT r.role_id, p.permission_id
 FROM roles r
          JOIN permissions p
               ON p.permission_code = 'BUILDING:VIEW'
 WHERE r.role_name = 'APPROVER';
 
 INSERT INTO role_permissions(role_id, permission_id)
-SELECT r.role_id, p.permission_code
+SELECT r.role_id, p.permission_id
 FROM roles r
          JOIN permissions p
               ON p.permission_code = 'BUILDING:VIEW'

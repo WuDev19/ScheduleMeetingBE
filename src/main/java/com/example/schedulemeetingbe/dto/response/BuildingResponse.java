@@ -1,4 +1,4 @@
-package com.example.schedulemeetingbe.dto.request.building;
+package com.example.schedulemeetingbe.dto.response;
 
 public record BuildingResponse(
         Long id,
