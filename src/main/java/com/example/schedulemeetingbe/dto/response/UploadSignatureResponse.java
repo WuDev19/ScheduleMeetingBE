@@ -1,6 +1,6 @@
 package com.example.schedulemeetingbe.dto.response;
 
-public record UploadSignatureResponse (
+public record UploadSignatureResponse(
         String signature,
         String cloud_name,
         String api_key,

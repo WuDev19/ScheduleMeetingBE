@@ -16,13 +16,13 @@ public class ApiResponse {
     private ApiResponse() {
     }
 
-    public static ResponseEntity<?> success(Object data, String message, int code) {
+    public static <T> ResponseEntity<ApiResult<T>> success(T data, String message, int code) {
         return ResponseEntity.ok(
-                Map.of(
-                        CODE, code,
-                        STATUS, StringCommon.SUCCESS,
-                        MESSAGE, message,
-                        DATA, data
+                new ApiResult<>(
+                        code,
+                        StringCommon.SUCCESS,
+                        message,
+                        data
                 )
         );
     }

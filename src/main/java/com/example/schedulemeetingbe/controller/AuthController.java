@@ -2,7 +2,9 @@ package com.example.schedulemeetingbe.controller;
 
 import com.example.schedulemeetingbe.constant.Constants;
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
+import com.example.schedulemeetingbe.dto.common.ApiResult;
 import com.example.schedulemeetingbe.dto.request.*;
+import com.example.schedulemeetingbe.dto.response.LoginResponse;
 import com.example.schedulemeetingbe.service.base.IAuthenticationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -10,6 +12,8 @@ import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -21,7 +25,7 @@ public class AuthController {
 
     @Operation(summary = "Đăng kí tài khoản bằng username password")
     @PostMapping("/sign-up")
-    public ResponseEntity<?> signUpWithUsername(@Valid @RequestBody SignUpWithUsernameRequest request) {
+    public ResponseEntity<ApiResult<Map<String, Object>>> signUpWithUsername(@Valid @RequestBody SignUpWithUsernameRequest request) {
         return ApiResponse.success(
                 iAuthenticationService.signUpWithUsername(request),
                 "Đăng kí tài khoản thành công",
@@ -31,7 +35,7 @@ public class AuthController {
 
     @Operation(summary = "API dành cho đăng nhập bằng username + password")
     @PostMapping("/login")
-    public ResponseEntity<?> login(@Valid @RequestBody LoginByUsernameRequest request) {
+    public ResponseEntity<ApiResult<LoginResponse>> login(@Valid @RequestBody LoginByUsernameRequest request) {
         return ApiResponse.success(
                 iAuthenticationService.login(request),
                 "Đăng nhập thành công",
@@ -41,7 +45,7 @@ public class AuthController {
 
     @Operation(summary = "API dành cho đăng xuất khi đăng nhập bằng username")
     @PostMapping("/logout")
-    public ResponseEntity<?> logout(@Valid @RequestBody LogoutRequest request) {
+    public ResponseEntity<ApiResult<Map<String, Object>>> logout(@Valid @RequestBody LogoutRequest request) {
         return ApiResponse.success(
                 iAuthenticationService.logout(request),
                 "Đăng xuất thành công",
@@ -55,7 +59,7 @@ public class AuthController {
                     " và refresh token cũ update thành revoke"
     )
     @PostMapping("/refresh-token/{refToken}")
-    public ResponseEntity<?> refreshToken(@PathVariable String refToken) {
+    public ResponseEntity<ApiResult<LoginResponse>> refreshToken(@PathVariable String refToken) {
         return ApiResponse.success(
                 iAuthenticationService.refreshToken(refToken),
                 "Cấp lại access token và refresh token thành công",
@@ -79,7 +83,7 @@ public class AuthController {
 
     @Operation(summary = "API gửi lại link verify account")
     @PostMapping("/resend-verification")
-    public ResponseEntity<?> resendEmailVerifyAccount(@Valid @RequestBody SendEmailRequest request) {
+    public ResponseEntity<ApiResult<Map<String, Object>>> resendEmailVerifyAccount(@Valid @RequestBody SendEmailRequest request) {
         return ApiResponse.success(
                 iAuthenticationService.resendEmailVerifyAccount(request),
                 "Gửi lại link xác nhận thành công",
@@ -89,7 +93,7 @@ public class AuthController {
 
     @Operation(summary = "API cho quên mật khẩu", description = "Người dùng bấm quên mật khẩu sau đó nhập email đẵ đăng kí để nhận link mật khẩu mới")
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@Valid @RequestBody SendEmailRequest request) {
+    public ResponseEntity<ApiResult<Map<String, Object>>> forgotPassword(@Valid @RequestBody SendEmailRequest request) {
         return ApiResponse.success(
                 iAuthenticationService.sendEmailResetPassword(request),
                 "Gửi email reset mật khẩu thành công",
