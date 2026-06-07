@@ -96,7 +96,7 @@ public class UserServiceImpl implements IUserService {
     @CacheEvict(value = "user-detail", key = "#id")
     @Transactional
     @Override
-    public Map<String, Object> updateUser(Long id, UpdateUserRequest request) {
+    public UserDetailResponse updateUser(Long id, UpdateUserRequest request) {
         User user = userRepository.findById(id).orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         if (request.fullName() != null) {
             user.setFullName(request.fullName());
@@ -107,7 +107,7 @@ public class UserServiceImpl implements IUserService {
         if (request.username() != null) {
             user.setUsername(request.username());
         }
-        return CRUDResponseHelper.updateSuccess();
+        return UserMapper.mapToUserDetailResponse(user);
     }
 
     @CacheEvict(value = "user-detail", key = "#id")

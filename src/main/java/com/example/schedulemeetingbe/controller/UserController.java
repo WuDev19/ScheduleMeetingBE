@@ -57,7 +57,7 @@ public class UserController {
     @Operation(summary = "Api cho cập nhật tài khoản người dùng")
     @PatchMapping("/{id}")
     @PreAuthorize("hasAuthority('USER:UPDATE')")
-    public ResponseEntity<ApiResult<Map<String, Object>>> updateAccount(@PathVariable Long id, @Valid @ModelAttribute UpdateUserRequest request) {
+    public ResponseEntity<ApiResult<UserDetailResponse>> updateUser(@PathVariable Long id, @Valid @ModelAttribute UpdateUserRequest request) {
         return ApiResponse.success(
                 iUserService.updateUser(id, request),
                 "Cập nhật tài khoản thành công",
@@ -83,9 +83,9 @@ public class UserController {
     @PreAuthorize("hasAuthority('USER:LOCK')")
     public ResponseEntity<ApiResult<Map<String, Object>>> lockAccount(@PathVariable Long id) {
         return ApiResponse.success(
-            iUserService.lockAccount(id),
-            "Xóa tài khoản thành công",
-            Constants.SUCCESS_CODE
+                iUserService.lockAccount(id),
+                "Xóa tài khoản thành công",
+                Constants.SUCCESS_CODE
         );
     }
 

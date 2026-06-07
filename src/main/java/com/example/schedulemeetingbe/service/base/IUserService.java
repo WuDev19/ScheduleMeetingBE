@@ -11,7 +11,7 @@ import java.util.Map;
 public interface IUserService {
     Map<String, Object> createUser(CreateUserRequest request);
     UserDetailResponse getUserDetail(Long id);
-    Map<String, Object> updateUser(Long id, UpdateUserRequest request);
+    UserDetailResponse updateUser(Long id, UpdateUserRequest request);
     Map<String, Object> updateEmail(Long id, String newEmail);
     Map<String, Object> lockAccount(Long id);
     Map<String, Object> unlockAccount(Long id);

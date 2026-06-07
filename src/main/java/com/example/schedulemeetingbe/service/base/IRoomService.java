@@ -15,11 +15,13 @@ public interface IRoomService {
     RoomResponse updateRoom(Long id, UpdateRoomRequest request);
 
     Map<String, Object> deleteRoom(Long id);
+
     Map<String, Object> softDeleteRoom(Long id);
 
     PageResponse<RoomResponse> getRooms(Pageable pageable);
 
     PageResponse<RoomResponse> filter(RoomFilterRequest request, Pageable pageable);
+
     PageResponse<RoomResponse> search(String keyword, Pageable pageable);
 
     RoomResponse getDetail(Long id);
