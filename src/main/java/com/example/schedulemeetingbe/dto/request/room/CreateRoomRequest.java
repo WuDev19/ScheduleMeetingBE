@@ -6,7 +6,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 public record CreateRoomRequest(
-        @NotNull(message = StringCommon.NOT_NULL + "roomName")
         @NotBlank(message = "Dữ liệu roomName " + StringCommon.NOT_BLANK)
         String roomName,
 
