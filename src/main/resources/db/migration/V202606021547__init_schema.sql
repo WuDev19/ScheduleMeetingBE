@@ -470,7 +470,7 @@ CREATE TRIGGER trg_increment_booking_version
 CREATE OR REPLACE FUNCTION check_room_unavailability()
 RETURNS TRIGGER AS $$
 BEGIN
-    IF NEW.status NOT IN ('cancelled', 'rejected') AND NEW.deleted_at IS NULL THEN
+    IF NEW.status NOT IN ('CANCELLED', 'REJECTED') AND NEW.deleted_at IS NULL THEN
         IF EXISTS (
             SELECT 1
             FROM room_unavailability

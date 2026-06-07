@@ -55,6 +55,7 @@ public class BuildingServiceImpl implements IBuildingService {
         return BuildingMapper.mapToBuildingResponse(building);
     }
 
+    @CacheEvict(value = "building-detail", key = "#id")
     @Override
     public Map<String, Object> deleteBuilding(Long id) {
         boolean check = buildingRepository.existsById(id);
