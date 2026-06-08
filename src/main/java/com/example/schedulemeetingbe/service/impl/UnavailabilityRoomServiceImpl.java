@@ -2,6 +2,7 @@ package com.example.schedulemeetingbe.service.impl;
 
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
 import com.example.schedulemeetingbe.dto.request.unavailability_room.CreateUnavailabilityRoomRequest;
+import com.example.schedulemeetingbe.dto.request.unavailability_room.UnavailabilityRoomFilterRequest;
 import com.example.schedulemeetingbe.dto.request.unavailability_room.UpdateUnavailabilityRoomRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.UnavailabilityRoomResponse;
@@ -12,6 +13,7 @@ import com.example.schedulemeetingbe.exception.custom_exception.BusinessExceptio
 import com.example.schedulemeetingbe.mapper.RoomMapper;
 import com.example.schedulemeetingbe.repository.RoomRepository;
 import com.example.schedulemeetingbe.repository.UnavailabilityRoomRepository;
+import com.example.schedulemeetingbe.repository.specification.UnavailabilityRoomSpecification;
 import com.example.schedulemeetingbe.service.base.IUnavailabilityRoomService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
@@ -106,6 +108,25 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
     public PageResponse<UnavailabilityRoomResponse> search(String keyword, Pageable pageable) {
         Page<RoomUnavailability> roomPage = unavailabilityRoomRepository.findByReasonContainingIgnoreCase(
                 keyword,
+                pageable
+        );
+        return new PageResponse<>(
+                roomPage.getNumber(),
+                roomPage.getNumberOfElements(),
+                roomPage.getTotalElements(),
+                roomPage.getTotalPages(),
+                roomPage.getContent().stream()
+                        .map(RoomMapper::mapToUnavailabilityRoomResponse)
+                        .toList()
+        );
+    }
+
+    @Override
+    public PageResponse<UnavailabilityRoomResponse> filter(UnavailabilityRoomFilterRequest request, Pageable pageable) {
+        Page<RoomUnavailability> roomPage = unavailabilityRoomRepository.findAll(
+                UnavailabilityRoomSpecification.filter(
+                        TimeUtils.fromLongToZoneDateTime(request.start()),
+                        TimeUtils.fromLongToZoneDateTime(request.end())),
                 pageable
         );
         return new PageResponse<>(

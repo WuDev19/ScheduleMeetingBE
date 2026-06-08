@@ -5,6 +5,7 @@ import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
 import com.example.schedulemeetingbe.dto.common.ApiResult;
 import com.example.schedulemeetingbe.dto.request.unavailability_room.CreateUnavailabilityRoomRequest;
+import com.example.schedulemeetingbe.dto.request.unavailability_room.UnavailabilityRoomFilterRequest;
 import com.example.schedulemeetingbe.dto.request.unavailability_room.UpdateUnavailabilityRoomRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.UnavailabilityRoomResponse;
@@ -121,5 +122,21 @@ public class RoomUnavailabilityController {
                 Constants.SUCCESS_CODE
         );
     }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api lấy chi tiết phòng họp không khả dụng")
+    @GetMapping("/search")
+    @PreAuthorize("hasAuthority('ROOM_UNAVAILABLE:VIEW')")
+    public ResponseEntity<ApiResult<PageResponse<UnavailabilityRoomResponse>>> filter(
+            @ModelAttribute UnavailabilityRoomFilterRequest request,
+            @PageableDefault Pageable pageable
+    ) {
+        return ApiResponse.success(
+                iUnavailabilityRoomService.filter(request, pageable),
+                "Lọc danh sách phòng họp không khả dụng theo thời gian thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
 
 }

@@ -1,6 +1,7 @@
 package com.example.schedulemeetingbe.service.base;
 
 import com.example.schedulemeetingbe.dto.request.unavailability_room.CreateUnavailabilityRoomRequest;
+import com.example.schedulemeetingbe.dto.request.unavailability_room.UnavailabilityRoomFilterRequest;
 import com.example.schedulemeetingbe.dto.request.unavailability_room.UpdateUnavailabilityRoomRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.UnavailabilityRoomResponse;
@@ -23,4 +24,5 @@ public interface IUnavailabilityRoomService {
     PageResponse<UnavailabilityRoomResponse> getAll(Pageable pageable);
 
     PageResponse<UnavailabilityRoomResponse> search(String keyword, Pageable pageable);
+    PageResponse<UnavailabilityRoomResponse> filter(UnavailabilityRoomFilterRequest request, Pageable pageable);
 }
