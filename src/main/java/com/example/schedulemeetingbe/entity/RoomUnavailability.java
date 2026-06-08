@@ -35,6 +35,10 @@ public class RoomUnavailability {
     @Column(name = "created_at", nullable = false, updatable = false)
     private ZonedDateTime createdAt;
 
+    @Builder.Default
+    @Column(name = "is_deleted")
+    private Boolean isDeleted = false;
+
     @PrePersist
     protected void onCreate() {
         createdAt = ZonedDateTime.now(ZoneOffset.UTC);
