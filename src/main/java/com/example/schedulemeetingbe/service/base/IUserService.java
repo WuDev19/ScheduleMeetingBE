@@ -10,13 +10,24 @@ import java.util.Map;
 
 public interface IUserService {
     Map<String, Object> createUser(CreateUserRequest request);
+
     UserDetailResponse getUserDetail(Long id);
+
     UserDetailResponse updateUser(Long id, UpdateUserRequest request);
+
     Map<String, Object> updateEmail(Long id, String newEmail);
+
     Map<String, Object> lockAccount(Long id);
+
     Map<String, Object> unlockAccount(Long id);
+
     Map<String, Object> deleteForever(Long id);
+
     Map<String, Object> updateAvatar(Long id, UpdateAvatarRequest request);
+
     Map<String, Object> deleteAvatar(Long id);
+
     UploadSignatureResponse generateUploadSignature(Long id);
+
+    void updatePassword(String email, String newPassword);
 }

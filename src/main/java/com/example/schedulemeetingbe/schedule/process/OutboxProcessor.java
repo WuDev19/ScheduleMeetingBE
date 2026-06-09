@@ -1,19 +1,16 @@
 package com.example.schedulemeetingbe.schedule.process;
 
-import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.entity.OutboxEvent;
 import com.example.schedulemeetingbe.entity.payload.*;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.service.base.ICloudinaryService;
 import com.example.schedulemeetingbe.service.base.IEmailService;
+import com.example.schedulemeetingbe.service.base.IOutboxEventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -25,9 +22,9 @@ public class OutboxProcessor {
     private final IEmailService iEmailService;
     private final ICloudinaryService iCloudinaryService;
     private final OutboxEventRepository outboxEventRepository;
+    private final IOutboxEventService iOutboxEventService;
 
     @Async("outboxExecutor")
-    @Transactional
     public void processEvent(UUID eventId) {
         Optional<OutboxEvent> eventOptional = outboxEventRepository.findById(eventId);
         if (eventOptional.isEmpty()) return;
@@ -83,16 +80,18 @@ public class OutboxProcessor {
                             );
                     iCloudinaryService.delete(payload.publicId());
                 }
+                case "BOOKING_CANCELLED_BY_MAINTENANCE" -> {
+                    BookingCancelledByMaintenancePayload payload =
+                            jsonMapper.treeToValue(
+                                    event.getPayload(),
+                                    BookingCancelledByMaintenancePayload.class
+                            );
+                    iEmailService.sendEmailCancelledBookingByMaintain(payload);
+                }
             }
-            event.setStatus(OutboxStatus.SUCCESS);
-            event.setProcessedAt(ZonedDateTime.now(ZoneOffset.UTC));
+            iOutboxEventService.updateStatusSuccess(event.getId());
         } catch (Exception ex) {
-            event.setRetryCount(event.getRetryCount() + 1);
-            event.setStatus(
-                    event.getRetryCount() >= 5
-                            ? OutboxStatus.DEAD
-                            : OutboxStatus.FAILED
-            );
+            iOutboxEventService.updateStatusDead(event.getId());
         }
     }
 }

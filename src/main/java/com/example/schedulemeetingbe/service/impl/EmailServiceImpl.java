@@ -1,11 +1,17 @@
 package com.example.schedulemeetingbe.service.impl;
 
 import com.example.schedulemeetingbe.constant.StringCommon;
+import com.example.schedulemeetingbe.entity.Booking;
+import com.example.schedulemeetingbe.entity.Room;
 import com.example.schedulemeetingbe.entity.User;
+import com.example.schedulemeetingbe.entity.payload.BookingCancelledByMaintenancePayload;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
+import com.example.schedulemeetingbe.repository.BookingRepository;
+import com.example.schedulemeetingbe.repository.RoomRepository;
 import com.example.schedulemeetingbe.repository.UserRepository;
 import com.example.schedulemeetingbe.service.base.IEmailService;
+import com.example.schedulemeetingbe.service.base.IUserService;
 import com.example.schedulemeetingbe.utils.EmailErrorParser;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
@@ -13,12 +19,9 @@ import lombok.AllArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Random;
 
 @Service
@@ -26,8 +29,11 @@ import java.util.Random;
 public class EmailServiceImpl implements IEmailService {
 
     private final JavaMailSender javaMailSender;
+    private final IUserService iUserService;
     private final UserRepository userRepository;
-    private final BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final RoomRepository roomRepository;
+    private final BookingRepository bookingRepository;
+    private static final String UTF8 = "UTF-8";
 
     @Override
     public void sendEmailActiveAccount(String email, String token) {
@@ -40,11 +46,8 @@ public class EmailServiceImpl implements IEmailService {
         javaMailSender.send(simpleMailMessage);
     }
 
-    @Transactional
     @Override
     public void sendEmailResetPassword(String email) {
-        User user = userRepository.findByEmailAndIsActiveIsTrue(email).orElseThrow(() ->
-                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         String characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
         int length = 10;
         Random random = new Random();
@@ -54,8 +57,7 @@ public class EmailServiceImpl implements IEmailService {
             sb.append(characters.charAt(index));
         }
         String newPassword = sb.toString() + random.nextInt(1000);
-        user.setPasswordHash(bCryptPasswordEncoder.encode(newPassword));
-        user.setPasswordChangedAt(ZonedDateTime.now(ZoneOffset.UTC));
+        iUserService.updatePassword(email, newPassword);
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         try {
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
@@ -95,7 +97,7 @@ public class EmailServiceImpl implements IEmailService {
     public void sendEmailUsernamePassword(String email, String username, String password) {
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         try {
-            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
+            MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, UTF8);
             String html = """
                     <div style="font-family: Arial, sans-serif;">
                         <p>Thông tin đăng nhập của quý khách:</p>
@@ -158,4 +160,71 @@ public class EmailServiceImpl implements IEmailService {
                 + verifyUrl);
         javaMailSender.send(simpleMailMessage);
     }
+
+    @Override
+    public void sendEmailCancelledBookingByMaintain(BookingCancelledByMaintenancePayload payload) {
+        Long userId = payload.userId();
+        Long roomId = payload.roomId();
+        Long bookingId = payload.bookingId();
+        User user = userRepository.findById(userId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        Room room = roomRepository.findById(roomId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+        try {
+            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true, UTF8);
+            String content = generateContentBookingCancelledByMaintain(user, room, booking, payload.reason());
+            mimeMessageHelper.setTo(user.getEmail());
+            mimeMessageHelper.setSubject(StringCommon.APP_NAME_UPPER_CASE);
+            mimeMessageHelper.setText(content, true);
+            javaMailSender.send(mimeMessage);
+        } catch (Exception e) {
+            EmailErrorParser.parseException(e);
+        }
+    }
+
+    private String generateContentBookingCancelledByMaintain(User user, Room room, Booking booking, String reason) {
+        String startTimeStr = booking.getStartTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT));
+        String endTimeStr = booking.getEndTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT));
+        return """
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
+                    <h2 style="color: #d9534f;">Thông Báo Hủy Lịch Họp Đột Xuất</h2>
+                    <p>Xin chào <strong>%s</strong>,</p>
+                    <p>Chúng tôi rất tiếc phải thông báo rằng lịch đặt phòng của bạn đã bị hủy do sự cố phòng đột xuất.</p>
+                
+                    <table style="width: 100%%; border-collapse: collapse; margin: 20px 0;">
+                        <tr style="background-color: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Cuộc họp:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">%s</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Phòng họp:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">%s</td>
+                        </tr>
+                        <tr style="background-color: #f8f9fa;">
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold;">Thời gian:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">Từ %s đến %s</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd; font-weight: bold; color: #d9534f;">Lý do bảo trì:</td>
+                            <td style="padding: 10px; border: 1px solid #ddd; color: #d9534f; font-style: italic;">%s</td>
+                        </tr>
+                    </table>
+                
+                    <p>Rất mong bạn thông cảm cho sự cố bất tiện này. Vui lòng kiểm tra lại hệ thống để đặt lại lịch họp mới.</p>
+                    <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
+                    <p style="font-size: 12px; color: #777;">Đây là email tự động từ Hệ thống Quản lý Phòng họp.</p>
+                </div>
+                """.formatted(
+                user.getFullName(),
+                booking.getTitle(),
+                room.getRoomName(),
+                startTimeStr,
+                endTimeStr,
+                reason
+        );
+    }
+
 }

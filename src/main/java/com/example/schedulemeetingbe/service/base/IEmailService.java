@@ -1,8 +1,15 @@
 package com.example.schedulemeetingbe.service.base;
 
+import com.example.schedulemeetingbe.entity.payload.BookingCancelledByMaintenancePayload;
+
 public interface IEmailService {
     void sendEmailActiveAccount(String email, String token);
+
     void sendEmailResetPassword(String email);
+
     void sendEmailUsernamePassword(String email, String username, String password);
+
     void sendEmailUpdateEmail(String newEmail, String token);
+
+    void sendEmailCancelledBookingByMaintain(BookingCancelledByMaintenancePayload payload);
 }

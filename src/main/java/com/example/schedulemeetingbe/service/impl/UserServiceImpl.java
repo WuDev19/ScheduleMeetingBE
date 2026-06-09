@@ -34,6 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Set;
@@ -200,6 +201,15 @@ public class UserServiceImpl implements IUserService {
         user.setAvatarUrl(null);
         user.setPublicUrlId(null);
         return CRUDResponseHelper.deleteSuccess();
+    }
+
+    @Transactional
+    @Override
+    public void updatePassword(String email, String newPassword) {
+        User user = userRepository.findByEmailAndIsActiveIsTrue(email).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        user.setPasswordHash(bCryptPasswordEncoder.encode(newPassword));
+        user.setPasswordChangedAt(ZonedDateTime.now(ZoneOffset.UTC));
     }
 
 }

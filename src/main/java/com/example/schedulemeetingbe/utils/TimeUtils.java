@@ -13,7 +13,7 @@ public class TimeUtils {
     }
 
     public static ZonedDateTime fromLongToZoneDateTime(Long time) {
-        return ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneOffset.UTC);
+        return time != null ? ZonedDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneOffset.UTC) : null;
     }
 
     public static String dateTimeFormat() {

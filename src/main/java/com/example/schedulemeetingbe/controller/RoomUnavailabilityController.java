@@ -125,7 +125,7 @@ public class RoomUnavailabilityController {
 
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
     @Operation(summary = "Api lấy chi tiết phòng họp không khả dụng")
-    @GetMapping("/search")
+    @GetMapping("/filter")
     @PreAuthorize("hasAuthority('ROOM_UNAVAILABLE:VIEW')")
     public ResponseEntity<ApiResult<PageResponse<UnavailabilityRoomResponse>>> filter(
             @ModelAttribute UnavailabilityRoomFilterRequest request,
@@ -137,6 +137,5 @@ public class RoomUnavailabilityController {
                 Constants.SUCCESS_CODE
         );
     }
-
 
 }

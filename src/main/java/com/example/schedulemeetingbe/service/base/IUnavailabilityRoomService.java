@@ -24,5 +24,6 @@ public interface IUnavailabilityRoomService {
     PageResponse<UnavailabilityRoomResponse> getAll(Pageable pageable);
 
     PageResponse<UnavailabilityRoomResponse> search(String keyword, Pageable pageable);
+
     PageResponse<UnavailabilityRoomResponse> filter(UnavailabilityRoomFilterRequest request, Pageable pageable);
 }

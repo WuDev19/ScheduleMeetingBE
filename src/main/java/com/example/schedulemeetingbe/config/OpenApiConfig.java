@@ -70,4 +70,20 @@ public class OpenApiConfig {
                 .build();
     }
 
+    @Bean
+    public GroupedOpenApi unavailabilityRoomGroup() {
+        return GroupedOpenApi.builder()
+                .group("Unavailability Room")
+                .pathsToMatch("/api/v1/unavailability-room/**")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi equipmentGroup() {
+        return GroupedOpenApi.builder()
+                .group("Equipment")
+                .pathsToMatch("/api/v1/equipment/**")
+                .build();
+    }
+
 }
