@@ -3,7 +3,7 @@ package com.example.schedulemeetingbe.service.impl;
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
 import com.example.schedulemeetingbe.dto.request.equipment.CreateEquipmentRequest;
 import com.example.schedulemeetingbe.dto.request.equipment.UpdateEquipmentRequest;
-import com.example.schedulemeetingbe.dto.response.EquipmentResponse;
+import com.example.schedulemeetingbe.dto.response.equipment.EquipmentResponse;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.entity.Equipment;
 import com.example.schedulemeetingbe.exception.ErrorResponse;

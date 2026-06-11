@@ -6,7 +6,7 @@ import com.example.schedulemeetingbe.dto.common.ApiResponse;
 import com.example.schedulemeetingbe.dto.common.ApiResult;
 import com.example.schedulemeetingbe.dto.request.equipment.CreateEquipmentRequest;
 import com.example.schedulemeetingbe.dto.request.equipment.UpdateEquipmentRequest;
-import com.example.schedulemeetingbe.dto.response.EquipmentResponse;
+import com.example.schedulemeetingbe.dto.response.equipment.EquipmentResponse;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.service.base.IEquipmentService;
 import io.swagger.v3.oas.annotations.Operation;

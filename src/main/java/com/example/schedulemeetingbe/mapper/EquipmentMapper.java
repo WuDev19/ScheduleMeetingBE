@@ -1,7 +1,9 @@
 package com.example.schedulemeetingbe.mapper;
 
-import com.example.schedulemeetingbe.dto.response.EquipmentResponse;
+import com.example.schedulemeetingbe.dto.response.equipment.EquipmentResponse;
+import com.example.schedulemeetingbe.dto.response.equipment.RoomEquipmentResponse;
 import com.example.schedulemeetingbe.entity.Equipment;
+import com.example.schedulemeetingbe.entity.RoomEquipment;
 
 public class EquipmentMapper {
     private EquipmentMapper() {
@@ -15,4 +17,5 @@ public class EquipmentMapper {
                 equipment.getTotalQuantity()
         );
     }
+
 }

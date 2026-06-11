@@ -4,6 +4,7 @@ import com.example.schedulemeetingbe.constant.Constants;
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
 import com.example.schedulemeetingbe.dto.common.ApiResult;
+import com.example.schedulemeetingbe.dto.request.equipment.RoomEquipmentQuantityRequest;
 import com.example.schedulemeetingbe.dto.request.room.CreateRoomRequest;
 import com.example.schedulemeetingbe.dto.request.room.RoomFilterRequest;
 import com.example.schedulemeetingbe.dto.request.room.UpdateRoomRequest;
@@ -21,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -35,7 +37,7 @@ public class RoomController {
     @Operation(summary = "Api cho admin tạo thông tin phòng họp")
     @PostMapping
     @PreAuthorize("hasAuthority('ROOM:CREATE')")
-    public ResponseEntity<ApiResult<RoomResponse>> createRoom(@Valid @RequestBody CreateRoomRequest request) {
+    public ResponseEntity<ApiResult<Map<String, Long>>> createRoom(@Valid @RequestBody CreateRoomRequest request) {
         return ApiResponse.success(
                 iRoomService.createRoom(request),
                 "Tạo phòng họp thành công",
@@ -47,7 +49,7 @@ public class RoomController {
     @Operation(summary = "Api cho admin cập nhật thông tin phòng họp")
     @PatchMapping("/{id}")
     @PreAuthorize("hasAuthority('ROOM:UPDATE')")
-    public ResponseEntity<ApiResult<RoomResponse>> updateRoom(@PathVariable Long id, @RequestBody UpdateRoomRequest request) {
+    public ResponseEntity<ApiResult<Map<String, Long>>> updateRoom(@PathVariable Long id, @RequestBody UpdateRoomRequest request) {
         return ApiResponse.success(
                 iRoomService.updateRoom(id, request),
                 "Cập nhật phòng họp thành công",
@@ -131,6 +133,21 @@ public class RoomController {
         return ApiResponse.success(
                 iRoomService.search(keyword, pageable),
                 "Lấy danh sách phòng họp thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api thêm thiết bị vào phòng họp")
+    @PostMapping("/{roomId}/equipment")
+    @PreAuthorize("hasAuthority('ROOM:UPDATE')")
+    public ResponseEntity<ApiResult<Map<String, Long>>> addEquipment(
+            @PathVariable Long roomId,
+            @RequestBody List<RoomEquipmentQuantityRequest> requests
+            ) {
+        return ApiResponse.success(
+                iRoomService.addEquipmentToRoom(roomId, requests),
+                "Thêm thiết bị vào phòng họp thành công",
                 Constants.SUCCESS_CODE
         );
     }

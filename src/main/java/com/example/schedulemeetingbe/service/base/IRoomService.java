@@ -1,5 +1,6 @@
 package com.example.schedulemeetingbe.service.base;
 
+import com.example.schedulemeetingbe.dto.request.equipment.RoomEquipmentQuantityRequest;
 import com.example.schedulemeetingbe.dto.request.room.CreateRoomRequest;
 import com.example.schedulemeetingbe.dto.request.room.RoomFilterRequest;
 import com.example.schedulemeetingbe.dto.request.room.UpdateRoomRequest;
@@ -7,12 +8,13 @@ import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.RoomResponse;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Map;
 
 public interface IRoomService {
-    RoomResponse createRoom(CreateRoomRequest request);
+    Map<String, Long> createRoom(CreateRoomRequest request);
 
-    RoomResponse updateRoom(Long id, UpdateRoomRequest request);
+    Map<String, Long> updateRoom(Long id, UpdateRoomRequest request);
 
     Map<String, Object> deleteRoom(Long id);
 
@@ -25,4 +27,6 @@ public interface IRoomService {
     PageResponse<RoomResponse> search(String keyword, Pageable pageable);
 
     RoomResponse getDetail(Long id);
+
+    Map<String, Long> addEquipmentToRoom(Long roomId, List<RoomEquipmentQuantityRequest> requests);
 }
