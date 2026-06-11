@@ -59,6 +59,7 @@ public class RoomServiceImpl implements IRoomService {
                 .description(request.description())
                 .building(building)
                 .build();
+        Room saved = roomRepository.save(room);
         if (request.equipments() != null && !request.equipments().isEmpty()) {
             List<Equipment> equipments = equipmentRepository.findByEquipmentIdIn(
                     request.equipments()
@@ -70,7 +71,7 @@ public class RoomServiceImpl implements IRoomService {
             for (int i = 0; i < equipments.size(); i++) {
                 roomEquipments.add(
                         RoomEquipment.builder()
-                                .room(room)
+                                .room(saved)
                                 .equipment(equipments.get(i))
                                 .quantity(request.equipments().get(i).quantity())
                                 .build()
@@ -78,7 +79,6 @@ public class RoomServiceImpl implements IRoomService {
             }
             roomEquipmentRepository.saveAll(roomEquipments);
         }
-        Room saved = roomRepository.save(room);
         return Map.of(ROOM_ID, saved.getRoomId());
     }
 
@@ -142,30 +142,8 @@ public class RoomServiceImpl implements IRoomService {
 
     @Override
     public PageResponse<RoomResponse> search(String keyword, Pageable pageable) {
-        Page<Room> roomPage = roomRepository.findByRoomNameContainingIgnoreCase(keyword, pageable);
+        Page<Room> roomPage = roomRepository.searchRoom(keyword, pageable);
         return getRoomResponsePageResponse(roomPage);
-    }
-
-    @NonNull
-    private PageResponse<RoomResponse> getRoomResponsePageResponse(Page<Room> roomPage) {
-        Map<Long, List<RoomEquipmentResponse>> roomEquipment = roomEquipmentRepository.findEquipmentByRoomId(
-                        roomPage.getContent()
-                                .stream()
-                                .map(Room::getRoomId)
-                                .toList()
-                )
-                .stream()
-                .collect(Collectors.groupingBy(RoomEquipmentResponse::roomId));
-        return new PageResponse<>(
-                roomPage.getNumber(),
-                roomPage.getNumberOfElements(),
-                roomPage.getTotalElements(),
-                roomPage.getTotalPages(),
-                roomPage.getContent().stream()
-                        .map(room ->
-                                RoomMapper.mapToRoomResponse(room, roomEquipment.getOrDefault(room.getRoomId(), List.of())))
-                        .toList()
-        );
     }
 
     @Cacheable(value = "room-detail", key = "#id")
@@ -200,5 +178,28 @@ public class RoomServiceImpl implements IRoomService {
         roomEquipmentRepository.saveAll(roomEquipments);
         return Map.of(ROOM_ID, roomId);
     }
+
+    @NonNull
+    private PageResponse<RoomResponse> getRoomResponsePageResponse(Page<Room> roomPage) {
+        Map<Long, List<RoomEquipmentResponse>> roomEquipment = roomEquipmentRepository.findEquipmentByRoomId(
+                        roomPage.getContent()
+                                .stream()
+                                .map(Room::getRoomId)
+                                .toList()
+                )
+                .stream()
+                .collect(Collectors.groupingBy(RoomEquipmentResponse::roomId));
+        return new PageResponse<>(
+                roomPage.getNumber(),
+                roomPage.getNumberOfElements(),
+                roomPage.getTotalElements(),
+                roomPage.getTotalPages(),
+                roomPage.getContent().stream()
+                        .map(room ->
+                                RoomMapper.mapToRoomResponse(room, roomEquipment.getOrDefault(room.getRoomId(), List.of())))
+                        .toList()
+        );
+    }
+
 
 }
