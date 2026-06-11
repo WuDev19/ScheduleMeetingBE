@@ -27,6 +27,7 @@ public class CloudinaryServiceImpl implements ICloudinaryService {
 
     private final Cloudinary cloudinary;
 
+    // tạo chữ ký cho client, client sẽ gửi theo đúng cấu trúc này thì mới có thể upload được ảnh lên cloudinary
     @Override
     public UploadSignatureResponse generateUploadSignature(String publicId) {
         long timestamp = System.currentTimeMillis() / 1000L;
@@ -45,6 +46,7 @@ public class CloudinaryServiceImpl implements ICloudinaryService {
         );
     }
 
+    //xóa ảnh trên cloudinary dựa trên publicId
     @Override
     public void delete(String publicId) throws IOException {
         cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
