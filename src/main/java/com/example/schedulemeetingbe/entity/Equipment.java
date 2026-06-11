@@ -1,10 +1,8 @@
 package com.example.schedulemeetingbe.entity;
 
-import com.example.schedulemeetingbe.constant.StringCommon;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
@@ -29,6 +27,10 @@ public class Equipment {
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private ZonedDateTime createdAt;
+
+    @Column(name = "total_quantity", nullable = false)
+    @Builder.Default
+    private Integer totalQuantity = 0;
 
     @PrePersist
     protected void onCreate() {
