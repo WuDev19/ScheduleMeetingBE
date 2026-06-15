@@ -2,7 +2,9 @@ package com.example.schedulemeetingbe.exception;
 
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
+import com.example.schedulemeetingbe.exception.custom_exception.CheckOverlapBookingException;
 import com.example.schedulemeetingbe.exception.custom_exception.CooldownResendException;
+import com.example.schedulemeetingbe.exception.custom_exception.ExceedEquipmentException;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
@@ -42,6 +44,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    @ExceptionHandler(CheckOverlapBookingException.class)
+    public ResponseEntity<?> handleCheckOverlapBookingException(CheckOverlapBookingException e) {
+        return ApiResponse.error(e.getMessage(),
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<?> handleBusinessException(BusinessException e) {
         e.printStackTrace();
@@ -50,6 +59,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 errorResponse.getMessage(),
                 errorResponse.getCode(),
                 HttpStatus.BAD_REQUEST
+        );
+    }
+
+    @ExceptionHandler(ExceedEquipmentException.class)
+    public ResponseEntity<?> handleExceedEquipmentException(ExceedEquipmentException e) {
+        e.printStackTrace();
+        var message = e.getMessages();
+        return ApiResponse.error(
+                message,
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT
         );
     }
 

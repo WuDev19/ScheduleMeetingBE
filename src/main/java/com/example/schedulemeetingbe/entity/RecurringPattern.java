@@ -26,6 +26,7 @@ public class RecurringPattern {
     @Column(name = "recurrence_type", nullable = false)
     private RecurrenceType recurrenceType;
 
+    // tần suất họp
     @Column(name = "interval_value", nullable = false)
     @Builder.Default
     private Integer intervalValue = 1;

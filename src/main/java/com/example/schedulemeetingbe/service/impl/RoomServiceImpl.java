@@ -32,9 +32,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -59,26 +60,24 @@ public class RoomServiceImpl implements IRoomService {
                 .description(request.description())
                 .building(building)
                 .build();
+        Room saved = roomRepository.save(room);
         if (request.equipments() != null && !request.equipments().isEmpty()) {
-            List<Equipment> equipments = equipmentRepository.findByEquipmentIdIn(
-                    request.equipments()
+            Map<Long, Equipment> equipments = equipmentRepository.findByEquipmentIdIn(request.equipments()
                             .stream()
                             .map(RoomEquipmentQuantityRequest::equipmentId)
                             .toList()
-            );
-            List<RoomEquipment> roomEquipments = new ArrayList<>();
-            for (int i = 0; i < equipments.size(); i++) {
-                roomEquipments.add(
-                        RoomEquipment.builder()
-                                .room(room)
-                                .equipment(equipments.get(i))
-                                .quantity(request.equipments().get(i).quantity())
-                                .build()
-                );
-            }
+                    )
+                    .stream()
+                    .collect(Collectors.toMap(Equipment::getEquipmentId, Function.identity()));
+            List<RoomEquipment> roomEquipments = request.equipments().stream()
+                    .map(req -> RoomEquipment.builder()
+                            .equipment(equipments.get(req.equipmentId()))
+                            .room(saved)
+                            .quantity(req.quantity())
+                            .build())
+                    .toList();
             roomEquipmentRepository.saveAll(roomEquipments);
         }
-        Room saved = roomRepository.save(room);
         return Map.of(ROOM_ID, saved.getRoomId());
     }
 
@@ -184,21 +183,26 @@ public class RoomServiceImpl implements IRoomService {
     public Map<String, Long> addEquipmentToRoom(Long roomId, List<RoomEquipmentQuantityRequest> requests) {
         Room room = roomRepository.findById(roomId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        List<Equipment> equipments = equipmentRepository.findByEquipmentIdIn(requests
+        Map<Long, Equipment> equipments = equipmentRepository.findByEquipmentIdIn(requests
+                        .stream()
+                        .map(RoomEquipmentQuantityRequest::equipmentId)
+                        .toList()
+                )
                 .stream()
-                .map(RoomEquipmentQuantityRequest::equipmentId)
-                .toList());
-        List<RoomEquipment> roomEquipments = new ArrayList<>();
-        for (int i = 0; i < equipments.size(); i++) {
-            roomEquipments.add(RoomEquipment
-                    .builder()
-                    .equipment(equipments.get(i))
-                    .room(room)
-                    .quantity(requests.get(i).quantity())
-                    .build());
-        }
+                .collect(Collectors.toMap(Equipment::getEquipmentId, Function.identity()));
+        List<RoomEquipment> roomEquipments = requests.stream()
+                .map(req -> RoomEquipment.builder()
+                        .equipment(equipments.get(req.equipmentId()))
+                        .room(room)
+                        .quantity(req.quantity())
+                        .build())
+                .toList();
         roomEquipmentRepository.saveAll(roomEquipments);
         return Map.of(ROOM_ID, roomId);
     }
 
+    @Override
+    public Optional<Room> getRoomDetail(Long id) {
+        return roomRepository.findById(id);
+    }
 }

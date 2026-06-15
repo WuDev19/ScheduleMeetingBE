@@ -5,8 +5,10 @@ import com.example.schedulemeetingbe.dto.request.user.UpdateAvatarRequest;
 import com.example.schedulemeetingbe.dto.request.user.UpdateUserRequest;
 import com.example.schedulemeetingbe.dto.response.UploadSignatureResponse;
 import com.example.schedulemeetingbe.dto.response.UserDetailResponse;
+import com.example.schedulemeetingbe.entity.User;
 
 import java.util.Map;
+import java.util.Optional;
 
 public interface IUserService {
     Map<String, Object> createUser(CreateUserRequest request);
@@ -30,4 +32,6 @@ public interface IUserService {
     UploadSignatureResponse generateUploadSignature(Long id);
 
     void updatePassword(String email, String newPassword);
+
+    Optional<User> getDetail(Long id);
 }

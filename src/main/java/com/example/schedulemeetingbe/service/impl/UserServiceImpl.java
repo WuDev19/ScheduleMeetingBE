@@ -37,6 +37,7 @@ import tools.jackson.databind.json.JsonMapper;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -212,4 +213,8 @@ public class UserServiceImpl implements IUserService {
         user.setPasswordChangedAt(ZonedDateTime.now(ZoneOffset.UTC));
     }
 
+    @Override
+    public Optional<User> getDetail(Long id) {
+        return userRepository.findById(id);
+    }
 }

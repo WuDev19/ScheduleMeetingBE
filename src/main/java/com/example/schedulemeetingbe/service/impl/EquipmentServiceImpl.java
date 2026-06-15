@@ -3,6 +3,7 @@ package com.example.schedulemeetingbe.service.impl;
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
 import com.example.schedulemeetingbe.dto.request.equipment.CreateEquipmentRequest;
 import com.example.schedulemeetingbe.dto.request.equipment.UpdateEquipmentRequest;
+import com.example.schedulemeetingbe.dto.response.equipment.EquipmentAndQuantityResponse;
 import com.example.schedulemeetingbe.dto.response.equipment.EquipmentResponse;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.entity.Equipment;
@@ -19,6 +20,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
@@ -107,4 +109,15 @@ public class EquipmentServiceImpl implements IEquipmentService {
                         .toList()
         );
     }
+
+    @Override
+    public List<Equipment> findEquipmentIn(List<Long> ids) {
+        return equipmentRepository.findByEquipmentIdIn(ids);
+    }
+
+    @Override
+    public List<EquipmentAndQuantityResponse> findEquipmentAndRemainingQuantity(List<Long> eqIds) {
+        return equipmentRepository.findEquipmentAndRemainingQuantity(eqIds);
+    }
+
 }

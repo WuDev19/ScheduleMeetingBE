@@ -3,6 +3,8 @@ package com.example.schedulemeetingbe.entity;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -37,7 +39,6 @@ public class Booking {
     @JoinColumn(name = "recurring_id")
     private RecurringPattern recurringPattern;
 
-    @Column(nullable = false, length = 255)
     private String title;
 
     @Column(columnDefinition = "TEXT")
@@ -54,6 +55,7 @@ public class Booking {
     private Integer attendeeCount = 1;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(nullable = false)
     @Builder.Default
     private BookingStatus status = BookingStatus.PENDING;

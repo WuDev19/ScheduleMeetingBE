@@ -24,7 +24,8 @@ public enum ErrorResponse {
     ATTACHMENT_ERROR("Tệp đính kèm không hợp lệ hoặc vượt quá dung lượng cho phép", 1017),
     SYSTEM_UNKNOWN_ERROR("Gửi email thất bại do lỗi hệ thống chưa xác định", 1018),
     FILE_ACCESS_ERROR("Lỗi không thể truy cập file", 1019),
-    FILE_EXCEED_MEMORY("File vượt quá dung lượng cho phép", 1020);
+    FILE_EXCEED_MEMORY("File vượt quá dung lượng cho phép", 1020),
+    FAKE_AUTH_ERROR("Bạn đang mạo danh người khác, nghiêm cấm hành vi này", 1021);
 
     private final String message;
     private final int code;
