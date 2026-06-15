@@ -18,8 +18,8 @@ public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
 
     @Query(value = """
             SELECT be.equipment_id AS equipmentId,
-                   e.equiment_name AS equipmentName,
-                   (e.total_quantity - CAST(SUM(be.quantity) AS INT)) AS remainingQuantity
+                   e.equipment_name AS equipmentName,
+                   (e.total_quantity - CAST(SUM(be.quantity) AS INTEGER)) AS remainingQuantity
             FROM equipment e
             JOIN booking_equipment be
             ON e.equipment_id = be.equipment_id

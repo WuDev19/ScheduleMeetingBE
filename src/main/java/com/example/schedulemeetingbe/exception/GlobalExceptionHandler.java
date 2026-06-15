@@ -1,10 +1,7 @@
 package com.example.schedulemeetingbe.exception;
 
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
-import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
-import com.example.schedulemeetingbe.exception.custom_exception.CheckOverlapBookingException;
-import com.example.schedulemeetingbe.exception.custom_exception.CooldownResendException;
-import com.example.schedulemeetingbe.exception.custom_exception.ExceedEquipmentException;
+import com.example.schedulemeetingbe.exception.custom_exception.*;
 import org.jspecify.annotations.Nullable;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
@@ -68,6 +65,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         var message = e.getMessages();
         return ApiResponse.error(
                 message,
+                HttpStatus.CONFLICT.value(),
+                HttpStatus.CONFLICT
+        );
+    }
+
+    @ExceptionHandler(OverlapBookingException.class)
+    public ResponseEntity<?> handleOverlapBookingException(OverlapBookingException e) {
+        e.printStackTrace();
+        var reasons = e.getReasons();
+        return ApiResponse.error(
+                reasons,
                 HttpStatus.CONFLICT.value(),
                 HttpStatus.CONFLICT
         );

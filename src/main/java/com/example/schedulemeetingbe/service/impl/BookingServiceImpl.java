@@ -7,8 +7,8 @@ import com.example.schedulemeetingbe.dto.response.equipment.EquipmentAndQuantity
 import com.example.schedulemeetingbe.entity.*;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
-import com.example.schedulemeetingbe.exception.custom_exception.CheckOverlapBookingException;
 import com.example.schedulemeetingbe.exception.custom_exception.ExceedEquipmentException;
+import com.example.schedulemeetingbe.exception.custom_exception.OverlapBookingException;
 import com.example.schedulemeetingbe.mapper.BookingMapper;
 import com.example.schedulemeetingbe.repository.BookingEquipmentRepository;
 import com.example.schedulemeetingbe.repository.BookingRepository;
@@ -37,10 +37,10 @@ public class BookingServiceImpl implements IBookingService {
     private final IRoomService iRoomService;
     private final IEquipmentService iEquipmentService;
 
-    //thêm cái kiểm tra số lượng còn lại trong kho của equipment
     @Transactional
     @Override
     public BookingResponse createBooking(CreateBookingRequest request, String username) {
+        long start = System.currentTimeMillis();
         //kiểm tra người dùng có thật sự tồn tại ko
         User user = iUserService.getDetail(request.userId()).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
@@ -52,7 +52,7 @@ public class BookingServiceImpl implements IBookingService {
         Room room = iRoomService.getRoomDetail(request.roomId()).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         //kiểm tra có bị trùng lịch trong Unavailability Room hay Bookings ko (dưới db có constraint nhưng vẫn check bên be để có thể hiện lỗi thân thiện hơn)
-        bookingRepository.checkOverlap(
+        List<String> reasons = bookingRepository.checkOverlap(
                 request.roomId(),
                 new String[]{
                         String.format(
@@ -60,9 +60,10 @@ public class BookingServiceImpl implements IBookingService {
                                 request.start().toOffsetDateTime(),
                                 request.end().toOffsetDateTime()
                         )}
-        ).ifPresent(reason -> {
-            throw new CheckOverlapBookingException(reason);
-        });
+        );
+        if (!reasons.isEmpty()) {
+            throw new OverlapBookingException(reasons);
+        }
         Booking booking = Booking.builder()
                 .bookedBy(user)
                 .attendeeCount(request.attendee())
@@ -74,10 +75,16 @@ public class BookingServiceImpl implements IBookingService {
                 .build();
         Booking saved = bookingRepository.save(booking);
         // người dùng đặt lịch và có chọn thêm thiết bị khi đặt lịch
+        addEquipmentToRoom(request, saved);
+        System.out.println((System.currentTimeMillis() - start) + "ms Tốc độ");
+        return BookingMapper.mapToBookingResponse(saved, user, room);
+    }
+
+    private void addEquipmentToRoom(CreateBookingRequest request, Booking saved) {
         List<CreateBookingEquipmentRequest> bookingEquipmentRequests = request.equipments();
         if (bookingEquipmentRequests != null && !bookingEquipmentRequests.isEmpty()) {
             // lấy thông tin cơ bản của thiết bị và số lượng còn lại để check xem còn đủ để cho mượn ko
-            // tránh n+1 query và sử dụng truy cập phần tử với O(1) tối ưu với Map
+            // tránh n+1 query và sử dụng Map để truy cập phần tử với O(1)
             Map<Long, EquipmentAndQuantityResponse> equipmentAndQuantityResponses = iEquipmentService
                     .findEquipmentAndRemainingQuantity(
                             bookingEquipmentRequests
@@ -120,7 +127,5 @@ public class BookingServiceImpl implements IBookingService {
                     .toList();
             bookingEquipmentRepository.saveAll(bookingEquipments);
         }
-        return BookingMapper.mapToBookingResponse(saved, user, room);
     }
-
 }
