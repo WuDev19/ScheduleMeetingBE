@@ -10,6 +10,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public interface IEquipmentService {
 
@@ -28,4 +29,6 @@ public interface IEquipmentService {
     List<Equipment> findEquipmentIn(List<Long> ids);
 
     List<EquipmentAndQuantityResponse> findEquipmentAndRemainingQuantity(List<Long> eqIds);
+
+    Optional<Equipment> getEquipmentDetail(Long id);
 }

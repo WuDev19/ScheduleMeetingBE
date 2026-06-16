@@ -1,7 +1,9 @@
 package com.example.schedulemeetingbe.service.impl;
 
+import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import com.example.schedulemeetingbe.dto.request.booking.CreateBookingEquipmentRequest;
 import com.example.schedulemeetingbe.dto.request.booking.CreateBookingRequest;
+import com.example.schedulemeetingbe.dto.request.booking.UpdateBookingRequest;
 import com.example.schedulemeetingbe.dto.response.booking.BookingResponse;
 import com.example.schedulemeetingbe.dto.response.equipment.EquipmentAndQuantityResponse;
 import com.example.schedulemeetingbe.entity.*;
@@ -20,6 +22,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +46,10 @@ public class BookingServiceImpl implements IBookingService {
     @Override
     public BookingResponse createBooking(CreateBookingRequest request, String username) {
         long start = System.currentTimeMillis();
+        //kiểm tra ngày bắt đầu phải nhỏ hơn ngày kết thúc
+        if (request.start().isAfter(request.end())) {
+            throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
+        }
         //kiểm tra người dùng có thật sự tồn tại ko
         User user = iUserService.getDetail(request.userId()).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
@@ -52,18 +61,8 @@ public class BookingServiceImpl implements IBookingService {
         Room room = iRoomService.getRoomDetail(request.roomId()).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         //kiểm tra có bị trùng lịch trong Unavailability Room hay Bookings ko (dưới db có constraint nhưng vẫn check bên be để có thể hiện lỗi thân thiện hơn)
-        List<String> reasons = bookingRepository.checkOverlap(
-                request.roomId(),
-                new String[]{
-                        String.format(
-                                "[%s, %s)",
-                                request.start().toOffsetDateTime(),
-                                request.end().toOffsetDateTime()
-                        )}
-        );
-        if (!reasons.isEmpty()) {
-            throw new OverlapBookingException(reasons);
-        }
+        checkOverlap(request.roomId(), request.start(), request.end());
+
         Booking booking = Booking.builder()
                 .bookedBy(user)
                 .attendeeCount(request.attendee())
@@ -78,6 +77,37 @@ public class BookingServiceImpl implements IBookingService {
         addEquipmentToRoom(request, saved);
         System.out.println((System.currentTimeMillis() - start) + "ms Tốc độ");
         return BookingMapper.mapToBookingResponse(saved, user, room);
+    }
+
+    // chiều code nốt
+    @Transactional
+    @Override
+    public BookingResponse updateBooking(Long id, UpdateBookingRequest request) {
+        Booking booking = bookingRepository.findById(id).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        if (Duration.between(ZonedDateTime.now(ZoneOffset.UTC), booking.getStartTime())
+                .toMinutes() < 60) {
+            throw new BusinessException(ErrorResponse.UPDATE_BOOKING_ERROR);
+        }
+        if (request.title() != null) booking.setTitle(request.title());
+        if (request.description() != null) booking.setDescription(request.description());
+        if (request.attendeeCount() != null) booking.setAttendeeCount(request.attendeeCount());
+        if (request.newRoomId() != null) {
+            Room room = iRoomService.getRoomDetail(request.newRoomId()).orElseThrow(() ->
+                    new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+            booking.setRoom(room);
+        }
+        if (request.start() != null && request.end() != null) {
+            if (request.start().isAfter(request.end())) {
+                throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
+            } else {
+                checkOverlap(request.roomId(), request.start(), request.end());
+                booking.setStartTime(request.start());
+                booking.setEndTime(request.end());
+            }
+        }
+        booking.setStatus(BookingStatus.PENDING);
+        return null;
     }
 
     private void addEquipmentToRoom(CreateBookingRequest request, Booking saved) {
@@ -98,12 +128,18 @@ public class BookingServiceImpl implements IBookingService {
             List<String> exceedQuantity = new ArrayList<>();
             bookingEquipmentRequests.forEach(createBookingEquipmentRequest -> {
                 EquipmentAndQuantityResponse equipmentAndQuantity = equipmentAndQuantityResponses.get(createBookingEquipmentRequest.equipmentId());
-                if (createBookingEquipmentRequest.quantity() > equipmentAndQuantity.remainingQuantity()) {
-                    exceedQuantity.add("Vượt quá số lượng, thiết bị " +
-                            equipmentAndQuantity.equipmentName() +
-                            " chỉ còn trống " +
-                            equipmentAndQuantity.remainingQuantity()
-                    );
+                //tránh trường hợp gửi equipmentId ko hợp lệ
+                iEquipmentService.getEquipmentDetail(createBookingEquipmentRequest.equipmentId()).orElseThrow(() ->
+                        new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+                //tránh NPE vì khi truy vấn bên trên những equipmentId ko có trong bảng bookingequipment sẽ ko xuất hiện trong result
+                if (equipmentAndQuantity != null) {
+                    if (createBookingEquipmentRequest.quantity() > equipmentAndQuantity.remainingQuantity()) {
+                        exceedQuantity.add("Vượt quá số lượng, thiết bị " +
+                                equipmentAndQuantity.equipmentName() +
+                                " chỉ còn trống " +
+                                equipmentAndQuantity.remainingQuantity()
+                        );
+                    }
                 }
             });
             if (!exceedQuantity.isEmpty()) {
@@ -126,6 +162,21 @@ public class BookingServiceImpl implements IBookingService {
                             .build())
                     .toList();
             bookingEquipmentRepository.saveAll(bookingEquipments);
+        }
+    }
+
+    private void checkOverlap(Long roomId, ZonedDateTime start, ZonedDateTime end) {
+        List<String> reasons = bookingRepository.checkOverlap(
+                roomId,
+                new String[]{
+                        String.format(
+                                "[%s, %s)",
+                                start.toOffsetDateTime(),
+                                end.toOffsetDateTime()
+                        )}
+        );
+        if (!reasons.isEmpty()) {
+            throw new OverlapBookingException(reasons);
         }
     }
 }

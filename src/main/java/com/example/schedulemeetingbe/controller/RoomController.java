@@ -7,6 +7,7 @@ import com.example.schedulemeetingbe.dto.common.ApiResult;
 import com.example.schedulemeetingbe.dto.request.equipment.RoomEquipmentQuantityRequest;
 import com.example.schedulemeetingbe.dto.request.room.CreateRoomRequest;
 import com.example.schedulemeetingbe.dto.request.room.RoomFilterRequest;
+import com.example.schedulemeetingbe.dto.request.room.StartEndTimeRequest;
 import com.example.schedulemeetingbe.dto.request.room.UpdateRoomRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.RoomResponse;
@@ -144,10 +145,26 @@ public class RoomController {
     public ResponseEntity<ApiResult<Map<String, Long>>> addEquipment(
             @PathVariable Long roomId,
             @RequestBody List<RoomEquipmentQuantityRequest> requests
-            ) {
+    ) {
         return ApiResponse.success(
                 iRoomService.addEquipmentToRoom(roomId, requests),
                 "Thêm thiết bị vào phòng họp thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api thêm thiết bị vào phòng họp")
+    @GetMapping("/not-overlap/{roomId}")
+    @PreAuthorize("hasAuthority('ROOM:VIEW')")
+    public ResponseEntity<ApiResult<PageResponse<RoomResponse>>> getRoomNotOverlap(
+            @PathVariable Long roomId,
+            @RequestBody StartEndTimeRequest request,
+            @PageableDefault Pageable pageable
+    ) {
+        return ApiResponse.success(
+                iRoomService.getRoomNotOverlapTime(roomId, request, pageable),
+                "Lấy danh sách phòng trống trong khoảng thời gian này thành công",
                 Constants.SUCCESS_CODE
         );
     }

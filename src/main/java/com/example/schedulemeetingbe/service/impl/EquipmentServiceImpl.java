@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -120,4 +121,8 @@ public class EquipmentServiceImpl implements IEquipmentService {
         return equipmentRepository.findEquipmentAndRemainingQuantity(eqIds);
     }
 
+    @Override
+    public Optional<Equipment> getEquipmentDetail(Long id) {
+        return equipmentRepository.findById(id);
+    }
 }

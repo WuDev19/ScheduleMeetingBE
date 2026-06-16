@@ -5,10 +5,42 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.OffsetDateTime;
+import java.util.List;
 
 public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificationExecutor<Room> {
 
     Page<Room> findByIsActiveIsTrue(Pageable pageable);
 
     Page<Room> findByRoomNameContainingIgnoreCase(String keyword, Pageable pageable);
+
+    @Query(value = """
+            SELECT r.*
+            FROM rooms r
+            WHERE r.room_id <> :roomId
+            AND NOT EXISTS(
+                SELECT 1
+                FROM bookings b
+                WHERE b.room_id = r.room_id
+                        AND tstzrange(b.start_time, b.end_time)
+                            && tstzrange(:start, :end)
+                )
+            AND NOT EXISTS(
+                SELECT 1
+                FROM room_unavailability ru
+                WHERE ru.room_id = r.room_id
+                        AND tstzrange(ru.start_time, ru.end_time)
+                            && tstzrange(:start, :end) 
+                )
+            """,
+            nativeQuery = true)
+    Page<Room> findRoomNotOverlap(
+            @Param("roomId") Long roomId,
+            @Param("start") OffsetDateTime start,
+            @Param("end") OffsetDateTime end,
+            Pageable pageable
+    );
 }

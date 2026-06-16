@@ -14,23 +14,23 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                 SELECT CONCAT('Phòng họp không khả dụng vì ', ru.reason) AS reason
                 FROM room_unavailability ru
                 WHERE ru.room_id = :roomId
-                AND tstzrange(ru.start_time, ru.end_time) 
+                AND tstzrange(ru.start_time, ru.end_time)
                                     && ANY((:ranges)::tstzrange[])
-                
+            
                 UNION ALL
-                            
+            
                 SELECT CONCAT('Bị trùng với ', b.title) AS reason
                 FROM bookings b
                 WHERE b.room_id = :roomId
                 AND b.status NOT IN ('CANCELLED', 'REJECTED')
                 AND b.deleted_at IS NULL
-                AND tstzrange(b.start_time, b.end_time) 
+                AND tstzrange(b.start_time, b.end_time)
                                     && ANY((:ranges)::tstzrange[])
              ) AS overlap_check
             """, nativeQuery = true)
     List<String> checkOverlap(
             @Param("roomId") Long roomId,
-            @Param("ranges") String[] ranges
+            @Param("ranges") String[] ranges //truyền mảng để có thể sử dụng hàm này cho cả booking 1 lần và booking theo chu kì
     );
 
 }

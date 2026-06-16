@@ -25,7 +25,9 @@ public enum ErrorResponse {
     SYSTEM_UNKNOWN_ERROR("Gửi email thất bại do lỗi hệ thống chưa xác định", 1018),
     FILE_ACCESS_ERROR("Lỗi không thể truy cập file", 1019),
     FILE_EXCEED_MEMORY("File vượt quá dung lượng cho phép", 1020),
-    FAKE_AUTH_ERROR("Bạn đang mạo danh người khác, nghiêm cấm hành vi này", 1021);
+    FAKE_AUTH_ERROR("Bạn đang mạo danh người khác, nghiêm cấm hành vi này", 1021),
+    START_END_DATE_ERROR("Ngày kết thúc phải lớn hơn ngày bắt đầu", 1022),
+    UPDATE_BOOKING_ERROR("Thời gian cập nhật thông tin lịch đặt phải trước 1 tiếng để APPROVER có thể duyệt kịp", 1023);
 
     private final String message;
     private final int code;

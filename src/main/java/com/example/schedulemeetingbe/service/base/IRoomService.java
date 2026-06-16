@@ -3,6 +3,7 @@ package com.example.schedulemeetingbe.service.base;
 import com.example.schedulemeetingbe.dto.request.equipment.RoomEquipmentQuantityRequest;
 import com.example.schedulemeetingbe.dto.request.room.CreateRoomRequest;
 import com.example.schedulemeetingbe.dto.request.room.RoomFilterRequest;
+import com.example.schedulemeetingbe.dto.request.room.StartEndTimeRequest;
 import com.example.schedulemeetingbe.dto.request.room.UpdateRoomRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.RoomResponse;
@@ -31,6 +32,8 @@ public interface IRoomService {
     RoomResponse getDetail(Long id);
 
     Map<String, Long> addEquipmentToRoom(Long roomId, List<RoomEquipmentQuantityRequest> requests);
+
+    PageResponse<RoomResponse> getRoomNotOverlapTime(Long roomId, StartEndTimeRequest request, Pageable pageable);
 
     Optional<Room> getRoomDetail(Long id);
 }
