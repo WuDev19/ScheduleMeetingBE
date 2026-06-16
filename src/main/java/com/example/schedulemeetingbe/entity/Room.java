@@ -1,9 +1,9 @@
 package com.example.schedulemeetingbe.entity;
 
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 @Entity
@@ -55,12 +55,12 @@ public class Room {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = ZonedDateTime.now(ZoneOffset.UTC);
-        updatedAt = ZonedDateTime.now(ZoneOffset.UTC);
+        createdAt = TimeUtils.ZONE_DATE_TIME;
+        updatedAt = TimeUtils.ZONE_DATE_TIME;
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = ZonedDateTime.now(ZoneOffset.UTC);
+        updatedAt = TimeUtils.ZONE_DATE_TIME;
     }
 }

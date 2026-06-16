@@ -9,6 +9,9 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class TimeUtils {
+
+    public static ZonedDateTime ZONE_DATE_TIME = ZonedDateTime.now(ZoneOffset.UTC);
+
     private TimeUtils() {
     }
 

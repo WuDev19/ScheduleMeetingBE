@@ -2,13 +2,13 @@ package com.example.schedulemeetingbe.entity;
 
 import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.entity.converter.Jackson3JsonNodeConverter;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import tools.jackson.databind.JsonNode;
 
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
@@ -61,6 +61,6 @@ public class OutboxEvent {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = ZonedDateTime.now(ZoneOffset.UTC);
+        createdAt = TimeUtils.ZONE_DATE_TIME;
     }
 }

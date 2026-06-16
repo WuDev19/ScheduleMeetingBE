@@ -8,6 +8,7 @@ import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.repository.RefreshTokenRepository;
 import com.example.schedulemeetingbe.service.base.IJwtService;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -17,7 +18,6 @@ import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.*;
 
@@ -58,7 +58,7 @@ public class JwtServiceImpl implements IJwtService {
         return RefreshToken.builder()
                 .userRefreshToken(user)
                 .refreshToken(token)
-                .expireDate(ZonedDateTime.now(ZoneOffset.UTC).plusDays(7))
+                .expireDate(TimeUtils.ZONE_DATE_TIME.plusDays(7))
                 .build();
     }
 
@@ -68,7 +68,7 @@ public class JwtServiceImpl implements IJwtService {
             refreshTokenRepository.deleteByUserRefreshToken(refreshToken.getUserRefreshToken());
             throw new BusinessException(ErrorResponse.REFRESH_TOKEN_REVOKED);
         }
-        if (refreshToken.getExpireDate().isBefore(ZonedDateTime.now(ZoneOffset.UTC))) {
+        if (refreshToken.getExpireDate().isBefore(TimeUtils.ZONE_DATE_TIME)) {
             throw new BusinessException(ErrorResponse.JWT_EXCEPTION);
         }
         return refreshToken;

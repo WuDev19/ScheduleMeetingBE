@@ -17,6 +17,7 @@ import com.example.schedulemeetingbe.exception.custom_exception.CooldownResendEx
 import com.example.schedulemeetingbe.repository.*;
 import com.example.schedulemeetingbe.service.base.IAuthenticationService;
 import com.example.schedulemeetingbe.service.base.IJwtService;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.AllArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -25,7 +26,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Set;
@@ -70,7 +70,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         if (!isMatch) {
             throw new BusinessException(ErrorResponse.PASSWORD_NOT_TRUE);
         }
-        user.setLastLoginAt(ZonedDateTime.now(ZoneOffset.UTC));
+        user.setLastLoginAt(TimeUtils.ZONE_DATE_TIME);
         user.setIsActive(true);
         String token = iJwtService.generateToken(username, user.getUserId(), user.getRoles());
         RefreshToken refreshToken = iJwtService.generateRefreshToken(user);
@@ -102,7 +102,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         VerificationToken verificationToken = VerificationToken.builder()
                 .token(UUID.randomUUID().toString())
                 .user(userSaved)
-                .expiresAt(ZonedDateTime.now(ZoneOffset.UTC).plusHours(1))
+                .expiresAt(TimeUtils.ZONE_DATE_TIME.plusHours(1))
                 .build();
         return createUserRegisterVerificationTokenAndOutboxEvent(userSaved, verificationToken, EVENT_TYPE.USER_REGISTER);
     }
@@ -192,7 +192,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         }
         verificationTokenRepository.revokeAllVerificationTokenOfUser(user.getUserId()); // revoke tất cả những token cũ
         VerificationToken verificationToken = VerificationToken.builder()
-                .expiresAt(ZonedDateTime.now(ZoneOffset.UTC).plusHours(1))
+                .expiresAt(TimeUtils.ZONE_DATE_TIME.plusHours(1))
                 .token(UUID.randomUUID().toString())
                 .user(user)
                 .build();
@@ -244,7 +244,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
             throw new BusinessException(ErrorResponse.VERIFY_TOKEN_REVOKED);
         }
         if (verification.getExpiresAt()
-                .isBefore(ZonedDateTime.now(ZoneOffset.UTC))) {
+                .isBefore(TimeUtils.ZONE_DATE_TIME)) {
             verification.setRevoked(true);
             throw new BusinessException(ErrorResponse.VERIFY_TOKEN_EXPIRED);
         }

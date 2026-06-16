@@ -1,9 +1,9 @@
 package com.example.schedulemeetingbe.entity;
 
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.UUID;
 
@@ -55,6 +55,6 @@ public class VerificationToken {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = ZonedDateTime.now(ZoneOffset.UTC);
+        createdAt = TimeUtils.ZONE_DATE_TIME;
     }
 }

@@ -25,6 +25,7 @@ import com.example.schedulemeetingbe.repository.UserRepository;
 import com.example.schedulemeetingbe.repository.VerificationTokenRepository;
 import com.example.schedulemeetingbe.service.base.ICloudinaryService;
 import com.example.schedulemeetingbe.service.base.IUserService;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -34,7 +35,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -210,7 +210,7 @@ public class UserServiceImpl implements IUserService {
         User user = userRepository.findByEmailAndIsActiveIsTrue(email).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         user.setPasswordHash(bCryptPasswordEncoder.encode(newPassword));
-        user.setPasswordChangedAt(ZonedDateTime.now(ZoneOffset.UTC));
+        user.setPasswordChangedAt(TimeUtils.ZONE_DATE_TIME);
     }
 
     @Override

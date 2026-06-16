@@ -3,12 +3,11 @@ package com.example.schedulemeetingbe.service.impl;
 import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.service.base.IOutboxEventService;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.UUID;
 
 @Service
@@ -22,7 +21,7 @@ public class OutboxEventServiceImpl implements IOutboxEventService {
     public void updateStatusSuccess(UUID eventId) {
         outboxEventRepository.findById(eventId).ifPresent(event -> {
             event.setStatus(OutboxStatus.SUCCESS);
-            event.setProcessedAt(ZonedDateTime.now(ZoneOffset.UTC));
+            event.setProcessedAt(TimeUtils.ZONE_DATE_TIME);
         });
     }
 

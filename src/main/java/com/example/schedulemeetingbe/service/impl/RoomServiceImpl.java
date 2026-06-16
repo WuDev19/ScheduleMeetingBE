@@ -22,6 +22,7 @@ import com.example.schedulemeetingbe.repository.RoomEquipmentRepository;
 import com.example.schedulemeetingbe.repository.RoomRepository;
 import com.example.schedulemeetingbe.repository.specification.RoomSpecification;
 import com.example.schedulemeetingbe.service.base.IRoomService;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.cache.annotation.CacheEvict;
@@ -31,8 +32,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -121,7 +120,7 @@ public class RoomServiceImpl implements IRoomService {
     public Map<String, Object> softDeleteRoom(Long id) {
         Room room = roomRepository.findById(id).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        room.setDeletedAt(ZonedDateTime.now(ZoneOffset.UTC));
+        room.setDeletedAt(TimeUtils.ZONE_DATE_TIME);
         return CRUDResponseHelper.deleteSuccess();
     }
 

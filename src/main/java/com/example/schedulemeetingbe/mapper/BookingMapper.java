@@ -1,6 +1,7 @@
 package com.example.schedulemeetingbe.mapper;
 
 import com.example.schedulemeetingbe.dto.response.booking.BookingResponse;
+import com.example.schedulemeetingbe.dto.response.booking.StatusBookingResponse;
 import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.Room;
 import com.example.schedulemeetingbe.entity.User;
@@ -24,6 +25,14 @@ public class BookingMapper {
                 booking.getEndTime(),
                 booking.getAttendeeCount(),
                 booking.getCreatedAt()
+        );
+    }
+
+    public static StatusBookingResponse mapToStatusBookingResponse(Booking booking) {
+        return new StatusBookingResponse(
+                booking.getBookingId(),
+                booking.getStatus(),
+                booking.getUpdatedAt()
         );
     }
 }

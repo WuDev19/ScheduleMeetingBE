@@ -1,12 +1,9 @@
 package com.example.schedulemeetingbe.entity;
 
-import com.example.schedulemeetingbe.constant.StringCommon;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 
 @Entity
@@ -36,7 +33,7 @@ public class BlackListAccessToken {
 
     @PrePersist
     public void onCreate(){
-        this.createdAt = ZonedDateTime.now(ZoneOffset.UTC);
+        this.createdAt = TimeUtils.ZONE_DATE_TIME;
     }
 }
 

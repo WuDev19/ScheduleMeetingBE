@@ -1,10 +1,12 @@
 package com.example.schedulemeetingbe.service.impl;
 
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
+import com.example.schedulemeetingbe.dto.request.booking.CancelBookingRequest;
 import com.example.schedulemeetingbe.dto.request.booking.CreateBookingEquipmentRequest;
 import com.example.schedulemeetingbe.dto.request.booking.CreateBookingRequest;
 import com.example.schedulemeetingbe.dto.request.booking.UpdateBookingRequest;
 import com.example.schedulemeetingbe.dto.response.booking.BookingResponse;
+import com.example.schedulemeetingbe.dto.response.booking.StatusBookingResponse;
 import com.example.schedulemeetingbe.dto.response.equipment.EquipmentAndQuantityResponse;
 import com.example.schedulemeetingbe.entity.*;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
@@ -18,12 +20,12 @@ import com.example.schedulemeetingbe.service.base.IBookingService;
 import com.example.schedulemeetingbe.service.base.IEquipmentService;
 import com.example.schedulemeetingbe.service.base.IRoomService;
 import com.example.schedulemeetingbe.service.base.IUserService;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -82,10 +84,10 @@ public class BookingServiceImpl implements IBookingService {
     // chiều code nốt
     @Transactional
     @Override
-    public BookingResponse updateBooking(Long id, UpdateBookingRequest request) {
-        Booking booking = bookingRepository.findById(id).orElseThrow(() ->
+    public Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request) {
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        if (Duration.between(ZonedDateTime.now(ZoneOffset.UTC), booking.getStartTime())
+        if (Duration.between(TimeUtils.ZONE_DATE_TIME, booking.getStartTime())
                 .toMinutes() < 60) {
             throw new BusinessException(ErrorResponse.UPDATE_BOOKING_ERROR);
         }
@@ -107,7 +109,44 @@ public class BookingServiceImpl implements IBookingService {
             }
         }
         booking.setStatus(BookingStatus.PENDING);
-        return null;
+        return Map.of("bookingId", bookingId);
+    }
+
+    @Transactional
+    @Override
+    public StatusBookingResponse approveBooking(Long bookingId, Long userId) {
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        User user = iUserService.getDetail(userId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        booking.setStatus(BookingStatus.APPROVED);
+        booking.setApprovedBy(user);
+        booking.setApprovedAt(TimeUtils.ZONE_DATE_TIME);
+        return BookingMapper.mapToStatusBookingResponse(booking);
+    }
+
+    @Transactional
+    @Override
+    public StatusBookingResponse rejectBooking(Long bookingId, Long userId) {
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        User user = iUserService.getDetail(userId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        booking.setStatus(BookingStatus.REJECTED);
+        booking.setApprovedBy(user);
+        booking.setApprovedAt(TimeUtils.ZONE_DATE_TIME);
+        return BookingMapper.mapToStatusBookingResponse(booking);
+    }
+
+    @Transactional
+    @Override
+    public StatusBookingResponse cancelBooking(Long bookingId, CancelBookingRequest request) {
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        booking.setStatus(BookingStatus.CANCELLED);
+        booking.setCancellationReason(request.reason());
+        booking.setCancelledAt(TimeUtils.ZONE_DATE_TIME);
+        return BookingMapper.mapToStatusBookingResponse(booking);
     }
 
     private void addEquipmentToRoom(CreateBookingRequest request, Booking saved) {

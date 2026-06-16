@@ -1,11 +1,9 @@
 package com.example.schedulemeetingbe.entity;
 
-import com.example.schedulemeetingbe.constant.StringCommon;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.Set;
 
@@ -41,6 +39,6 @@ public class Role {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = ZonedDateTime.now(ZoneOffset.UTC);
+        createdAt = TimeUtils.ZONE_DATE_TIME;
     }
 }
