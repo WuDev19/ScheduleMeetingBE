@@ -4,6 +4,7 @@ import com.example.schedulemeetingbe.constant.Constants;
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
 import com.example.schedulemeetingbe.dto.common.ApiResult;
+import com.example.schedulemeetingbe.dto.request.booking.UpdateEquipmentBookingRequest;
 import com.example.schedulemeetingbe.dto.request.booking.CancelBookingRequest;
 import com.example.schedulemeetingbe.dto.request.booking.CreateBookingRequest;
 import com.example.schedulemeetingbe.dto.request.booking.UpdateBookingRequest;
@@ -20,6 +21,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -53,6 +55,20 @@ public class BookingController {
         return ApiResponse.success(
                 iBookingService.updateBooking(bookingId, request),
                 "Cập nhật lịch thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho người dùng dặt thêm thiết bị trước khi bắt đầu lịch họp")
+    @PatchMapping("/{bookingId}")
+    @PreAuthorize("hasAuthority('BOOKING:UPDATE')")
+    public ResponseEntity<ApiResult<Map<String, Long>>> addEquipmentBooking(
+            @PathVariable Long bookingId,
+            @RequestBody List<UpdateEquipmentBookingRequest> request) {
+        return ApiResponse.success(
+                iBookingService.addEquipmentBooking(bookingId, request),
+                "Gửi yêu cầu bổ sung thiết bị thành công",
                 Constants.SUCCESS_CODE
         );
     }

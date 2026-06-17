@@ -1,10 +1,8 @@
 package com.example.schedulemeetingbe.service.impl;
 
+import com.example.schedulemeetingbe.constant.enums.BookingEquipmentAction;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
-import com.example.schedulemeetingbe.dto.request.booking.CancelBookingRequest;
-import com.example.schedulemeetingbe.dto.request.booking.CreateBookingEquipmentRequest;
-import com.example.schedulemeetingbe.dto.request.booking.CreateBookingRequest;
-import com.example.schedulemeetingbe.dto.request.booking.UpdateBookingRequest;
+import com.example.schedulemeetingbe.dto.request.booking.*;
 import com.example.schedulemeetingbe.dto.response.booking.BookingResponse;
 import com.example.schedulemeetingbe.dto.response.booking.StatusBookingResponse;
 import com.example.schedulemeetingbe.dto.response.equipment.EquipmentAndQuantityResponse;
@@ -44,6 +42,8 @@ public class BookingServiceImpl implements IBookingService {
     private final IRoomService iRoomService;
     private final IEquipmentService iEquipmentService;
 
+    private static final String BOOKING_ID = "bookingId";
+
     @Transactional
     @Override
     public BookingResponse createBooking(CreateBookingRequest request, String username) {
@@ -81,7 +81,6 @@ public class BookingServiceImpl implements IBookingService {
         return BookingMapper.mapToBookingResponse(saved, user, room);
     }
 
-    // chiều code nốt
     @Transactional
     @Override
     public Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request) {
@@ -109,7 +108,31 @@ public class BookingServiceImpl implements IBookingService {
             }
         }
         booking.setStatus(BookingStatus.PENDING);
-        return Map.of("bookingId", bookingId);
+        return Map.of(BOOKING_ID, bookingId);
+    }
+
+    @Transactional
+    @Override
+    public Map<String, Long> addEquipmentBooking(Long bookingId, List<UpdateEquipmentBookingRequest> request) {
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        List<UpdateEquipmentBookingRequest> addBookingEquipment = new ArrayList<>();
+        List<UpdateEquipmentBookingRequest> deleteBookingEquipment = new ArrayList<>();
+        request.forEach(updateEquipmentBookingRequest -> {
+            if (updateEquipmentBookingRequest.action().equals(BookingEquipmentAction.ADD))
+                addBookingEquipment.add(updateEquipmentBookingRequest);
+            else
+                deleteBookingEquipment.add(updateEquipmentBookingRequest);
+
+        });
+        if (!deleteBookingEquipment.isEmpty()) {
+            bookingEquipmentRepository.deleteAllByIdInBatch(deleteBookingEquipment.stream().map(UpdateEquipmentBookingRequest::equipmentId).toList());
+        }
+        if (!addBookingEquipment.isEmpty()) {
+            addEquipmentToRoom(addBookingEquipment, booking);
+        }
+        booking.setStatus(BookingStatus.PENDING);
+        return Map.of(BOOKING_ID, bookingId);
     }
 
     @Transactional
@@ -204,6 +227,58 @@ public class BookingServiceImpl implements IBookingService {
         }
     }
 
+    private void addEquipmentToRoom(List<UpdateEquipmentBookingRequest> request, Booking saved) {
+        // lấy thông tin cơ bản của thiết bị và số lượng còn lại để check xem còn đủ để cho mượn ko
+        // tránh n+1 query và sử dụng Map để truy cập phần tử với O(1)
+        Map<Long, EquipmentAndQuantityResponse> equipmentAndQuantityResponses = iEquipmentService
+                .findEquipmentAndRemainingQuantity(
+                        request
+                                .stream()
+                                .map(UpdateEquipmentBookingRequest::equipmentId)
+                                .toList()
+                )
+                .stream()
+                .collect(Collectors.toMap(EquipmentAndQuantityResponse::equipmentId, Function.identity()));
+        // lấy danh sách equipment vượt quá số lượng để báo cho người dùng
+        List<String> exceedQuantity = new ArrayList<>();
+        request.forEach(createBookingEquipmentRequest -> {
+            EquipmentAndQuantityResponse equipmentAndQuantity = equipmentAndQuantityResponses.get(createBookingEquipmentRequest.equipmentId());
+            //tránh trường hợp gửi equipmentId ko hợp lệ
+            iEquipmentService.getEquipmentDetail(createBookingEquipmentRequest.equipmentId()).orElseThrow(() ->
+                    new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+            //tránh NPE vì khi truy vấn bên trên những equipmentId ko có trong bảng bookingequipment sẽ ko xuất hiện trong result
+            if (equipmentAndQuantity != null) {
+                if (createBookingEquipmentRequest.quantity() > equipmentAndQuantity.remainingQuantity()) {
+                    exceedQuantity.add("Vượt quá số lượng, thiết bị " +
+                            equipmentAndQuantity.equipmentName() +
+                            " chỉ còn trống " +
+                            equipmentAndQuantity.remainingQuantity()
+                    );
+                }
+            }
+        });
+        if (!exceedQuantity.isEmpty()) {
+            throw new ExceedEquipmentException(exceedQuantity);
+        }
+        Map<Long, Equipment> equipments = iEquipmentService.findEquipmentIn(request
+                        .stream()
+                        .map(UpdateEquipmentBookingRequest::equipmentId)
+                        .toList()
+                )
+                .stream()
+                .collect(Collectors.toMap(Equipment::getEquipmentId, Function.identity()));
+        List<BookingEquipment> bookingEquipments = request
+                .stream()
+                .map(createBookingEquipmentRequest -> BookingEquipment
+                        .builder()
+                        .booking(saved)
+                        .quantity(createBookingEquipmentRequest.quantity())
+                        .equipment(equipments.get(createBookingEquipmentRequest.equipmentId()))
+                        .build())
+                .toList();
+        bookingEquipmentRepository.saveAll(bookingEquipments);
+    }
+
     private void checkOverlap(Long roomId, ZonedDateTime start, ZonedDateTime end) {
         List<String> reasons = bookingRepository.checkOverlap(
                 roomId,
@@ -218,4 +293,5 @@ public class BookingServiceImpl implements IBookingService {
             throw new OverlapBookingException(reasons);
         }
     }
+
 }

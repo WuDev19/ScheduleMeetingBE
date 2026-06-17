@@ -1,11 +1,10 @@
 package com.example.schedulemeetingbe.service.base;
 
-import com.example.schedulemeetingbe.dto.request.booking.CancelBookingRequest;
-import com.example.schedulemeetingbe.dto.request.booking.CreateBookingRequest;
-import com.example.schedulemeetingbe.dto.request.booking.UpdateBookingRequest;
+import com.example.schedulemeetingbe.dto.request.booking.*;
 import com.example.schedulemeetingbe.dto.response.booking.BookingResponse;
 import com.example.schedulemeetingbe.dto.response.booking.StatusBookingResponse;
 
+import java.util.List;
 import java.util.Map;
 
 /* về đặt phòng thì còn
@@ -14,11 +13,14 @@ import java.util.Map;
  * 3. REGISTER hủy đặt phòng - done
  * 4. Đổi phòng khi đẵ đặt lịch - done
  * 5. Lọc, tìm kiếm
+ * 6. APRROVER duyệt phòng sau khi người dùng có sự thay đổi (sẽ phải có so sánh trực quan giữa cũ và thay đổi mới)
  * */
 public interface IBookingService {
     BookingResponse createBooking(CreateBookingRequest request, String username);
 
-    Map<String, Long> updateBooking(Long id, UpdateBookingRequest request);
+    Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request);
+
+    Map<String, Long> addEquipmentBooking(Long bookingId, List<UpdateEquipmentBookingRequest> request);
 
     StatusBookingResponse approveBooking(Long bookingId, Long userId);
 

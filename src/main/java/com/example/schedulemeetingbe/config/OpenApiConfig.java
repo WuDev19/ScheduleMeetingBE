@@ -86,4 +86,12 @@ public class OpenApiConfig {
                 .build();
     }
 
+    @Bean
+    public GroupedOpenApi bookingGroup() {
+        return GroupedOpenApi.builder()
+                .group("Booking")
+                .pathsToMatch("/api/v1/booking/**")
+                .build();
+    }
+
 }
