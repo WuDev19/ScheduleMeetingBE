@@ -57,7 +57,10 @@ public class UserController {
     @Operation(summary = "Api cho cập nhật tài khoản người dùng")
     @PatchMapping("/{id}")
     @PreAuthorize("hasAuthority('USER:UPDATE')")
-    public ResponseEntity<ApiResult<UserDetailResponse>> updateUser(@PathVariable Long id, @Valid @ModelAttribute UpdateUserRequest request) {
+    public ResponseEntity<ApiResult<UserDetailResponse>> updateUser(
+            @PathVariable Long id,
+            @Valid @ModelAttribute UpdateUserRequest request
+    ) {
         return ApiResponse.success(
                 iUserService.updateUser(id, request),
                 "Cập nhật tài khoản thành công",

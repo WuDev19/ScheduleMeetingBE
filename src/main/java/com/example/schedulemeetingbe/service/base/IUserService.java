@@ -5,6 +5,7 @@ import com.example.schedulemeetingbe.dto.request.user.UpdateAvatarRequest;
 import com.example.schedulemeetingbe.dto.request.user.UpdateUserRequest;
 import com.example.schedulemeetingbe.dto.response.UploadSignatureResponse;
 import com.example.schedulemeetingbe.dto.response.UserDetailResponse;
+import com.example.schedulemeetingbe.entity.Role;
 import com.example.schedulemeetingbe.entity.User;
 
 import java.util.Map;
@@ -34,4 +35,6 @@ public interface IUserService {
     void updatePassword(String email, String newPassword);
 
     Optional<User> getDetail(Long id);
+
+    Optional<Role> getRoleUser(String roleName);
 }

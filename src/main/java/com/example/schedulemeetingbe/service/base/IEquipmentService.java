@@ -30,5 +30,7 @@ public interface IEquipmentService {
 
     List<EquipmentAndQuantityResponse> findEquipmentAndRemainingQuantity(List<Long> eqIds);
 
+    EquipmentAndQuantityResponse findEquipmentAndRemainingQuantity(Long beId);
+
     Optional<Equipment> getEquipmentDetail(Long id);
 }

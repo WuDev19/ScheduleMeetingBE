@@ -122,6 +122,11 @@ public class EquipmentServiceImpl implements IEquipmentService {
     }
 
     @Override
+    public EquipmentAndQuantityResponse findEquipmentAndRemainingQuantity(Long beId) {
+        return equipmentRepository.findEquipmentAndRemainingQuantity(beId);
+    }
+
+    @Override
     public Optional<Equipment> getEquipmentDetail(Long id) {
         return equipmentRepository.findById(id);
     }

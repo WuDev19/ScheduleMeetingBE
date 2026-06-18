@@ -29,4 +29,17 @@ public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
             nativeQuery = true)
     List<EquipmentAndQuantityResponse> findEquipmentAndRemainingQuantity(@Param("eqIds") List<Long> eqIds);
 
+    @Query(value = """
+            SELECT be.equipment_id AS equipmentId,
+                   e.equipment_name AS equipmentName,
+                   (e.total_quantity - CAST(SUM(be.quantity) AS INTEGER)) AS remainingQuantity
+            FROM equipment e
+            JOIN booking_equipment be
+            ON e.equipment_id = be.equipment_id
+            WHERE be.booking_equipment_id = :boEqId
+            GROUP BY be.equipment_id, e.equipment_name, e.total_quantity
+            """,
+            nativeQuery = true)
+    EquipmentAndQuantityResponse findEquipmentAndRemainingQuantity(@Param("boEqId") Long boEqId);
+
 }

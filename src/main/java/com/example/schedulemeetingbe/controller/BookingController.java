@@ -4,10 +4,9 @@ import com.example.schedulemeetingbe.constant.Constants;
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
 import com.example.schedulemeetingbe.dto.common.ApiResult;
-import com.example.schedulemeetingbe.dto.request.booking.UpdateEquipmentBookingRequest;
-import com.example.schedulemeetingbe.dto.request.booking.CancelBookingRequest;
-import com.example.schedulemeetingbe.dto.request.booking.CreateBookingRequest;
-import com.example.schedulemeetingbe.dto.request.booking.UpdateBookingRequest;
+import com.example.schedulemeetingbe.dto.request.booking.*;
+import com.example.schedulemeetingbe.dto.response.booking.BookingDetailResponse;
+import com.example.schedulemeetingbe.dto.response.booking.BookingEquipmentResponse;
 import com.example.schedulemeetingbe.dto.response.booking.BookingResponse;
 import com.example.schedulemeetingbe.dto.response.booking.StatusBookingResponse;
 import com.example.schedulemeetingbe.service.base.IBookingService;
@@ -51,9 +50,10 @@ public class BookingController {
     @PreAuthorize("hasAuthority('BOOKING:UPDATE')")
     public ResponseEntity<ApiResult<Map<String, Long>>> updateBooking(
             @PathVariable Long bookingId,
-            @RequestBody UpdateBookingRequest request) {
+            @RequestBody UpdateBookingRequest request,
+            @AuthenticationPrincipal Jwt jwt) {
         return ApiResponse.success(
-                iBookingService.updateBooking(bookingId, request),
+                iBookingService.updateBooking(bookingId, request, jwt.getClaim(StringCommon.USER_ID)),
                 "Cập nhật lịch thành công",
                 Constants.SUCCESS_CODE
         );
@@ -61,13 +61,14 @@ public class BookingController {
 
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
     @Operation(summary = "Api cho người dùng dặt thêm thiết bị trước khi bắt đầu lịch họp")
-    @PatchMapping("/{bookingId}")
+    @PostMapping("/{bookingId}/equipment")
     @PreAuthorize("hasAuthority('BOOKING:UPDATE')")
     public ResponseEntity<ApiResult<Map<String, Long>>> addEquipmentBooking(
             @PathVariable Long bookingId,
-            @RequestBody List<UpdateEquipmentBookingRequest> request) {
+            @RequestBody List<UpdateEquipmentBookingRequest> request,
+            @AuthenticationPrincipal Jwt jwt) {
         return ApiResponse.success(
-                iBookingService.addEquipmentBooking(bookingId, request),
+                iBookingService.addEquipmentBooking(bookingId, request, jwt.getClaim(StringCommon.USER_ID)),
                 "Gửi yêu cầu bổ sung thiết bị thành công",
                 Constants.SUCCESS_CODE
         );
@@ -109,11 +110,59 @@ public class BookingController {
     @PreAuthorize("hasAuthority('BOOKING:CANCEL')")
     public ResponseEntity<ApiResult<StatusBookingResponse>> cancelBooking(
             @PathVariable Long bookingId,
-            @Valid @RequestBody CancelBookingRequest request
+            @Valid @RequestBody CancelBookingRequest request,
+            @AuthenticationPrincipal Jwt jwt
     ) {
         return ApiResponse.success(
-                iBookingService.cancelBooking(bookingId, request),
+                iBookingService.cancelBooking(bookingId, request, jwt.getClaim(StringCommon.USER_ID)),
                 "Hủy lịch thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho admin xóa lịch họp từ giao diện")
+    @DeleteMapping("/{bookingId}")
+    @PreAuthorize("hasAuthority('BOOKING:DELETE')")
+    public ResponseEntity<ApiResult<Map<String, Object>>> deleteBooking(
+            @PathVariable Long bookingId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ApiResponse.success(
+                iBookingService.deleteBooking(bookingId, jwt.getClaim(StringCommon.USER_ID)),
+                "Xóa lịch thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho người dùng xem chi tiết lịch họp")
+    @GetMapping("/{bookingId}")
+    @PreAuthorize("hasAuthority('BOOKING:VIEW')")
+    public ResponseEntity<ApiResult<BookingDetailResponse>> getBookingDetail(
+            @PathVariable Long bookingId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ApiResponse.success(
+                iBookingService.getBookingDetail(bookingId, jwt.getClaim(StringCommon.USER_ID)),
+                "Xem chi tiết lịch họp thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho người dùng cập nhật số lượng thiết bị của lịch họp")
+    @PatchMapping("/{bookingId}/equipment/{beId}")
+    @PreAuthorize("hasAuthority('BOOKING:UPDATE')")
+    public ResponseEntity<ApiResult<BookingEquipmentResponse>> updateBookingEquipmentQuantity(
+            @PathVariable Long bookingId,
+            @PathVariable Long beId,
+            @RequestBody UpdateBookingEquipQuantityRequest request,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ApiResponse.success(
+                iBookingService.updateBookingEquipmentQuantity(bookingId, jwt.getClaim(StringCommon.USER_ID), beId, request),
+                "Cập nhật số lượng thiết bị cụ thể của lịch họp thành công",
                 Constants.SUCCESS_CODE
         );
     }

@@ -44,6 +44,8 @@ import java.util.concurrent.TimeUnit;
 
 import static com.example.schedulemeetingbe.constant.Constants.COOLDOWN_UPDATE_EMAIL;
 
+//xem xét đổi repo -> service
+//thếu cái tự đổi mật khẩu
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements IUserService {
@@ -108,6 +110,10 @@ public class UserServiceImpl implements IUserService {
         }
         if (request.username() != null) {
             user.setUsername(request.username());
+        }
+        if (request.newPassword() != null) {
+            user.setPasswordHash(bCryptPasswordEncoder.encode(request.newPassword()));
+            user.setPasswordChangedAt(TimeUtils.ZONE_DATE_TIME);
         }
         return UserMapper.mapToUserDetailResponse(user);
     }
@@ -217,4 +223,10 @@ public class UserServiceImpl implements IUserService {
     public Optional<User> getDetail(Long id) {
         return userRepository.findById(id);
     }
+
+    @Override
+    public Optional<Role> getRoleUser(String roleName) {
+        return roleRepository.findByRoleName(roleName);
+    }
+
 }

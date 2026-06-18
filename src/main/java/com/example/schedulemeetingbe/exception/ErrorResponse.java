@@ -27,7 +27,9 @@ public enum ErrorResponse {
     FILE_EXCEED_MEMORY("File vượt quá dung lượng cho phép", 1020),
     FAKE_AUTH_ERROR("Bạn đang mạo danh người khác, nghiêm cấm hành vi này", 1021),
     START_END_DATE_ERROR("Ngày kết thúc phải lớn hơn ngày bắt đầu", 1022),
-    UPDATE_BOOKING_ERROR("Thời gian cập nhật thông tin lịch đặt phải trước 1 tiếng để APPROVER có thể duyệt kịp", 1023);
+    UPDATE_BOOKING_ERROR("Thời gian cập nhật thông tin lịch đặt phải trước 1 tiếng để APPROVER có thể duyệt kịp", 1023),
+    BOOKING_DETAIL_ERROR("Bạn không thể xem được chi tiết lịch họp của người khác", 1024),
+    EXCEED_ATTENDEE("Vượt quá sức chứa của phòng hiện tại", 1025);
 
     private final String message;
     private final int code;

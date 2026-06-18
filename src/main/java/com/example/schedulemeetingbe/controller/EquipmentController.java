@@ -85,9 +85,7 @@ public class EquipmentController {
     @Operation(summary = "Api cho admin cập nhật thiết bị")
     @GetMapping("/all")
     @PreAuthorize("hasAuthority('EQUIPMENT:VIEW')")
-    public ResponseEntity<ApiResult<PageResponse<EquipmentResponse>>> getAll(
-            @PageableDefault Pageable pageable
-    ) {
+    public ResponseEntity<ApiResult<PageResponse<EquipmentResponse>>> getAll(@PageableDefault Pageable pageable) {
         return ApiResponse.success(
                 iEquipmentService.getAll(pageable),
                 "Lấy danh sách thiết bị thành công",

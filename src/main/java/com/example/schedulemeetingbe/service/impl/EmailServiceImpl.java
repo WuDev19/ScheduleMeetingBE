@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.time.format.DateTimeFormatter;
 import java.util.Random;
 
+// đổi repo -> service
 @Service
 @AllArgsConstructor
 public class EmailServiceImpl implements IEmailService {
