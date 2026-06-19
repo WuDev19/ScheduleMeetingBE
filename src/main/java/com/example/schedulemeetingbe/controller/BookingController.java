@@ -5,15 +5,15 @@ import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
 import com.example.schedulemeetingbe.dto.common.ApiResult;
 import com.example.schedulemeetingbe.dto.request.booking.*;
-import com.example.schedulemeetingbe.dto.response.booking.BookingDetailResponse;
-import com.example.schedulemeetingbe.dto.response.booking.BookingEquipmentResponse;
-import com.example.schedulemeetingbe.dto.response.booking.BookingResponse;
-import com.example.schedulemeetingbe.dto.response.booking.StatusBookingResponse;
+import com.example.schedulemeetingbe.dto.response.PageResponse;
+import com.example.schedulemeetingbe.dto.response.booking.*;
 import com.example.schedulemeetingbe.service.base.IBookingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -163,6 +163,32 @@ public class BookingController {
         return ApiResponse.success(
                 iBookingService.updateBookingEquipmentQuantity(bookingId, jwt.getClaim(StringCommon.USER_ID), beId, request),
                 "Cập nhật số lượng thiết bị cụ thể của lịch họp thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho approver xem danh sách lịch họp đang chờ")
+    @GetMapping("/pending")
+    @PreAuthorize("hasAuthority('BOOKING_STATUS:VIEW')")
+    public ResponseEntity<ApiResult<PageResponse<BookingSummaryResponse>>> updateBookingEquipmentQuantity(
+            @PageableDefault Pageable pageable
+    ) {
+        return ApiResponse.success(
+                iBookingService.getBookingWaitingApprove(pageable),
+                "Hiển thị danh sách lịch họp đang chờ thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho approver xem chi tiết lịch họp đang chờ duyệt")
+    @GetMapping("/pending/detail/{historyId}")
+    @PreAuthorize("hasAuthority('BOOKING_STATUS:VIEW')")
+    public ResponseEntity<ApiResult<BookingHistoryResponse>> updateBookingEquipmentQuantity(@PathVariable Long historyId) {
+        return ApiResponse.success(
+                iBookingService.getBookingHistoryDetailToApprove(historyId),
+                "Hiển thị chi tiết lịch họp đang chờ duyệt thành công",
                 Constants.SUCCESS_CODE
         );
     }

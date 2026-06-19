@@ -1,6 +1,10 @@
 package com.example.schedulemeetingbe.repository;
 
+import com.example.schedulemeetingbe.dto.response.booking.BookingHistoryResponse;
+import com.example.schedulemeetingbe.dto.response.booking.BookingSummaryProjection;
 import com.example.schedulemeetingbe.entity.Booking;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -10,7 +14,6 @@ import java.util.List;
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Query(value = """
-            SELECT reason FROM (
                 SELECT CONCAT('Phòng họp không khả dụng vì ', ru.reason) AS reason
                 FROM room_unavailability ru
                 WHERE ru.room_id = :roomId
@@ -25,12 +28,76 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                 AND b.status NOT IN ('CANCELLED', 'REJECTED')
                 AND b.deleted_at IS NULL
                 AND tstzrange(b.start_time, b.end_time)
-                                    && ANY((:ranges)::tstzrange[])
-             ) AS overlap_check
+                                    && ANY((:ranges)::tstzrange[])   
             """, nativeQuery = true)
     List<String> checkOverlap(
             @Param("roomId") Long roomId,
             @Param("ranges") String[] ranges //truyền mảng để có thể sử dụng hàm này cho cả booking 1 lần và booking theo chu kì
     );
+
+    @Query(value = """
+            SELECT 
+                b.booking_id AS bookingId,
+                bh.history_id AS historyId,
+                b.title AS title,
+                u.full_name AS userBooked,
+                u.phone AS phone,
+                r.room_name AS roomName,
+                b.status AS status,
+                bh.action_type AS actionType,
+                b.start_time AS startTime,
+                b.end_time AS endTime
+            FROM bookings b
+            JOIN rooms r ON r.room_id = b.room_id 
+            JOIN users u ON u.user_id = b.booked_by 
+            JOIN booking_history bh ON bh.booking_id = b.booking_id
+            WHERE b.status = 'PENDING'
+            ORDER BY b.updated_at DESC 
+            """,
+            countQuery = """
+                    SELECT COUNT(*)
+                    FROM bookings b
+                    JOIN rooms r ON r.room_id = b.room_id 
+                    JOIN users u ON u.user_id = b.booked_by 
+                    JOIN booking_history bh ON bh.booking_id = b.booking_id
+                    WHERE b.status = 'PENDING'
+                    """,
+            nativeQuery = true)
+    Page<BookingSummaryProjection> getBookingWaitingApprove(Pageable pageable);
+
+    @Query(value = """
+            SELECT 
+                b.booking_id AS bookingId,
+                b.title AS title,
+                b.description AS discription,
+                r.room_name AS roomName,
+                bd.address AS roomAddress,
+                r.floor_number AS floorNumber,
+                u.full_name AS fullName,
+                u.email AS email,
+                u.phone AS phone,
+                b.start_time AS startTime,
+                b.end_time AS endTime,
+                b.attendee_count AS attendee,
+                bh.history_id AS bookingHistoryId,
+                uc.full_name AS userChanged,
+                bh.action_type AS actionType,
+                bh.old_data AS oldData,
+                bh.new_data AS newData
+            FROM booking_history bh
+            JOIN bookings b
+            ON b.booking_id = bh.booking_id
+            JOIN rooms r 
+            ON r.room_id = b.room_id
+            JOIN buildings bd
+            ON bd.building_id = r.building_id
+            JOIN users u
+            ON u.user_id = b.booked_by
+            JOIN users uc
+            ON uc.user_id = bh.changed_by
+            WHERE bh.history_id = :historyId
+            """,
+            nativeQuery = true)
+    BookingHistoryResponse getDetailBookingWaitingToApprove(@Param("historyId") Long historyId);
 
 }

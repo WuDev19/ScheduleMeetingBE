@@ -18,7 +18,7 @@ public class StringCommon {
     public static final String DELETED_AT = "deletedAt";
     public static final String CREATED_AT = "createdAt";
     public static final String UPDATED_AT = "updatedAt";
-    public static final String DATE_TIME_FORMAT = "HH:mm:ss dd-MM-yyyy";
+    public static final String DATE_TIME_FORMAT = "dd-MM-yyyy HH:mm:ss Z";
     public static final String DATE_FORMAT = "dd-MM-yyyy";
     public static final String NOT_BLANK = "không được để trống";
     public static final String NOT_NULL = "Thiếu dữ liệu trường ";

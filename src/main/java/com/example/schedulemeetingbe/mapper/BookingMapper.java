@@ -1,13 +1,13 @@
 package com.example.schedulemeetingbe.mapper;
 
-import com.example.schedulemeetingbe.dto.response.booking.BookingDetailEquipmentResponse;
-import com.example.schedulemeetingbe.dto.response.booking.BookingDetailResponse;
-import com.example.schedulemeetingbe.dto.response.booking.BookingResponse;
-import com.example.schedulemeetingbe.dto.response.booking.StatusBookingResponse;
+import com.example.schedulemeetingbe.constant.StringCommon;
+import com.example.schedulemeetingbe.dto.response.booking.*;
 import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.Room;
 import com.example.schedulemeetingbe.entity.User;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 public class BookingMapper {
@@ -63,4 +63,22 @@ public class BookingMapper {
                 equipments
         );
     }
+
+    public static BookingSummaryResponse mapToBookingSummaryResponse(BookingSummaryProjection projection) {
+        ZonedDateTime startTime = projection.getStartTime().atZone(ZoneId.of(StringCommon.TIME_ZONE_VN));
+        ZonedDateTime endTime = projection.getEndTime().atZone(ZoneId.of(StringCommon.TIME_ZONE_VN));
+        return new BookingSummaryResponse(
+                projection.getBookingId(),
+                projection.getHistoryId(),
+                projection.getTitle(),
+                projection.getUserBooked(),
+                projection.getPhone(),
+                projection.getRoomName(),
+                projection.getStatus(),
+                projection.getActionType(),
+                startTime,
+                endTime
+        );
+    }
+
 }

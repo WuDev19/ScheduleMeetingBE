@@ -3,6 +3,7 @@ package com.example.schedulemeetingbe.service.base;
 import com.example.schedulemeetingbe.dto.request.booking.*;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.booking.*;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Map;
@@ -40,4 +41,7 @@ public interface IBookingService {
 
     BookingEquipmentResponse updateBookingEquipmentQuantity(Long bookingId, Long userId, Long bookingEquipmentId, UpdateBookingEquipQuantityRequest request);
 
+    BookingHistoryResponse getBookingHistoryDetailToApprove(Long bookingHistoryId);
+
+    PageResponse<BookingSummaryResponse> getBookingWaitingApprove(Pageable pageable);
 }

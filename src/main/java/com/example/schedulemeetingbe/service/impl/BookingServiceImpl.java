@@ -6,6 +6,7 @@ import com.example.schedulemeetingbe.constant.enums.BookingEquipmentAction;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
 import com.example.schedulemeetingbe.dto.request.booking.*;
+import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.booking.*;
 import com.example.schedulemeetingbe.dto.response.equipment.EquipmentAndQuantityResponse;
 import com.example.schedulemeetingbe.entity.*;
@@ -26,6 +27,8 @@ import com.example.schedulemeetingbe.service.base.IRoomService;
 import com.example.schedulemeetingbe.service.base.IUserService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
@@ -381,6 +384,27 @@ public class BookingServiceImpl implements IBookingService {
         bookingHistoryRepository.save(bookingHistory);
 
         return new BookingEquipmentResponse(bookingEquipmentId, request.quantity());
+    }
+
+    @Override
+    public PageResponse<BookingSummaryResponse> getBookingWaitingApprove(Pageable pageable) {
+        Page<BookingSummaryProjection> page = bookingRepository.getBookingWaitingApprove(pageable);
+        List<BookingSummaryResponse> result = page.getContent()
+                .stream()
+                .map(BookingMapper::mapToBookingSummaryResponse)
+                .toList();
+        return new PageResponse<>(
+                page.getNumber(),
+                page.getNumberOfElements(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                result
+        );
+    }
+
+    @Override
+    public BookingHistoryResponse getBookingHistoryDetailToApprove(Long bookingHistoryId) {
+        return bookingRepository.getDetailBookingWaitingToApprove(bookingHistoryId);
     }
 
     private UpdateBookingChangePayload createUpdateBookingPayload(Booking booking, Long userId, Long roomId) {
