@@ -58,7 +58,7 @@ public class EquipmentController {
     }
 
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
-    @Operation(summary = "Api cho admin cập nhật thiết bị")
+    @Operation(summary = "Api cho admin xóa thiết bị")
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAuthority('EQUIPMENT:DELETE')")
     public ResponseEntity<ApiResult<Map<String, Object>>> delete(@PathVariable Long id) {
@@ -70,7 +70,7 @@ public class EquipmentController {
     }
 
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
-    @Operation(summary = "Api cho admin cập nhật thiết bị")
+    @Operation(summary = "Api xem chi tiết thiết bị")
     @GetMapping("/{id}")
     @PreAuthorize("hasAuthority('EQUIPMENT:VIEW')")
     public ResponseEntity<ApiResult<EquipmentResponse>> getDetail(@PathVariable Long id) {
@@ -82,7 +82,7 @@ public class EquipmentController {
     }
 
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
-    @Operation(summary = "Api cho admin cập nhật thiết bị")
+    @Operation(summary = "Api lấy tất cả thiết bị")
     @GetMapping("/all")
     @PreAuthorize("hasAuthority('EQUIPMENT:VIEW')")
     public ResponseEntity<ApiResult<PageResponse<EquipmentResponse>>> getAll(@PageableDefault Pageable pageable) {
@@ -94,7 +94,7 @@ public class EquipmentController {
     }
 
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
-    @Operation(summary = "Api cho admin cập nhật thiết bị")
+    @Operation(summary = "Api tìm kiếm thiết bị")
     @GetMapping("/search")
     @PreAuthorize("hasAuthority('EQUIPMENT:VIEW')")
     public ResponseEntity<ApiResult<PageResponse<EquipmentResponse>>> search(

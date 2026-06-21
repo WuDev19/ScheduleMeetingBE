@@ -26,6 +26,7 @@ public interface BookingEquipmentRepository extends JpaRepository<BookingEquipme
             )
             FROM BookingEquipment be
             WHERE be.booking.bookingId = :bookingId
+            ORDER BY be.updatedAt DESC
             """)
     List<BookingDetailEquipmentResponse> getBookingEquipments(@Param("bookingId") Long bookingId);
 }

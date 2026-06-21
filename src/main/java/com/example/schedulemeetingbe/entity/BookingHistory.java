@@ -52,6 +52,10 @@ public class BookingHistory {
     @Column(name = "created_at", nullable = false, updatable = false)
     private ZonedDateTime createdAt;
 
+    @Builder.Default
+    @Column(name = "is_revoked")
+    private Boolean isRevoked = false;
+
     @PrePersist
     protected void onCreate() {
         createdAt = TimeUtils.ZONE_DATE_TIME;

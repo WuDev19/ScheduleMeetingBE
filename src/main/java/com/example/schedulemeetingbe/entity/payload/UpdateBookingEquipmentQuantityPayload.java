@@ -1,6 +1,6 @@
 package com.example.schedulemeetingbe.entity.payload;
 
-public record BookingEquipmentQuantityPayload (
+public record UpdateBookingEquipmentQuantityPayload(
         Long beId,
         Integer quantity
 ) {

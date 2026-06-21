@@ -1,11 +1,13 @@
 package com.example.schedulemeetingbe.repository;
 
+import com.example.schedulemeetingbe.constant.enums.BookingActionType;
 import com.example.schedulemeetingbe.dto.response.booking.BookingHistoryResponse;
 import com.example.schedulemeetingbe.dto.response.booking.BookingSummaryProjection;
 import com.example.schedulemeetingbe.entity.Booking;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -13,6 +15,44 @@ import java.util.List;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
+    //check lúc cập nhật
+    @Query(value = """
+                SELECT CONCAT('Phòng họp không khả dụng vì ', ru.reason) AS reason
+                FROM room_unavailability ru
+                WHERE ru.room_id = :roomId
+                AND tstzrange(ru.start_time, ru.end_time)
+                                    && ANY((:ranges)::tstzrange[])
+            
+                UNION ALL
+            
+                SELECT CONCAT('Bị trùng với ', b.title) AS reason
+                FROM bookings b
+                WHERE b.room_id = :roomId
+                AND b.status NOT IN ('CANCELLED', 'REJECTED')
+                AND b.deleted_at IS NULL
+                AND b.booking_id <> :currentBookingId
+                AND tstzrange(b.start_time, b.end_time)
+                                    && ANY((:ranges)::tstzrange[])
+            
+                UNION ALL 
+            
+                SELECT concat('Phòng và thời gian không khả dụng vì chưa được duyệt') AS reason
+                FROM booking_reservation br
+                WHERE br.status = 'AWAIT_APPROVE'
+                AND br.booking_id <> :currentBookingId
+                AND tstzrange(br.old_start_time, br.old_end_time)
+                            && ANY((:ranges)::tstzrange[])
+                LIMIT 1
+            
+            """,
+            nativeQuery = true)
+    List<String> checkOverlap(
+            @Param("currentBookingId") Long currentBookingId,
+            @Param("roomId") Long roomId,
+            @Param("ranges") String[] ranges //truyền mảng để có thể sử dụng hàm này cho cả booking 1 lần và booking theo chu kì
+    );
+
+    //check lúc tạo mới thì chưa có booking_id
     @Query(value = """
                 SELECT CONCAT('Phòng họp không khả dụng vì ', ru.reason) AS reason
                 FROM room_unavailability ru
@@ -28,8 +68,19 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                 AND b.status NOT IN ('CANCELLED', 'REJECTED')
                 AND b.deleted_at IS NULL
                 AND tstzrange(b.start_time, b.end_time)
-                                    && ANY((:ranges)::tstzrange[])   
-            """, nativeQuery = true)
+                                    && ANY((:ranges)::tstzrange[])
+            
+                UNION ALL 
+            
+                SELECT concat('Phòng và thời gian không khả dụng vì chưa được duyệt') AS reason
+                FROM booking_reservation br
+                WHERE br.status = 'AWAIT_APPROVE'
+                AND tstzrange(br.old_start_time, br.old_end_time)
+                            && ANY((:ranges)::tstzrange[])
+                LIMIT 1
+            
+            """,
+            nativeQuery = true)
     List<String> checkOverlap(
             @Param("roomId") Long roomId,
             @Param("ranges") String[] ranges //truyền mảng để có thể sử dụng hàm này cho cả booking 1 lần và booking theo chu kì
@@ -52,7 +103,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             JOIN users u ON u.user_id = b.booked_by 
             JOIN booking_history bh ON bh.booking_id = b.booking_id
             WHERE b.status = 'PENDING'
-            ORDER BY b.updated_at DESC 
+            AND bh.is_revoked = false
+            AND bh.action_type IN ('UPDATED', 'ADD_EQUIPMENT', 'UPDATE_EQUIP_QUANTITY', 'CREATED')        
+            ORDER BY bh.created_at DESC 
             """,
             countQuery = """
                     SELECT COUNT(*)
@@ -61,6 +114,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                     JOIN users u ON u.user_id = b.booked_by 
                     JOIN booking_history bh ON bh.booking_id = b.booking_id
                     WHERE b.status = 'PENDING'
+                    AND bh.is_revoked = false
+                    AND bh.action_type IN ('UPDATED', 'ADD_EQUIPMENT', 'UPDATE_EQUIP_QUANTITY', 'CREATED')    
                     """,
             nativeQuery = true)
     Page<BookingSummaryProjection> getBookingWaitingApprove(Pageable pageable);
@@ -99,5 +154,17 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """,
             nativeQuery = true)
     BookingHistoryResponse getDetailBookingWaitingToApprove(@Param("historyId") Long historyId);
+
+    @Modifying
+    @Query(value = """
+            UPDATE BookingHistory bh
+            SET bh.isRevoked = true
+            WHERE bh.booking.bookingId = :bookingId
+            AND bh.actionType = :actionType
+            """)
+    void revokeAllOldChangeHistory(
+            @Param("bookingId") Long bookingId,
+            @Param("actionType") BookingActionType actionType
+    );
 
 }

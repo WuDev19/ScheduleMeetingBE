@@ -50,6 +50,7 @@ public class BookingMapper {
                 booking.getBookingId(),
                 booking.getTitle(),
                 booking.getDescription(),
+                room.getRoomId(),
                 room.getRoomName(),
                 room.getBuilding().getAddress(),
                 room.getFloorNumber(),

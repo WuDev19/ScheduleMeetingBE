@@ -1,6 +1,5 @@
 package com.example.schedulemeetingbe.command.booking.approve;
 
-import com.example.schedulemeetingbe.command.booking.rollback.BookingRollbackCommand;
 import com.example.schedulemeetingbe.constant.enums.BookingActionType;
 import org.springframework.stereotype.Component;
 

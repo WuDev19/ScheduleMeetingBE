@@ -14,7 +14,7 @@ import java.util.Map;
  * 3. REGISTER hủy đặt phòng - done
  * 4. Đổi phòng khi đẵ đặt lịch - done
  * 5. Xem chi tiết - done
- * 6. APPROVER duyệt phòng sau khi người dùng có sự thay đổi (sẽ phải có so sánh trực quan giữa cũ và thay đổi mới)
+ * 6. APPROVER duyệt phòng sau khi người dùng có sự thay đổi (sẽ phải có so sánh trực quan giữa cũ và thay đổi mới) - done
  * 7. Lọc, tìm kiếm (
  * - REGISTER: tìm kiếm các lịch đặt của chính mình
  * - APPROVER: tìm kiếm lọc lịch của tất cả mọi người
@@ -29,9 +29,9 @@ public interface IBookingService {
 
     Map<String, Long> addEquipmentBooking(Long bookingId, List<UpdateEquipmentBookingRequest> request, Long userId);
 
-    StatusBookingResponse approveBooking(Long bookingId, Long userId);
+    StatusBookingResponse approveBooking(Long bookingId, ApproveRequest request, Long userId);
 
-    StatusBookingResponse rejectBooking(Long bookingId, Long userId);
+    StatusBookingResponse rejectBooking(Long bookingId, RollBackRequest request, Long userId);
 
     StatusBookingResponse cancelBooking(Long bookingId, CancelBookingRequest request, Long userId);
 
@@ -39,7 +39,7 @@ public interface IBookingService {
 
     BookingDetailResponse getBookingDetail(Long bookingId, Long userId);
 
-    BookingEquipmentResponse updateBookingEquipmentQuantity(Long bookingId, Long userId, Long bookingEquipmentId, UpdateBookingEquipQuantityRequest request);
+    BookingEquipmentResponse updateBookingEquipmentQuantity(Long bookingId, Long userId, Long equipmentId, Long bookingEquipmentId, UpdateBookingEquipQuantityRequest request);
 
     BookingHistoryResponse getBookingHistoryDetailToApprove(Long bookingHistoryId);
 

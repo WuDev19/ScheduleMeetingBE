@@ -1,5 +1,7 @@
 package com.example.schedulemeetingbe.service.impl;
 
+import com.example.schedulemeetingbe.command.booking.approve.BookingApproveCommandFactory;
+import com.example.schedulemeetingbe.command.booking.rollback.BookingRollbackCommandFactory;
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.constant.enums.BookingActionType;
 import com.example.schedulemeetingbe.constant.enums.BookingEquipmentAction;
@@ -11,16 +13,14 @@ import com.example.schedulemeetingbe.dto.response.booking.*;
 import com.example.schedulemeetingbe.dto.response.equipment.EquipmentAndQuantityResponse;
 import com.example.schedulemeetingbe.entity.*;
 import com.example.schedulemeetingbe.entity.payload.AddBookingEquipmentPayload;
-import com.example.schedulemeetingbe.entity.payload.BookingEquipmentQuantityPayload;
 import com.example.schedulemeetingbe.entity.payload.UpdateBookingChangePayload;
+import com.example.schedulemeetingbe.entity.payload.UpdateBookingEquipmentQuantityPayload;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.exception.custom_exception.ExceedEquipmentException;
 import com.example.schedulemeetingbe.exception.custom_exception.OverlapBookingException;
 import com.example.schedulemeetingbe.mapper.BookingMapper;
-import com.example.schedulemeetingbe.repository.BookingEquipmentRepository;
-import com.example.schedulemeetingbe.repository.BookingHistoryRepository;
-import com.example.schedulemeetingbe.repository.BookingRepository;
+import com.example.schedulemeetingbe.repository.*;
 import com.example.schedulemeetingbe.service.base.IBookingService;
 import com.example.schedulemeetingbe.service.base.IEquipmentService;
 import com.example.schedulemeetingbe.service.base.IRoomService;
@@ -33,11 +33,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -48,12 +48,16 @@ public class BookingServiceImpl implements IBookingService {
     private final BookingRepository bookingRepository;
     private final BookingEquipmentRepository bookingEquipmentRepository;
     private final BookingHistoryRepository bookingHistoryRepository;
+    private final BookingReservationRepository bookingReservationRepository;
+    private final BookingEquipmentReservationRepository bookingEquipmentReservationRepository;
 
     private final IUserService iUserService;
     private final IRoomService iRoomService;
     private final IEquipmentService iEquipmentService;
 
     private final JsonMapper jsonMapper;
+    private final BookingRollbackCommandFactory factory;
+    private final BookingApproveCommandFactory approveFactory;
 
     private static final String BOOKING_ID = "bookingId";
 
@@ -79,8 +83,9 @@ public class BookingServiceImpl implements IBookingService {
             throw new BusinessException(ErrorResponse.EXCEED_ATTENDEE);
         }
         //kiểm tra có bị trùng lịch trong Unavailability Room hay Bookings ko (dưới db có constraint nhưng vẫn check bên be để có thể hiện lỗi thân thiện hơn)
-        checkOverlap(request.roomId(), request.start(), request.end());
+        checkOverlap(null, request.roomId(), request.start(), request.end(), true);
 
+        //booking mới thì ko cần lưu vào booking_reservation
         Booking booking = Booking.builder()
                 .bookedBy(user)
                 .attendeeCount(request.attendee())
@@ -118,10 +123,10 @@ public class BookingServiceImpl implements IBookingService {
     public Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request, Long userId) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        if (Duration.between(TimeUtils.ZONE_DATE_TIME, booking.getStartTime())
-                .toMinutes() < 60) {
-            throw new BusinessException(ErrorResponse.UPDATE_BOOKING_ERROR);
-        }
+//        if (Duration.between(TimeUtils.ZONE_DATE_TIME, booking.getStartTime())
+//                .toMinutes() < 60) {
+//            throw new BusinessException(ErrorResponse.UPDATE_BOOKING_ERROR);
+//        }
         UpdateBookingChangePayload oldPayload = createUpdateBookingPayload(
                 booking,
                 booking.getBookedBy().getUserId(),
@@ -135,21 +140,51 @@ public class BookingServiceImpl implements IBookingService {
             }
             booking.setAttendeeCount(request.attendeeCount());
         }
-        if (request.newRoomId() != null) {
-            Room room = iRoomService.getRoomDetail(request.newRoomId()).orElseThrow(() ->
-                    new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-            booking.setRoom(room);
-            booking.setStatus(BookingStatus.PENDING);
-        }
-        if (request.start() != null && request.end() != null) {
-            if (request.start().isAfter(request.end())) {
-                throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
-            } else {
-                checkOverlap(request.roomId(), request.start(), request.end());
-                booking.setStartTime(request.start());
-                booking.setEndTime(request.end());
+
+        /* bao trọn được trường hợp chỉ đổi room hoặc chỉ đổi start-end hoặc đổi cả hai
+            (room sẽ được lọc ra những room nào thỏa mãn trước dựa vào start-end)
+         */
+        if (request.newRoomId() != null || (request.start() != null && request.end() != null)) {
+            BookingReservation bookingReservation = bookingReservationRepository
+                    .findBookingReservationsByBooking_BookingId(bookingId)
+                    .orElseGet(() -> {
+                        BookingReservation newReservation = new BookingReservation();
+                        newReservation.setBooking(booking);
+                        return newReservation;
+                    });
+            if (bookingReservation.getReservationId() == null) {
+                bookingReservation.setOldRoom(booking.getRoom());
+                bookingReservation.setOldStartTime(booking.getStartTime());
+                bookingReservation.setOldEndTime(booking.getEndTime());
+            }
+            if (request.newRoomId() != null) {
+                //lưu lại để có thể rollback từ cập nhật nếu approver reject
+                Room room = iRoomService.getRoomDetail(request.newRoomId()).orElseThrow(() ->
+                        new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+                booking.setRoom(room);
                 booking.setStatus(BookingStatus.PENDING);
             }
+            if (request.start() != null && request.end() != null) {
+                if (request.start().isAfter(request.end())) {
+                    throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
+                } else {
+                    checkOverlap(bookingId, request.roomId(), request.start(), request.end(), false);
+                    booking.setStartTime(request.start());
+                    booking.setEndTime(request.end());
+                    booking.setStatus(BookingStatus.PENDING);
+                }
+            }
+            /* nếu là mới thì mới save
+             * tạo bảng booking_reservation để bảo toàn những lịch mình đặt trước khi bị thay đổi và
+             * lịch mới chưa được APPROVER duyệt, khi đó người dùng khác cũng ko thể đặt được
+             * lịch trùng với cả lịch mới cập nhật và lịch cũ đang đợi lịch mới đc duyệt
+             * nếu ko có logic này thì
+             * Ví dụ như người dùng A đổi sang room A1
+             * người dùng B đăng kí vào room A1 có khoảng time overlap với giá trị cũ của A
+             * thì khi yêu cầu thay đổi của A ko đc APPROVER chấp thuận sẽ được rollback về giá trị cũ
+             * nhưng khi đó B đã đăng kí thành công vào lịch đó => lỗi ko mong muốn nên phải bảo toàn cả hai lịch cho A
+             */
+            bookingReservationRepository.save(bookingReservation);
         }
         UpdateBookingChangePayload newPayload = createUpdateBookingPayload(
                 booking,
@@ -157,6 +192,9 @@ public class BookingServiceImpl implements IBookingService {
                 booking.getRoom().getRoomId()
         );
         User user = iUserService.getDetail(userId).orElse(null);
+
+        //revoke những cái lịch sử thay đổi cũ, chỉ để hiện cái thay đổi mới nhất để cho approver duyệt
+        bookingRepository.revokeAllOldChangeHistory(bookingId, BookingActionType.UPDATED);
         BookingHistory bookingHistory = BookingHistory.builder()
                 .booking(booking)
                 .actionType(BookingActionType.UPDATED)
@@ -198,9 +236,12 @@ public class BookingServiceImpl implements IBookingService {
             addEquipmentToRoom(addBookingEquipment, booking);
         }
         booking.setStatus(BookingStatus.PENDING);
+
         List<BookingDetailEquipmentResponse> newBookingEquipment = bookingEquipmentRepository.getBookingEquipments(bookingId);
         AddBookingEquipmentPayload newPayload = new AddBookingEquipmentPayload(bookingId, newBookingEquipment);
         User user = iUserService.getDetail(userId).orElse(null);
+
+        // add equipment thì ko cần revoke lịch sử
         BookingHistory bookingHistory = BookingHistory.builder()
                 .booking(booking)
                 .actionType(BookingActionType.ADD_EQUIPMENT)
@@ -209,12 +250,13 @@ public class BookingServiceImpl implements IBookingService {
                 .newData(jsonMapper.valueToTree(newPayload))
                 .build();
         bookingHistoryRepository.save(bookingHistory);
+
         return Map.of(BOOKING_ID, bookingId);
     }
 
     @Transactional
     @Override
-    public StatusBookingResponse approveBooking(Long bookingId, Long userId) {
+    public StatusBookingResponse approveBooking(Long bookingId, ApproveRequest request, Long userId) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         UpdateBookingChangePayload oldPayload = createUpdateBookingPayload(
@@ -224,9 +266,7 @@ public class BookingServiceImpl implements IBookingService {
         );
         User approver = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        booking.setStatus(BookingStatus.APPROVED);
-        booking.setApprovedBy(approver);
-        booking.setApprovedAt(TimeUtils.ZONE_DATE_TIME);
+        approveFactory.get(request.actionType()).execute(booking, request, approver);
         UpdateBookingChangePayload newPayload = createUpdateBookingPayload(
                 booking,
                 booking.getBookedBy().getUserId(),
@@ -245,7 +285,8 @@ public class BookingServiceImpl implements IBookingService {
 
     @Transactional
     @Override
-    public StatusBookingResponse rejectBooking(Long bookingId, Long userId) {
+    public StatusBookingResponse rejectBooking(Long bookingId, RollBackRequest request, Long userId) {
+        long start = System.currentTimeMillis();
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         UpdateBookingChangePayload oldPayload = createUpdateBookingPayload(
@@ -255,9 +296,7 @@ public class BookingServiceImpl implements IBookingService {
         );
         User approver = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        booking.setStatus(BookingStatus.REJECTED);
-        booking.setApprovedBy(approver);
-        booking.setApprovedAt(TimeUtils.ZONE_DATE_TIME);
+        checkBookingHistoryActionType(booking, request, approver);
         UpdateBookingChangePayload newPayload = createUpdateBookingPayload(
                 booking,
                 booking.getBookedBy().getUserId(),
@@ -271,6 +310,7 @@ public class BookingServiceImpl implements IBookingService {
                 .newData(jsonMapper.valueToTree(newPayload))
                 .build();
         bookingHistoryRepository.save(bookingHistory);
+        System.out.println((System.currentTimeMillis() - start) + " ms - Tốc độ");
         return BookingMapper.mapToStatusBookingResponse(booking);
     }
 
@@ -350,39 +390,39 @@ public class BookingServiceImpl implements IBookingService {
     public BookingEquipmentResponse updateBookingEquipmentQuantity(
             Long bookingId,
             Long userId,
+            Long equipmentId,
             Long bookingEquipmentId,
             UpdateBookingEquipQuantityRequest request
     ) {
+        long start = System.currentTimeMillis();
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         BookingEquipment bookingEquipment = bookingEquipmentRepository
                 .findById(bookingEquipmentId)
                 .orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
 
-        BookingEquipmentQuantityPayload oldPayload = new BookingEquipmentQuantityPayload(bookingEquipmentId, bookingEquipment.getQuantity());
+        UpdateBookingEquipmentQuantityPayload oldPayload = new UpdateBookingEquipmentQuantityPayload(bookingEquipmentId, bookingEquipment.getQuantity());
 
-        EquipmentAndQuantityResponse bookingEquipmentResponse = iEquipmentService.findEquipmentAndRemainingQuantity(bookingEquipmentId);
-        if (request.quantity() > bookingEquipmentResponse.remainingQuantity()) {
-            throw new ExceedEquipmentException(List.of("Vượt quá số lượng, thiết bị " +
-                    bookingEquipmentResponse.equipmentName() +
-                    " chỉ còn trống " +
-                    bookingEquipmentResponse.remainingQuantity()));
-        }
-        bookingEquipment.setQuantity(request.quantity());
+        //kiểm tra khi tăng số lượng với giảm số lượng thì có thỏa mãn ko
+        validateEquipmentQuantity(bookingEquipment, equipmentId, request.quantity());
+
         booking.setStatus(BookingStatus.PENDING);
 
-        BookingEquipmentQuantityPayload newPayload = new BookingEquipmentQuantityPayload(bookingEquipmentId, bookingEquipment.getQuantity());
+        UpdateBookingEquipmentQuantityPayload newPayload = new UpdateBookingEquipmentQuantityPayload(bookingEquipmentId, bookingEquipment.getQuantity());
         User user = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+
+        bookingRepository.revokeAllOldChangeHistory(bookingId, BookingActionType.UPDATE_EQUIP_QUANTITY);
         BookingHistory bookingHistory = BookingHistory.builder()
                 .booking(booking)
-                .actionType(BookingActionType.UPDATED)
+                .actionType(BookingActionType.UPDATE_EQUIP_QUANTITY)
                 .changedBy(user)
                 .oldData(jsonMapper.valueToTree(oldPayload))
                 .newData(jsonMapper.valueToTree(newPayload))
                 .build();
         bookingHistoryRepository.save(bookingHistory);
 
+        System.out.println((System.currentTimeMillis() - start) + " ms - Tốc độ");
         return new BookingEquipmentResponse(bookingEquipmentId, request.quantity());
     }
 
@@ -530,19 +570,78 @@ public class BookingServiceImpl implements IBookingService {
         bookingEquipmentRepository.saveAll(bookingEquipments);
     }
 
-    private void checkOverlap(Long roomId, ZonedDateTime start, ZonedDateTime end) {
-        List<String> reasons = bookingRepository.checkOverlap(
-                roomId,
-                new String[]{
-                        String.format(
-                                "[%s, %s)",
-                                start.toOffsetDateTime(),
-                                end.toOffsetDateTime()
-                        )}
-        );
+    private void checkOverlap(Long bookingId, Long roomId, ZonedDateTime start, ZonedDateTime end, boolean isCreate) {
+        List<String> reasons;
+        if (isCreate) {
+            reasons = bookingRepository.checkOverlap(
+                    roomId,
+                    new String[]{
+                            String.format(
+                                    "[%s, %s)",
+                                    start.toOffsetDateTime(),
+                                    end.toOffsetDateTime()
+                            )}
+            );
+        } else {
+            reasons = bookingRepository.checkOverlap(
+                    bookingId,
+                    roomId,
+                    new String[]{
+                            String.format(
+                                    "[%s, %s)",
+                                    start.toOffsetDateTime(),
+                                    end.toOffsetDateTime()
+                            )}
+            );
+        }
         if (!reasons.isEmpty()) {
             throw new OverlapBookingException(reasons);
         }
+    }
+
+    private void checkBookingHistoryActionType(Booking booking, RollBackRequest request, User approver) {
+        factory.get(request.actionType())
+                .execute(booking, request, approver);
+    }
+
+    private void validateEquipmentQuantity(
+            BookingEquipment bookingEquipment,
+            Long equipmentId,
+            Integer newQuantity
+    ) {
+        Integer currentQuantity = bookingEquipment.getQuantity();
+        if (Objects.equals(currentQuantity, newQuantity)) {
+            return;
+        }
+        // tăng số lượng
+        if (newQuantity > currentQuantity) {
+            EquipmentAndQuantityResponse bookingEquipmentResponse =
+                    iEquipmentService.findEquipmentAndRemainingQuantity(equipmentId);
+            int needMore = newQuantity - currentQuantity;
+            if (needMore > bookingEquipmentResponse.remainingQuantity()) {
+                throw new ExceedEquipmentException(List.of("Vượt quá số lượng, thiết bị " +
+                        bookingEquipmentResponse.equipmentName() +
+                        " chỉ còn trống " +
+                        bookingEquipmentResponse.remainingQuantity()));
+            }
+            bookingEquipment.setQuantity(newQuantity);
+            return;
+        }
+        // giảm số lượng
+        int reservedQuantity = currentQuantity - newQuantity;
+        bookingEquipment.setQuantity(newQuantity);
+        BookingEquipmentReservation reservation =
+                bookingEquipmentReservationRepository
+                        .findByBookingEquipment_BookingEquipmentId(
+                                bookingEquipment.getBookingEquipmentId()
+                        )
+                        .orElse(
+                                BookingEquipmentReservation.builder()
+                                        .bookingEquipment(bookingEquipment)
+                                        .build()
+                        );
+        reservation.setReservationQuantity(reservedQuantity);
+        bookingEquipmentReservationRepository.save(reservation);
     }
 
 }

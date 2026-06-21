@@ -7,6 +7,7 @@ public record BookingDetailResponse(
         Long id,
         String title,
         String description,
+        Long roomId,
         String roomName,
         String roomAddress,
         Integer floorNumber,

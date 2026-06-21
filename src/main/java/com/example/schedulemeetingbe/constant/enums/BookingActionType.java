@@ -7,5 +7,6 @@ public enum BookingActionType {
     APPROVED,
     REJECTED,
     ADD_EQUIPMENT,
-    DELETE
+    DELETE,
+    UPDATE_EQUIP_QUANTITY
 }

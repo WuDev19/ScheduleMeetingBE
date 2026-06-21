@@ -1,42 +1,49 @@
 package com.example.schedulemeetingbe.entity;
 
+import com.example.schedulemeetingbe.constant.enums.ReservationStatus;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.ZonedDateTime;
+import java.util.List;
+import java.util.Set;
 
-@Setter
+@Entity
+@Table(name = "booking_reservation")
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(access = AccessLevel.PUBLIC)
-@Entity
-@Table(
-        name = "booking_equipment",
-        uniqueConstraints = @UniqueConstraint(
-                name = "uq_booking_equipment",
-                columnNames = {"booking_id", "equipment_id"}
-        )
-)
-public class BookingEquipment {
+public class BookingReservation {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "booking_equipment_id")
-    private Long bookingEquipmentId;
+    @Column(name = "reservation_id")
+    private Long reservationId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_id", nullable = false)
+    @OneToOne
+    @JoinColumn(name = "booking_id")
     private Booking booking;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "equipment_id", nullable = false)
-    private Equipment equipment;
+    @JoinColumn(name = "old_room_id")
+    private Room oldRoom;
 
-    @Column(name = "quantity", nullable = false)
+    @Column(name = "old_start_time")
+    private ZonedDateTime oldStartTime;
+
+    @Column(name = "old_end_time")
+    private ZonedDateTime oldEndTime;
+
     @Builder.Default
-    private Integer quantity = 1;
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    @Column(name = "status")
+    private ReservationStatus status = ReservationStatus.AWAIT_APPROVE;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private ZonedDateTime createdAt;
@@ -54,5 +61,4 @@ public class BookingEquipment {
     protected void onUpdate() {
         updatedAt = TimeUtils.ZONE_DATE_TIME;
     }
-
 }

@@ -80,10 +80,11 @@ public class BookingController {
     @PreAuthorize("hasAuthority('BOOKING:APPROVE')")
     public ResponseEntity<ApiResult<StatusBookingResponse>> approveBooking(
             @PathVariable Long bookingId,
+            @RequestBody ApproveRequest request,
             @AuthenticationPrincipal Jwt jwt
     ) {
         return ApiResponse.success(
-                iBookingService.approveBooking(bookingId, jwt.getClaim(StringCommon.USER_ID)),
+                iBookingService.approveBooking(bookingId, request, jwt.getClaim(StringCommon.USER_ID)),
                 "Duyệt lịch thành công",
                 Constants.SUCCESS_CODE
         );
@@ -95,10 +96,11 @@ public class BookingController {
     @PreAuthorize("hasAuthority('BOOKING:REJECT')")
     public ResponseEntity<ApiResult<StatusBookingResponse>> rejectBooking(
             @PathVariable Long bookingId,
+            @RequestBody RollBackRequest request,
             @AuthenticationPrincipal Jwt jwt
     ) {
         return ApiResponse.success(
-                iBookingService.rejectBooking(bookingId, jwt.getClaim(StringCommon.USER_ID)),
+                iBookingService.rejectBooking(bookingId, request, jwt.getClaim(StringCommon.USER_ID)),
                 "Từ chối lịch thành công",
                 Constants.SUCCESS_CODE
         );
@@ -152,16 +154,23 @@ public class BookingController {
 
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
     @Operation(summary = "Api cho người dùng cập nhật số lượng thiết bị của lịch họp")
-    @PatchMapping("/{bookingId}/equipment/{beId}")
+    @PatchMapping("/{bookingId}/equipment/{equipmentId}/{beId}")
     @PreAuthorize("hasAuthority('BOOKING:UPDATE')")
     public ResponseEntity<ApiResult<BookingEquipmentResponse>> updateBookingEquipmentQuantity(
             @PathVariable Long bookingId,
+            @PathVariable Long equipmentId,
             @PathVariable Long beId,
             @RequestBody UpdateBookingEquipQuantityRequest request,
             @AuthenticationPrincipal Jwt jwt
     ) {
         return ApiResponse.success(
-                iBookingService.updateBookingEquipmentQuantity(bookingId, jwt.getClaim(StringCommon.USER_ID), beId, request),
+                iBookingService.updateBookingEquipmentQuantity(
+                        bookingId,
+                        jwt.getClaim(StringCommon.USER_ID),
+                        equipmentId,
+                        beId,
+                        request
+                ),
                 "Cập nhật số lượng thiết bị cụ thể của lịch họp thành công",
                 Constants.SUCCESS_CODE
         );
@@ -171,7 +180,7 @@ public class BookingController {
     @Operation(summary = "Api cho approver xem danh sách lịch họp đang chờ")
     @GetMapping("/pending")
     @PreAuthorize("hasAuthority('BOOKING_STATUS:VIEW')")
-    public ResponseEntity<ApiResult<PageResponse<BookingSummaryResponse>>> updateBookingEquipmentQuantity(
+    public ResponseEntity<ApiResult<PageResponse<BookingSummaryResponse>>> getBookingWaitingApprove(
             @PageableDefault Pageable pageable
     ) {
         return ApiResponse.success(
@@ -185,7 +194,7 @@ public class BookingController {
     @Operation(summary = "Api cho approver xem chi tiết lịch họp đang chờ duyệt")
     @GetMapping("/pending/detail/{historyId}")
     @PreAuthorize("hasAuthority('BOOKING_STATUS:VIEW')")
-    public ResponseEntity<ApiResult<BookingHistoryResponse>> updateBookingEquipmentQuantity(@PathVariable Long historyId) {
+    public ResponseEntity<ApiResult<BookingHistoryResponse>> getBookingHistoryDetailToApprove(@PathVariable Long historyId) {
         return ApiResponse.success(
                 iBookingService.getBookingHistoryDetailToApprove(historyId),
                 "Hiển thị chi tiết lịch họp đang chờ duyệt thành công",
