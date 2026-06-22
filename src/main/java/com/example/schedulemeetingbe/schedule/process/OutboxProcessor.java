@@ -24,6 +24,8 @@ public class OutboxProcessor {
     private final OutboxEventRepository outboxEventRepository;
     private final IOutboxEventService iOutboxEventService;
 
+    //vẫn chưa xử lý đc case đang PROCESSING thì server sập => kẹt ở PROCESSING
+    //thêm một cái scheduler nữa check cái processing nếu ở trạng thái processing lâu thì đưa về failed
     @Async("outboxExecutor")
     public void processEvent(UUID eventId) {
         Optional<OutboxEvent> eventOptional = outboxEventRepository.findById(eventId);
@@ -88,9 +90,17 @@ public class OutboxProcessor {
                             );
                     iEmailService.sendEmailCancelledBookingByMaintain(payload);
                 }
+                case "SEND_EMAIL_CONFIRM_PARTICIPATE" -> {
+                    ReceiverEmailPayload payload = jsonMapper.treeToValue(
+                            event.getPayload(),
+                            ReceiverEmailPayload.class
+                    );
+                    iEmailService.sendBulkEmailBookingContent(payload);
+                }
             }
             iOutboxEventService.updateStatusSuccess(event.getId());
         } catch (Exception ex) {
+            ex.printStackTrace();
             iOutboxEventService.updateStatusDead(event.getId());
         }
     }

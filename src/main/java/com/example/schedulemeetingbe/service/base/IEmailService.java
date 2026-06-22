@@ -1,6 +1,7 @@
 package com.example.schedulemeetingbe.service.base;
 
 import com.example.schedulemeetingbe.entity.payload.BookingCancelledByMaintenancePayload;
+import com.example.schedulemeetingbe.entity.payload.ReceiverEmailPayload;
 
 public interface IEmailService {
     void sendEmailActiveAccount(String email, String token);
@@ -12,4 +13,6 @@ public interface IEmailService {
     void sendEmailUpdateEmail(String newEmail, String token);
 
     void sendEmailCancelledBookingByMaintain(BookingCancelledByMaintenancePayload payload);
+
+    void sendBulkEmailBookingContent(ReceiverEmailPayload payload);
 }

@@ -202,4 +202,13 @@ public class BookingController {
         );
     }
 
+    @GetMapping("/attendee/confirm")
+    public String confirmParticipate(
+            @RequestParam String token,
+            @RequestParam Long bookingId
+    ) {
+        iBookingService.verifyEmailAndUpsertBookingAttendee(token, bookingId);
+        return StringCommon.CONFIRM_PARTICIPATE_HTML;
+    }
+
 }

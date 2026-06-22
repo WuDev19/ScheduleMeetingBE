@@ -35,6 +35,8 @@ public record CreateBookingRequest(
         @NotNull(message = StringCommon.NOT_NULL + "attendee")
         Integer attendee,
 
-        List<CreateBookingEquipmentRequest> equipments
+        List<CreateBookingEquipmentRequest> equipments,
+
+        List<String> receivers
 ) {
 }

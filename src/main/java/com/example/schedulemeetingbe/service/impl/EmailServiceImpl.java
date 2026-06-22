@@ -4,12 +4,15 @@ import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.Room;
 import com.example.schedulemeetingbe.entity.User;
+import com.example.schedulemeetingbe.entity.VerificationToken;
 import com.example.schedulemeetingbe.entity.payload.BookingCancelledByMaintenancePayload;
+import com.example.schedulemeetingbe.entity.payload.ReceiverEmailPayload;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.repository.BookingRepository;
 import com.example.schedulemeetingbe.repository.RoomRepository;
 import com.example.schedulemeetingbe.repository.UserRepository;
+import com.example.schedulemeetingbe.repository.VerificationTokenRepository;
 import com.example.schedulemeetingbe.service.base.IEmailService;
 import com.example.schedulemeetingbe.service.base.IUserService;
 import com.example.schedulemeetingbe.utils.EmailErrorParser;
@@ -21,8 +24,11 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Random;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 // đổi repo -> service
 @Service
@@ -31,9 +37,12 @@ public class EmailServiceImpl implements IEmailService {
 
     private final JavaMailSender javaMailSender;
     private final IUserService iUserService;
+
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
     private final BookingRepository bookingRepository;
+    private final VerificationTokenRepository verificationTokenRepository;
+
     private static final String UTF8 = "UTF-8";
 
     @Override
@@ -225,6 +234,229 @@ public class EmailServiceImpl implements IEmailService {
                 startTimeStr,
                 endTimeStr,
                 reason
+        );
+    }
+
+    /* giả sử đang gửi đc 50/100 người thì server sập khi đó verification_token chưa được lưu
+    * -> sau khi retry tạo mới, dữ liệu cũ (rác) ko có trong db -> hợp lí hơn
+    * trường hợp những người đã nhận được mail, và bấm xác nhận sẽ check bên db
+    * -> khi đó thông báo link email ko còn hợp lệ, vui lòng chờ hệ thống gửi lại
+    * giả sử có 100 mail gửi mỗi cái 3s thì hết 5p, sau 5p thì mới save verification
+    * */
+    @Override
+    public void sendBulkEmailBookingContent(ReceiverEmailPayload payload) {
+        Map<String, User> userMap = iUserService.getUserEmailIn(payload.receivers())
+                .stream()
+                .collect(Collectors.toMap(User::getEmail, Function.identity()));
+        List<VerificationToken> verificationTokens = new ArrayList<>();
+        payload.receivers().forEach(email -> {
+            String token = UUID.randomUUID().toString();
+            VerificationToken verificationToken = VerificationToken
+                    .builder()
+                    .token(token)
+                    .expiresAt(ZonedDateTime.now().plusHours(5))
+                    .user(userMap.get(email))
+                    .build();
+            verificationTokens.add(verificationToken);
+            try {
+                MimeMessage message = javaMailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+                helper.setTo(email); // Gửi riêng cho từng người
+                helper.setSubject(StringCommon.APP_NAME_UPPER_CASE);
+                helper.setText(content(payload, token), true);
+
+                javaMailSender.send(message);
+            } catch (Exception e) {
+                EmailErrorParser.parseException(e);
+            }
+        });
+        verificationTokenRepository.saveAll(verificationTokens);
+    }
+
+    private String content(ReceiverEmailPayload payload, String token) {
+        String actionUrl = StringCommon.BASE_URL_APP
+                + "/api/v1/booking/attendee/confirm?token="
+                + token
+                + "&bookingId="
+                + payload.bookingId();
+        String html = """
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Thông Báo Mời Họp</title>
+                </head>
+                
+                <body style="margin:0;padding:0;background-color:#f1f5f9;font-family:'Segoe UI',Arial,sans-serif;">
+                
+                <table width="100%%" cellpadding="0" cellspacing="0" border="0"
+                       style="background-color:#f1f5f9;padding:30px 10px;">
+                    <tr>
+                        <td align="center">
+                
+                            <table width="600" cellpadding="0" cellspacing="0" border="0"
+                                   style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.05);">
+                
+                                <tr>
+                                    <td align="center" style="background:#1e3a8a;padding:35px 20px;">
+                                        <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;">
+                                            📅 Lời Mời Tham Gia Cuộc Họp
+                                        </h1>
+                                    </td>
+                                </tr>
+                
+                                <tr>
+                                    <td style="padding:40px 30px;">
+                
+                                        <p style="margin:0 0 16px;font-size:16px;font-weight:600;color:#0f172a;">
+                                            Xin chào Anh/Chị,
+                                        </p>
+                
+                                        <p style="margin:0 0 28px;font-size:15px;line-height:1.7;color:#64748b;">
+                                            Bạn được mời tham gia cuộc họp với mã số
+                                            <strong>#%d</strong>.
+                                            Vui lòng xem thông tin chi tiết bên dưới và xác nhận tham gia.
+                                        </p>
+                
+                                        <table width="100%%" cellpadding="0" cellspacing="0" border="0"
+                                               style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:24px;">
+                
+                                            <tr>
+                                                <td style="padding:8px 0;width:140px;font-size:14px;font-weight:600;color:#64748b;">
+                                                    Tiêu đề
+                                                </td>
+                                                <td style="padding:8px 0;font-size:15px;font-weight:600;color:#0f172a;">
+                                                    %s
+                                                </td>
+                                            </tr>
+                
+                                            <tr>
+                                                <td style="padding:8px 0;font-size:14px;font-weight:600;color:#64748b;">
+                                                    Thời gian bắt đầu
+                                                </td>
+                                                <td style="padding:8px 0;font-size:15px;color:#0f172a;">
+                                                    %s
+                                                </td>
+                                            </tr>
+                
+                                            <tr>
+                                                <td style="padding:8px 0;font-size:14px;font-weight:600;color:#64748b;">
+                                                    Thời gian kết thúc
+                                                </td>
+                                                <td style="padding:8px 0;font-size:15px;color:#0f172a;">
+                                                    %s
+                                                </td>
+                                            </tr>
+                
+                                            <tr>
+                                                <td style="padding:8px 0;font-size:14px;font-weight:600;color:#64748b;">
+                                                    Phòng họp
+                                                </td>
+                                                <td style="padding:8px 0;font-size:15px;font-weight:600;color:#2563eb;">
+                                                    %s
+                                                </td>
+                                            </tr>
+                
+                                            <tr>
+                                                <td style="padding:8px 0;font-size:14px;font-weight:600;color:#64748b;">
+                                                    Địa điểm
+                                                </td>
+                                                <td style="padding:8px 0;font-size:15px;color:#0f172a;">
+                                                    %s
+                                                </td>
+                                            </tr>
+                
+                                            <tr>
+                                                <td style="padding:8px 0;font-size:14px;font-weight:600;color:#64748b;vertical-align:top;">
+                                                    Nội dung
+                                                </td>
+                                                <td style="padding:8px 0;font-size:15px;color:#0f172a;line-height:1.6;">
+                                                    %s
+                                                </td>
+                                            </tr>
+                
+                                        </table>
+                
+                                        <table width="100%%" cellpadding="0" cellspacing="0" border="0">
+                                            <tr>
+                                                <td align="center" style="padding:35px 0 20px;">
+                
+                                                    <a href="%s"
+                                                       target="_blank"
+                                                       style="
+                                                            display:inline-block;
+                                                            background:#10b981;
+                                                            color:#ffffff;
+                                                            text-decoration:none;
+                                                            padding:14px 36px;
+                                                            border-radius:10px;
+                                                            font-size:15px;
+                                                            font-weight:600;
+                                                            border:1px solid #10b981;
+                                                       ">
+                                                        ✓ Xác Nhận Tham Gia
+                                                    </a>
+                
+                                                </td>
+                                            </tr>
+                                        </table>
+                
+                                        <p style="margin:0;text-align:center;font-size:13px;color:#64748b;">
+                                            Nếu nút trên không hoạt động, vui lòng sử dụng liên kết bên dưới:
+                                        </p>
+                
+                                        <p style="text-align:center;margin-top:12px;word-break:break-all;">
+                                            <a href="%s"
+                                               style="color:#2563eb;text-decoration:none;font-size:13px;">
+                                                %s
+                                            </a>
+                                        </p>
+                
+                                        <p style="margin-top:28px;text-align:center;font-size:13px;color:#94a3b8;font-style:italic;">
+                                            Vui lòng xác nhận trước thời điểm cuộc họp bắt đầu.
+                                        </p>
+                
+                                    </td>
+                                </tr>
+                
+                                <tr>
+                                    <td style="
+                                        padding:24px 30px;
+                                        background:#f8fafc;
+                                        border-top:1px solid #e2e8f0;
+                                        text-align:center;
+                                    ">
+                                        <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.6;">
+                                            Đây là email được gửi tự động từ hệ thống ScheduleMeeting.<br>
+                                            Vui lòng không phản hồi trực tiếp email này.<br>
+                                            © 2026 ScheduleMeeting Utility. All rights reserved.
+                                        </p>
+                                    </td>
+                                </tr>
+                
+                            </table>
+                
+                        </td>
+                    </tr>
+                </table>
+                
+                </body>
+                </html>
+                """;
+
+        return html.formatted(
+                payload.bookingId(),
+                payload.title(),
+                payload.startTime(),
+                payload.endTime(),
+                payload.room(),
+                payload.address(),
+                payload.description(),
+                actionUrl,
+                actionUrl,
+                actionUrl
         );
     }
 

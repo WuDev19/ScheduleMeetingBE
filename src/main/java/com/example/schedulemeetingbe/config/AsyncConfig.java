@@ -12,7 +12,7 @@ import java.util.concurrent.Executor;
 public class AsyncConfig {
 
     @Bean(name = "outboxExecutor")
-    public Executor threadPoolExecutor(){
+    public Executor outboxThreadPoolExecutor(){
         ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
         threadPoolTaskExecutor.setCorePoolSize(5);
         threadPoolTaskExecutor.setMaxPoolSize(10);
@@ -20,4 +20,15 @@ public class AsyncConfig {
         threadPoolTaskExecutor.setThreadNamePrefix("out-box");
         return threadPoolTaskExecutor;
     }
+
+//    @Bean(name = "emailExecutor")
+//    public Executor emailThreadPoolExecutor(){
+//        ThreadPoolTaskExecutor threadPoolTaskExecutor = new ThreadPoolTaskExecutor();
+//        threadPoolTaskExecutor.setCorePoolSize(5);
+//        threadPoolTaskExecutor.setMaxPoolSize(10);
+//        threadPoolTaskExecutor.setQueueCapacity(500);
+//        threadPoolTaskExecutor.setThreadNamePrefix("email");
+//        return threadPoolTaskExecutor;
+//    }
+
 }

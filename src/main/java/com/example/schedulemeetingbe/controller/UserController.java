@@ -7,6 +7,7 @@ import com.example.schedulemeetingbe.dto.common.ApiResult;
 import com.example.schedulemeetingbe.dto.request.user.CreateUserRequest;
 import com.example.schedulemeetingbe.dto.request.user.UpdateAvatarRequest;
 import com.example.schedulemeetingbe.dto.request.user.UpdateUserRequest;
+import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.UploadSignatureResponse;
 import com.example.schedulemeetingbe.dto.response.UserDetailResponse;
 import com.example.schedulemeetingbe.service.base.IUserService;
@@ -15,6 +16,8 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -36,7 +39,22 @@ public class UserController {
     public ResponseEntity<ApiResult<UserDetailResponse>> getDetailUser(@PathVariable Long id) {
         return ApiResponse.success(
                 iUserService.getUserDetail(id),
-                "Lấy thông tin chi tiết taì khoản thành công",
+                "Lấy thông tin chi tiết tài khoản thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api tìm kiếm người dùng")
+    @GetMapping("/search")
+    @PreAuthorize("hasAuthority('USER:VIEW')")
+    public ResponseEntity<ApiResult<PageResponse<UserDetailResponse>>> search(
+            @RequestParam String keyword,
+            @PageableDefault Pageable pageable
+    ) {
+        return ApiResponse.success(
+                iUserService.searchUser(keyword, pageable),
+                "Tìm kiếm tài khoản thành công",
                 Constants.SUCCESS_CODE
         );
     }

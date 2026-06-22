@@ -4,6 +4,7 @@ import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.entity.OutboxEvent;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.schedule.process.OutboxProcessor;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -21,7 +22,10 @@ public class OutboxScheduler {
         List<OutboxEvent> events = outboxEventRepository.findTop50ByStatusInOrderByCreatedAtAsc(
                 List.of(OutboxStatus.PENDING, OutboxStatus.FAILED)
         );
-        events.forEach(event -> event.setStatus(OutboxStatus.PROCESSING));
+        events.forEach(event -> {
+            event.setStatus(OutboxStatus.PROCESSING);
+            event.setProcessedAt(TimeUtils.ZONE_DATE_TIME);
+        });
         outboxEventRepository.saveAll(events);
         events.forEach(event -> outboxProcessor.processEvent(event.getId()));
     }

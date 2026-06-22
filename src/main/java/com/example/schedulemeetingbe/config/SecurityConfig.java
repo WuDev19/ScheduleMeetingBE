@@ -27,7 +27,8 @@ public class SecurityConfig {
             END_POINT + "public/**",
             END_POINT + "swagger-ui.html",
             END_POINT + "api-docs/**",
-            END_POINT + "swagger-ui/**"
+            END_POINT + "swagger-ui/**",
+            END_POINT + "booking/attendee/confirm"
     };
 
     @Bean

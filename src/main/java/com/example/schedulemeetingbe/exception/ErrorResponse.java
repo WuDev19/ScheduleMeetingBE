@@ -29,7 +29,9 @@ public enum ErrorResponse {
     START_END_DATE_ERROR("Ngày kết thúc phải lớn hơn ngày bắt đầu", 1022),
     UPDATE_BOOKING_ERROR("Thời gian cập nhật thông tin lịch đặt phải trước 1 tiếng để APPROVER có thể duyệt kịp", 1023),
     BOOKING_DETAIL_ERROR("Bạn không thể xem được chi tiết lịch họp của người khác", 1024),
-    EXCEED_ATTENDEE("Vượt quá sức chứa của phòng hiện tại", 1025);
+    EXCEED_ATTENDEE("Vượt quá sức chứa của phòng hiện tại", 1025),
+    INCONSISTENCY_ATTENDEE("Số lượng người tham gia và số lượng email gửi đi ko đồng nhất", 1026),
+    EMAIL_LINK_UNAVAILABILITY("Link xác nhận không còn khả dụng, vui lòng đợi hệ thống gửi lại", 1027);
 
     private final String message;
     private final int code;

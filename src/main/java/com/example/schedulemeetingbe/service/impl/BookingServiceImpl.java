@@ -3,16 +3,16 @@ package com.example.schedulemeetingbe.service.impl;
 import com.example.schedulemeetingbe.command.booking.approve.BookingApproveCommandFactory;
 import com.example.schedulemeetingbe.command.booking.rollback.BookingRollbackCommandFactory;
 import com.example.schedulemeetingbe.constant.StringCommon;
-import com.example.schedulemeetingbe.constant.enums.BookingActionType;
-import com.example.schedulemeetingbe.constant.enums.BookingEquipmentAction;
-import com.example.schedulemeetingbe.constant.enums.BookingStatus;
+import com.example.schedulemeetingbe.constant.enums.*;
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
 import com.example.schedulemeetingbe.dto.request.booking.*;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.booking.*;
 import com.example.schedulemeetingbe.dto.response.equipment.EquipmentAndQuantityResponse;
 import com.example.schedulemeetingbe.entity.*;
+import com.example.schedulemeetingbe.entity.composite_key.BookingAttendeeId;
 import com.example.schedulemeetingbe.entity.payload.AddBookingEquipmentPayload;
+import com.example.schedulemeetingbe.entity.payload.ReceiverEmailPayload;
 import com.example.schedulemeetingbe.entity.payload.UpdateBookingChangePayload;
 import com.example.schedulemeetingbe.entity.payload.UpdateBookingEquipmentQuantityPayload;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,9 @@ public class BookingServiceImpl implements IBookingService {
     private final BookingHistoryRepository bookingHistoryRepository;
     private final BookingReservationRepository bookingReservationRepository;
     private final BookingEquipmentReservationRepository bookingEquipmentReservationRepository;
+    private final OutboxEventRepository outboxEventRepository;
+    private final VerificationTokenRepository verificationTokenRepository;
+    private final BookingAttendeeRepository bookingAttendeeRepository;
 
     private final IUserService iUserService;
     private final IRoomService iRoomService;
@@ -64,6 +68,9 @@ public class BookingServiceImpl implements IBookingService {
     @Transactional
     @Override
     public BookingResponse createBooking(CreateBookingRequest request, String username) {
+        if (request.receivers() != null && !request.attendee().equals(request.receivers().size())) {
+            throw new BusinessException(ErrorResponse.INCONSISTENCY_ATTENDEE);
+        }
         //kiểm tra ngày bắt đầu phải nhỏ hơn ngày kết thúc
         if (request.start().isAfter(request.end())) {
             throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
@@ -115,7 +122,31 @@ public class BookingServiceImpl implements IBookingService {
                 .build();
         bookingHistoryRepository.save(bookingHistory);
 
+        if (request.receivers() != null) {
+            createOutboxEvent(request.receivers(), saved, room);
+        }
+
         return BookingMapper.mapToBookingResponse(saved, user, room);
+    }
+
+    private void createOutboxEvent(List<String> receivers, Booking booking, Room room) {
+        Building building = room.getBuilding();
+        ReceiverEmailPayload payload = new ReceiverEmailPayload(
+                booking.getBookingId(),
+                booking.getTitle(),
+                booking.getDescription(),
+                "Tòa nhà " + building.getBuildingName() + ", " + building.getAddress(),
+                "Tầng " + room.getFloorNumber() + ", phòng " + room.getRoomName(),
+                booking.getStartTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ)),
+                booking.getEndTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ)),
+                receivers
+        );
+        OutboxEvent event = OutboxEvent.builder()
+                .status(OutboxStatus.PENDING)
+                .eventType(EVENT_TYPE.SEND_EMAIL_CONFIRM_PARTICIPATE.name())
+                .payload(jsonMapper.valueToTree(payload))
+                .build();
+        outboxEventRepository.save(event);
     }
 
     @Transactional
@@ -152,11 +183,11 @@ public class BookingServiceImpl implements IBookingService {
                         newReservation.setBooking(booking);
                         return newReservation;
                     });
-            if (bookingReservation.getReservationId() == null) {
-                bookingReservation.setOldRoom(booking.getRoom());
-                bookingReservation.setOldStartTime(booking.getStartTime());
-                bookingReservation.setOldEndTime(booking.getEndTime());
-            }
+            bookingReservation.setStatus(ReservationStatus.AWAIT_APPROVE);
+            bookingReservation.setOldRoom(booking.getRoom());
+            bookingReservation.setOldStartTime(booking.getStartTime());
+            bookingReservation.setOldEndTime(booking.getEndTime());
+
             if (request.newRoomId() != null) {
                 //lưu lại để có thể rollback từ cập nhật nếu approver reject
                 Room room = iRoomService.getRoomDetail(request.newRoomId()).orElseThrow(() ->
@@ -174,7 +205,7 @@ public class BookingServiceImpl implements IBookingService {
                     booking.setStatus(BookingStatus.PENDING);
                 }
             }
-            /* nếu là mới thì mới save
+            /*
              * tạo bảng booking_reservation để bảo toàn những lịch mình đặt trước khi bị thay đổi và
              * lịch mới chưa được APPROVER duyệt, khi đó người dùng khác cũng ko thể đặt được
              * lịch trùng với cả lịch mới cập nhật và lịch cũ đang đợi lịch mới đc duyệt
@@ -447,6 +478,34 @@ public class BookingServiceImpl implements IBookingService {
         return bookingRepository.getDetailBookingWaitingToApprove(bookingHistoryId);
     }
 
+    @Transactional
+    @Override
+    public void verifyEmailAndUpsertBookingAttendee(String token, Long bookingId) {
+        VerificationToken verificationToken = verificationTokenRepository.findByToken(token)
+                .orElseThrow(() -> new BusinessException(ErrorResponse.EMAIL_LINK_UNAVAILABILITY));
+        if(verificationToken.getVerified()) return;
+        if (verificationToken.getRevoked()) {
+            throw new BusinessException(ErrorResponse.VERIFY_TOKEN_REVOKED);
+        }
+        if (verificationToken.getExpiresAt()
+                .isBefore(TimeUtils.ZONE_DATE_TIME)) {
+            verificationToken.setRevoked(true);
+            throw new BusinessException(ErrorResponse.VERIFY_TOKEN_EXPIRED);
+        }
+        User user = verificationToken.getUser();
+        Booking booking = bookingRepository.findById(bookingId)
+                .orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        BookingAttendee bookingAttendee = BookingAttendee.builder()
+                .id(new BookingAttendeeId(bookingId, user.getUserId()))
+                .booking(booking)
+                .user(user)
+                .joinedAt(TimeUtils.ZONE_DATE_TIME)
+                .build();
+        verificationToken.setVerified(true);
+        verificationToken.setRevoked(true);
+        bookingAttendeeRepository.save(bookingAttendee);
+    }
+
     private UpdateBookingChangePayload createUpdateBookingPayload(Booking booking, Long userId, Long roomId) {
         return new UpdateBookingChangePayload(
                 booking.getBookingId(),
@@ -640,6 +699,7 @@ public class BookingServiceImpl implements IBookingService {
                                         .bookingEquipment(bookingEquipment)
                                         .build()
                         );
+        reservation.setStatus(ReservationStatus.AWAIT_APPROVE);
         reservation.setReservationQuantity(reservedQuantity);
         bookingEquipmentReservationRepository.save(reservation);
     }

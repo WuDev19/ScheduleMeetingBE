@@ -15,12 +15,12 @@ import java.util.Map;
  * 4. Đổi phòng khi đẵ đặt lịch - done
  * 5. Xem chi tiết - done
  * 6. APPROVER duyệt phòng sau khi người dùng có sự thay đổi (sẽ phải có so sánh trực quan giữa cũ và thay đổi mới) - done
- * 7. Lọc, tìm kiếm (
+ * 7. Gửi email cho người tham gia khi đặt lịch họp thành công - done
+ * 8. Lọc, tìm kiếm (
  * - REGISTER: tìm kiếm các lịch đặt của chính mình
  * - APPROVER: tìm kiếm lọc lịch của tất cả mọi người
  * - ADMIN: toàn quyền
  * )
- * 8. Gửi email cho người tham gia khi đặt lịch họp thành công
  * */
 public interface IBookingService {
     BookingResponse createBooking(CreateBookingRequest request, String username);
@@ -44,4 +44,6 @@ public interface IBookingService {
     BookingHistoryResponse getBookingHistoryDetailToApprove(Long bookingHistoryId);
 
     PageResponse<BookingSummaryResponse> getBookingWaitingApprove(Pageable pageable);
+
+    void verifyEmailAndUpsertBookingAttendee(String token, Long bookingId);
 }

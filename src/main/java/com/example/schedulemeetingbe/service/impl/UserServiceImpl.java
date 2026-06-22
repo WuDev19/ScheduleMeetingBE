@@ -6,6 +6,7 @@ import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
 import com.example.schedulemeetingbe.dto.request.user.CreateUserRequest;
 import com.example.schedulemeetingbe.dto.request.user.UpdateAvatarRequest;
 import com.example.schedulemeetingbe.dto.request.user.UpdateUserRequest;
+import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.UploadSignatureResponse;
 import com.example.schedulemeetingbe.dto.response.UserDetailResponse;
 import com.example.schedulemeetingbe.entity.OutboxEvent;
@@ -29,6 +30,8 @@ import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -36,10 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.ZonedDateTime;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.example.schedulemeetingbe.constant.Constants.COOLDOWN_UPDATE_EMAIL;
@@ -220,6 +220,21 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
+    public PageResponse<UserDetailResponse> searchUser(String keyword, Pageable pageable) {
+        Page<User> page = userRepository.findByEmailOrFullName(keyword, pageable);
+        return new PageResponse<>(
+                page.getNumber(),
+                page.getNumberOfElements(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.getContent()
+                        .stream()
+                        .map(UserMapper::mapToUserDetailResponse)
+                        .toList()
+        );
+    }
+
+    @Override
     public Optional<User> getDetail(Long id) {
         return userRepository.findById(id);
     }
@@ -227,6 +242,11 @@ public class UserServiceImpl implements IUserService {
     @Override
     public Optional<Role> getRoleUser(String roleName) {
         return roleRepository.findByRoleName(roleName);
+    }
+
+    @Override
+    public List<User> getUserEmailIn(List<String> emails) {
+        return userRepository.findByEmailIn(emails);
     }
 
 }
