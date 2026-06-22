@@ -1,9 +1,9 @@
 package com.example.schedulemeetingbe.service.impl;
 
-import com.example.schedulemeetingbe.command.booking.approve.BookingApproveCommandFactory;
-import com.example.schedulemeetingbe.command.booking.rollback.BookingRollbackCommandFactory;
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.constant.enums.*;
+import com.example.schedulemeetingbe.design_pattern.command.booking.approve.BookingApproveCommandFactory;
+import com.example.schedulemeetingbe.design_pattern.command.booking.rollback.BookingRollbackCommandFactory;
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
 import com.example.schedulemeetingbe.dto.request.booking.*;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
@@ -19,6 +19,7 @@ import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.exception.custom_exception.ExceedEquipmentException;
 import com.example.schedulemeetingbe.exception.custom_exception.OverlapBookingException;
+import com.example.schedulemeetingbe.helper.CreatePayloadHelper;
 import com.example.schedulemeetingbe.mapper.BookingMapper;
 import com.example.schedulemeetingbe.repository.*;
 import com.example.schedulemeetingbe.service.base.IBookingService;
@@ -107,7 +108,7 @@ public class BookingServiceImpl implements IBookingService {
         // người dùng đặt lịch và có chọn thêm thiết bị khi đặt lịch
         addEquipmentToRoom(request, saved);
 
-        UpdateBookingChangePayload payload = createUpdateBookingPayload(
+        UpdateBookingChangePayload payload = CreatePayloadHelper.create(
                 booking,
                 user.getUserId(),
                 room.getRoomId()
@@ -158,7 +159,7 @@ public class BookingServiceImpl implements IBookingService {
 //                .toMinutes() < 60) {
 //            throw new BusinessException(ErrorResponse.UPDATE_BOOKING_ERROR);
 //        }
-        UpdateBookingChangePayload oldPayload = createUpdateBookingPayload(
+        UpdateBookingChangePayload oldPayload = CreatePayloadHelper.create(
                 booking,
                 booking.getBookedBy().getUserId(),
                 booking.getRoom().getRoomId()
@@ -217,7 +218,7 @@ public class BookingServiceImpl implements IBookingService {
              */
             bookingReservationRepository.save(bookingReservation);
         }
-        UpdateBookingChangePayload newPayload = createUpdateBookingPayload(
+        UpdateBookingChangePayload newPayload = CreatePayloadHelper.create(
                 booking,
                 booking.getBookedBy().getUserId(),
                 booking.getRoom().getRoomId()
@@ -290,7 +291,7 @@ public class BookingServiceImpl implements IBookingService {
     public StatusBookingResponse approveBooking(Long bookingId, ApproveRequest request, Long userId) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        UpdateBookingChangePayload oldPayload = createUpdateBookingPayload(
+        UpdateBookingChangePayload oldPayload = CreatePayloadHelper.create(
                 booking,
                 booking.getBookedBy().getUserId(),
                 booking.getRoom().getRoomId()
@@ -298,7 +299,7 @@ public class BookingServiceImpl implements IBookingService {
         User approver = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         approveFactory.get(request.actionType()).execute(booking, request, approver);
-        UpdateBookingChangePayload newPayload = createUpdateBookingPayload(
+        UpdateBookingChangePayload newPayload = CreatePayloadHelper.create(
                 booking,
                 booking.getBookedBy().getUserId(),
                 booking.getRoom().getRoomId()
@@ -320,7 +321,7 @@ public class BookingServiceImpl implements IBookingService {
         long start = System.currentTimeMillis();
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        UpdateBookingChangePayload oldPayload = createUpdateBookingPayload(
+        UpdateBookingChangePayload oldPayload = CreatePayloadHelper.create(
                 booking,
                 booking.getBookedBy().getUserId(),
                 booking.getRoom().getRoomId()
@@ -328,7 +329,7 @@ public class BookingServiceImpl implements IBookingService {
         User approver = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         checkBookingHistoryActionType(booking, request, approver);
-        UpdateBookingChangePayload newPayload = createUpdateBookingPayload(
+        UpdateBookingChangePayload newPayload = CreatePayloadHelper.create(
                 booking,
                 booking.getBookedBy().getUserId(),
                 booking.getRoom().getRoomId()
@@ -350,7 +351,7 @@ public class BookingServiceImpl implements IBookingService {
     public StatusBookingResponse cancelBooking(Long bookingId, CancelBookingRequest request, Long userId) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        UpdateBookingChangePayload oldPayload = createUpdateBookingPayload(
+        UpdateBookingChangePayload oldPayload = CreatePayloadHelper.create(
                 booking,
                 booking.getBookedBy().getUserId(),
                 booking.getRoom().getRoomId()
@@ -360,7 +361,7 @@ public class BookingServiceImpl implements IBookingService {
         booking.setCancelledAt(TimeUtils.ZONE_DATE_TIME);
         User register = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        UpdateBookingChangePayload newPayload = createUpdateBookingPayload(
+        UpdateBookingChangePayload newPayload = CreatePayloadHelper.create(
                 booking,
                 booking.getBookedBy().getUserId(),
                 booking.getRoom().getRoomId()
@@ -384,7 +385,7 @@ public class BookingServiceImpl implements IBookingService {
         User admin = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         booking.setDeletedAt(TimeUtils.ZONE_DATE_TIME);
-        UpdateBookingChangePayload payload = createUpdateBookingPayload(
+        UpdateBookingChangePayload payload = CreatePayloadHelper.create(
                 booking,
                 booking.getBookedBy().getUserId(),
                 booking.getRoom().getRoomId()
@@ -483,7 +484,7 @@ public class BookingServiceImpl implements IBookingService {
     public void verifyEmailAndUpsertBookingAttendee(String token, Long bookingId) {
         VerificationToken verificationToken = verificationTokenRepository.findByToken(token)
                 .orElseThrow(() -> new BusinessException(ErrorResponse.EMAIL_LINK_UNAVAILABILITY));
-        if(verificationToken.getVerified()) return;
+        if (verificationToken.getVerified()) return;
         if (verificationToken.getRevoked()) {
             throw new BusinessException(ErrorResponse.VERIFY_TOKEN_REVOKED);
         }
@@ -504,22 +505,6 @@ public class BookingServiceImpl implements IBookingService {
         verificationToken.setVerified(true);
         verificationToken.setRevoked(true);
         bookingAttendeeRepository.save(bookingAttendee);
-    }
-
-    private UpdateBookingChangePayload createUpdateBookingPayload(Booking booking, Long userId, Long roomId) {
-        return new UpdateBookingChangePayload(
-                booking.getBookingId(),
-                booking.getTitle(),
-                booking.getDescription(),
-                booking.getStartTime(),
-                booking.getEndTime(),
-                booking.getAttendeeCount(),
-                booking.getStatus(),
-                booking.getCancellationReason(),
-                roomId,
-                userId,
-                booking.getCreatedAt()
-        );
     }
 
     private void addEquipmentToRoom(CreateBookingRequest request, Booking saved) {

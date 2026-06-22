@@ -1,16 +1,16 @@
-package com.example.schedulemeetingbe.command.booking.rollback;
+package com.example.schedulemeetingbe.design_pattern.command.booking.approve;
 
 import com.example.schedulemeetingbe.constant.enums.BookingActionType;
-import com.example.schedulemeetingbe.dto.request.booking.RollBackRequest;
+import com.example.schedulemeetingbe.dto.request.booking.ApproveRequest;
 import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.User;
 
-public interface BookingRollbackCommand {
+public interface BookingApproveCommand {
     BookingActionType getActionType();
 
     void execute(
             Booking booking,
-            RollBackRequest request,
+            ApproveRequest request,
             User approver
     );
 }

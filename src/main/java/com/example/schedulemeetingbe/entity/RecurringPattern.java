@@ -5,6 +5,8 @@ import com.example.schedulemeetingbe.constant.enums.RecurrenceType;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
 import java.time.ZonedDateTime;
@@ -23,6 +25,7 @@ public class RecurringPattern {
     private Long recurringId;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(name = "recurrence_type", nullable = false)
     private RecurrenceType recurrenceType;
 
@@ -34,10 +37,14 @@ public class RecurringPattern {
     @Column(name = "days_of_week", length = 50)
     private String daysOfWeek;
 
+    @Column(name = "start_date")
+    private LocalDate startDate;
+
     @Column(name = "end_date")
     private LocalDate endDate;
 
     @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
     @Column(nullable = false)
     @Builder.Default
     private BookingStatus status = BookingStatus.PENDING;

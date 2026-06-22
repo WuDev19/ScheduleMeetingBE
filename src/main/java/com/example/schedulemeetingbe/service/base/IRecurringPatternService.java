@@ -5,6 +5,6 @@ import com.example.schedulemeetingbe.dto.response.booking.RecurringPatternRespon
 import com.example.schedulemeetingbe.entity.RecurringPattern;
 
 public interface IRecurringPatternService {
-    RecurringPatternResponse createForAPI(RecurringPatternCreateRequest request);
+    RecurringPatternResponse createRecurring(RecurringPatternCreateRequest request, Long userId);
     RecurringPattern save(RecurringPattern recurringPattern);
 }

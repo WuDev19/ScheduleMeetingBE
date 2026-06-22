@@ -22,6 +22,8 @@ import java.util.Set;
 @AllArgsConstructor
 @Builder(access = AccessLevel.PUBLIC)
 public class Booking {
+
+    //chuyển sang sequence để tối ưu batch insert
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "booking_id")

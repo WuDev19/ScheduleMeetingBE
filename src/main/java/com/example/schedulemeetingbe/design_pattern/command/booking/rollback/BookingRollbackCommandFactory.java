@@ -1,4 +1,4 @@
-package com.example.schedulemeetingbe.command.booking.approve;
+package com.example.schedulemeetingbe.design_pattern.command.booking.rollback;
 
 import com.example.schedulemeetingbe.constant.enums.BookingActionType;
 import org.springframework.stereotype.Component;
@@ -10,15 +10,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
-public class BookingApproveCommandFactory {
-    private final Map<BookingActionType, BookingApproveCommand> commands;
+public class BookingRollbackCommandFactory {
 
-    public BookingApproveCommandFactory(List<BookingApproveCommand> commandList) {
+    private final Map<BookingActionType, BookingRollbackCommand> commands;
+
+    public BookingRollbackCommandFactory(List<BookingRollbackCommand> commandList) {
         this.commands = commandList.stream()
-                .collect(Collectors.toMap(BookingApproveCommand::getActionType, Function.identity()));
+                .collect(Collectors.toMap(BookingRollbackCommand::getActionType, Function.identity()));
     }
 
-    public BookingApproveCommand get(
+    public BookingRollbackCommand get(
             BookingActionType actionType
     ) {
         return Optional.ofNullable(commands.get(actionType))

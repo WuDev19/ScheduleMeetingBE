@@ -1,4 +1,4 @@
-package com.example.schedulemeetingbe.command.booking.approve;
+package com.example.schedulemeetingbe.design_pattern.command.booking.approve;
 
 import com.example.schedulemeetingbe.constant.enums.BookingActionType;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;

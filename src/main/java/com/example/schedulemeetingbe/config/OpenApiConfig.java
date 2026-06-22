@@ -94,4 +94,12 @@ public class OpenApiConfig {
                 .build();
     }
 
+    @Bean
+    public GroupedOpenApi recurringPatternGroup() {
+        return GroupedOpenApi.builder()
+                .group("Recurring Pattern")
+                .pathsToMatch("/api/v1/recurring-pattern/**")
+                .build();
+    }
+
 }

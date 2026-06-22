@@ -10,6 +10,7 @@ import com.example.schedulemeetingbe.dto.response.booking.*;
 import com.example.schedulemeetingbe.service.base.IBookingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +27,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/booking")
 @RequiredArgsConstructor
+@Tag(name = "Tài liệu API cho Booking")
 public class BookingController {
 
     private final IBookingService iBookingService;

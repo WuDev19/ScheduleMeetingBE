@@ -1,11 +1,10 @@
-package com.example.schedulemeetingbe.command.booking.rollback;
+package com.example.schedulemeetingbe.design_pattern.command.booking.rollback;
 
 import com.example.schedulemeetingbe.constant.enums.BookingActionType;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import com.example.schedulemeetingbe.constant.enums.ReservationStatus;
 import com.example.schedulemeetingbe.dto.request.booking.RollBackRequest;
 import com.example.schedulemeetingbe.entity.Booking;
-import com.example.schedulemeetingbe.entity.BookingReservation;
 import com.example.schedulemeetingbe.entity.Room;
 import com.example.schedulemeetingbe.entity.User;
 import com.example.schedulemeetingbe.exception.ErrorResponse;

@@ -31,7 +31,9 @@ public enum ErrorResponse {
     BOOKING_DETAIL_ERROR("Bạn không thể xem được chi tiết lịch họp của người khác", 1024),
     EXCEED_ATTENDEE("Vượt quá sức chứa của phòng hiện tại", 1025),
     INCONSISTENCY_ATTENDEE("Số lượng người tham gia và số lượng email gửi đi ko đồng nhất", 1026),
-    EMAIL_LINK_UNAVAILABILITY("Link xác nhận không còn khả dụng, vui lòng đợi hệ thống gửi lại", 1027);
+    EMAIL_LINK_UNAVAILABILITY("Link xác nhận không còn khả dụng, vui lòng đợi hệ thống gửi lại", 1027),
+    NOT_MATCH_DATE_ERROR("Thời gian gửi lên khi tạo lịch lặp không trùng khớp",1028),
+    EXCEED_PERIODIC("Đăng ký lịch định kỳ tối đa được 30 lịch trong 1 lần", 1029);
 
     private final String message;
     private final int code;
