@@ -4,6 +4,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZonedDateTime;
@@ -19,5 +20,6 @@ public class ClientTest {
         String token = UUID.randomUUID().toString();
         System.out.println(token + " chưa mã hóa");
         System.out.println(URLEncoder.encode(Integer.toString(10), StandardCharsets.UTF_8) + " đã mã hóa");
+        System.out.println(DayOfWeek.valueOf("MONDAY"));
     }
 }

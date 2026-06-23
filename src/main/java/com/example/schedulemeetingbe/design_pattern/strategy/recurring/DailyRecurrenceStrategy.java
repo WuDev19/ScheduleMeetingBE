@@ -7,7 +7,9 @@ import com.example.schedulemeetingbe.entity.*;
 import com.example.schedulemeetingbe.entity.payload.UpdateBookingChangePayload;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
+import com.example.schedulemeetingbe.exception.custom_exception.OverlapBookingException;
 import com.example.schedulemeetingbe.helper.CreatePayloadHelper;
+import com.example.schedulemeetingbe.helper.RecurrenceHelper;
 import com.example.schedulemeetingbe.repository.BookingHistoryRepository;
 import com.example.schedulemeetingbe.repository.BookingRepository;
 import com.example.schedulemeetingbe.utils.TimeUtils;
@@ -35,7 +37,7 @@ public class DailyRecurrenceStrategy implements RecurrencePatternStrategy {
 
     @Override
     public void create(RecurringPattern recurringPattern, RecurringPatternCreateRequest request, User register, Room room) {
-        if(ChronoUnit.DAYS.between(request.startDate(), request.endDate()) >= 30){
+        if(RecurrenceHelper.checkLimitRecurrence(request.startDate(), request.endDate())){
             throw new BusinessException(ErrorResponse.EXCEED_PERIODIC);
         }
         int interval = request.interval() != null ? request.interval() : 1;
@@ -46,6 +48,7 @@ public class DailyRecurrenceStrategy implements RecurrencePatternStrategy {
         long gapInMinutes = ChronoUnit.MINUTES.between(startTime, endTime);
         List<Booking> bookings = new ArrayList<>();
         List<BookingHistory> bookingHistories = new ArrayList<>();
+        List<String> rangesTime = new ArrayList<>();
         // hiện tại thì sẽ cho đặt lịch họp hôm thứ 7, chủ nhật,
         // sau tùy theo logic thì có thể chỉ cho họp trong ngày giờ hành chính
         while (!startDate.isAfter(endDate)) {
@@ -57,9 +60,15 @@ public class DailyRecurrenceStrategy implements RecurrencePatternStrategy {
                     .recurringPattern(recurringPattern)
                     .build();
             bookings.add(booking);
+            String rangeStr = String.format("[%s, %s)", startTime.toOffsetDateTime(), endTime.toOffsetDateTime());
+            rangesTime.add(rangeStr);
             startDate = startDate.plusDays(interval);
             startTime = startTime.plusDays(interval);
             endTime = startTime.plusMinutes(gapInMinutes);
+        }
+        List<String> reasons = bookingRepository.checkOverlap(room.getRoomId(), rangesTime.toArray(new String[0]));
+        if (!reasons.isEmpty()) {
+            throw new OverlapBookingException(reasons);
         }
         List<Booking> bookingList = bookingRepository.saveAll(bookings);
 
