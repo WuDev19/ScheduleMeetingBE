@@ -213,4 +213,10 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             """)
     List<BookingRecurrenceResponse> getBookingByRecurrence(@Param("recurringIds") List<Long> recurringIds);
 
+    @Query("""
+            SELECT b
+            FROM Booking b
+            WHERE b.status = 'APPROVED'
+            """)
+    List<Booking> findByStatusApproved();
 }

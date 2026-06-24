@@ -1,5 +1,6 @@
 package com.example.schedulemeetingbe.repository;
 
+import com.example.schedulemeetingbe.dto.response.notification.NotificationAndBookingResponse;
 import com.example.schedulemeetingbe.entity.Notification;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -25,4 +26,14 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     int deleteByIdAndUserId(@Param("notificationId") Long notificationId, @Param("userId") Long userId);
 
     void deleteByNotificationIdInAndUser_UserId(List<Long> notificationIds, Long userId);
+
+    @Query("""
+        SELECT new com.example.schedulemeetingbe.dto.response.notification.NotificationAndBookingResponse(
+             n.notificationId,
+             n.booking.bookingId
+        )
+        FROM Notification n
+        WHERE n.notificationId IN (:noIds)
+        """)
+    List<NotificationAndBookingResponse> getNotificationAndBooking(@Param("noIds") List<Long> noIds);
 }

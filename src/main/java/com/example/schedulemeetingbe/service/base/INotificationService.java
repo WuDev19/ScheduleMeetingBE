@@ -4,6 +4,7 @@ import com.example.schedulemeetingbe.dto.request.notification.CreateNotification
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.notification.NotificationResponse;
 import com.example.schedulemeetingbe.dto.response.notification.UnreadCountResponse;
+import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.Notification;
 import com.example.schedulemeetingbe.entity.User;
 import org.springframework.data.domain.Pageable;
@@ -18,16 +19,19 @@ public interface INotificationService {
 
     PageResponse<NotificationResponse> getNotifications(Long userId, Pageable pageable);
 
-    NotificationResponse markAsRead(Long notificationId, Long userId);
+    void markAsRead(Long notificationId, Long userId);
 
     void markAllAsRead(Long userId);
 
     UnreadCountResponse countUnread(Long userId);
 
     void deleteNotification(Long notificationId, Long userId);
+
     void deleteAllNotificationSelected(List<Long> notificationId, Long userId);
 
-    Notification save(String title, String message, User user);
+    Notification save(String title, String message, User user, Booking booking);
+
+    List<Notification> save(List<Notification> notifications);
 
     Optional<Notification> getNotification(Long notificationId);
 }

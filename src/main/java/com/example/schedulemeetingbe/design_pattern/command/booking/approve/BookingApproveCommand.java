@@ -23,8 +23,8 @@ import java.time.format.DateTimeFormatter;
 @RequiredArgsConstructor
 public abstract class BookingApproveCommand {
 
-    private final INotificationService iNotificationService;
-    private final OutboxEventRepository outboxEventRepository;
+    protected final INotificationService iNotificationService;
+    protected final OutboxEventRepository outboxEventRepository;
     protected final JsonMapper jsonMapper;
 
     abstract BookingActionType getActionType();
@@ -58,7 +58,12 @@ public abstract class BookingApproveCommand {
                     message.append("Yêu cầu thay đổi số lượng thiết bị của lịch họp \"").append(booking.getTitle()).append("\"")
                             .append(" diễn ra ").append(timeRange).append(" đã được phê duyệt thành công");
         }
-        Notification notification = iNotificationService.save(StringCommon.TITLE_NOTIFICATION, message.toString(), bookedBy);
+        Notification notification = iNotificationService.save(
+                StringCommon.TITLE_NOTIFICATION_EMAIL,
+                message.toString(),
+                bookedBy,
+                booking
+        );
 
         // tạo outbox event để gửi mail
         ApproveRejectRecurrencePayload payload = new ApproveRejectRecurrencePayload(

@@ -5,6 +5,7 @@ import java.time.ZonedDateTime;
 public record NotificationResponse(
         Long notificationId,
         Long userId,
+        Long bookingId,
         String title,
         String message,
         Boolean isRead,

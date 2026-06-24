@@ -204,13 +204,45 @@ public class BookingController {
         );
     }
 
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho approver xem chi tiết về lịch họp trong thông báo")
+    @GetMapping("/{bookingId}/detail/notification/{notificationId}")
+    @PreAuthorize("hasAuthority('BOOKING:VIEW')")
+    public ResponseEntity<ApiResult<BookingNotificationResponse>> getBookingAndNotification(
+            @PathVariable Long bookingId,
+            @PathVariable Long notificationId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        return ApiResponse.success(
+                iBookingService.getBookingAndNotification(bookingId, jwt.getClaim(StringCommon.USER_ID), notificationId),
+                "Hiển thị chi tiết về lịch họp trong thông báo thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
     @GetMapping("/attendee/confirm")
-    public String confirmParticipate(
+    public String confirmParticipateEmail(
             @RequestParam String token,
             @RequestParam Long bookingId
     ) {
         iBookingService.verifyEmailAndUpsertBookingAttendee(token, bookingId);
         return StringCommon.CONFIRM_PARTICIPATE_HTML;
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho người dung xác nhận tham giá lịch họp")
+    @PostMapping("/{bookingId}/attendee/confirm")
+    @PreAuthorize("hasAuthority('BOOKING:CONFIRM')")
+    public ResponseEntity<ApiResult<Void>> confirmParticipateEmail(
+            @PathVariable Long bookingId,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        iBookingService.confirmParticipateIn(bookingId, jwt.getClaim(StringCommon.USER_ID));
+        return ApiResponse.success(
+                null,
+                "Xác nhận tham gia thành công",
+                Constants.SUCCESS_CODE
+        );
     }
 
 }

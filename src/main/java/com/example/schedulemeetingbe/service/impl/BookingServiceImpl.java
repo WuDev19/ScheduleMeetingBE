@@ -33,10 +33,8 @@ import tools.jackson.databind.json.JsonMapper;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.time.temporal.ChronoUnit;
+import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -153,15 +151,15 @@ public class BookingServiceImpl implements IBookingService {
     public Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request, Long userId) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-//        if (Duration.between(TimeUtils.ZONE_DATE_TIME, booking.getStartTime())
-//                .toMinutes() < 60) {
-//            throw new BusinessException(ErrorResponse.UPDATE_BOOKING_ERROR);
-//        }
+        if (ChronoUnit.HOURS.between(TimeUtils.ZONE_DATE_TIME, booking.getStartTime()) < 1) {
+            throw new BusinessException(ErrorResponse.UPDATE_BOOKING_ERROR);
+        }
         UpdateBookingChangePayload oldPayload = CreatePayloadHelper.create(
                 booking,
                 booking.getBookedBy().getUserId(),
                 booking.getRoom().getRoomId()
         );
+        if (request.isCompleted() != null) booking.setStatus(BookingStatus.COMPLETED);
         if (request.title() != null) booking.setTitle(request.title());
         if (request.description() != null) booking.setDescription(request.description());
         if (request.attendeeCount() != null) {
@@ -215,6 +213,9 @@ public class BookingServiceImpl implements IBookingService {
              * nhưng khi đó B đã đăng kí thành công vào lịch đó => lỗi ko mong muốn nên phải bảo toàn cả hai lịch cho A
              */
             bookingReservationRepository.save(bookingReservation);
+
+            //revoke những cái lịch sử thay đổi cũ, chỉ để hiện cái thay đổi mới nhất để cho approver duyệt
+            bookingRepository.revokeAllOldChangeHistory(bookingId, BookingActionType.UPDATED);
         }
         UpdateBookingChangePayload newPayload = CreatePayloadHelper.create(
                 booking,
@@ -223,8 +224,6 @@ public class BookingServiceImpl implements IBookingService {
         );
         User user = iUserService.getDetail(userId).orElse(null);
 
-        //revoke những cái lịch sử thay đổi cũ, chỉ để hiện cái thay đổi mới nhất để cho approver duyệt
-        bookingRepository.revokeAllOldChangeHistory(bookingId, BookingActionType.UPDATED);
         BookingHistory bookingHistory = BookingHistory.builder()
                 .booking(booking)
                 .actionType(BookingActionType.UPDATED)
@@ -515,6 +514,31 @@ public class BookingServiceImpl implements IBookingService {
         Notification notification = iNotificationService.getNotification(notificationId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         return BookingMapper.mapToBookingNotificationResponse(booking, booking.getRoom(), user, notification);
+    }
+
+    @Transactional
+    @Override
+    public void confirmParticipateIn(Long bookingId, Long userId) {
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        User participant = iUserService.getDetail(userId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        BookingAttendee bookingAttendee = BookingAttendee.builder()
+                .user(participant)
+                .booking(booking)
+                .joinedAt(TimeUtils.ZONE_DATE_TIME)
+                .build();
+        bookingAttendeeRepository.save(bookingAttendee);
+    }
+
+    @Override
+    public Optional<Booking> getBooking(Long bookingId) {
+        return bookingRepository.findById(bookingId);
+    }
+
+    @Override
+    public List<Booking> getApprovedBooking() {
+        return bookingRepository.findByStatusApproved();
     }
 
     private void addEquipmentToRoom(CreateBookingRequest request, Booking saved) {

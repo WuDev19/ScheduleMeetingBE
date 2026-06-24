@@ -63,7 +63,7 @@ public class RecurrenceHelper {
             String message,
             User createdBy
     ) {
-        Notification notification = iNotificationService.save(StringCommon.TITLE_NOTIFICATION, message, createdBy);
+        Notification notification = iNotificationService.save(StringCommon.TITLE_NOTIFICATION_EMAIL, message, createdBy, null);
         ApproveRejectRecurrencePayload payload = new ApproveRejectRecurrencePayload(
                 recurringPattern.getCreatedBy().getEmail(),
                 notification.getTitle(),

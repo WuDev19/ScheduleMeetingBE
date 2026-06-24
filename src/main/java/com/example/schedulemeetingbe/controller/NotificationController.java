@@ -80,12 +80,13 @@ public class NotificationController {
     @Operation(summary = "Api đánh dấu một notification là đã đọc")
     @PatchMapping("/{notificationId}/read")
     @PreAuthorize("hasAuthority('NOTIFICATION:UPDATE')")
-    public ResponseEntity<ApiResult<NotificationResponse>> markAsRead(
+    public ResponseEntity<ApiResult<Void>> markAsRead(
             @PathVariable Long notificationId,
             @AuthenticationPrincipal Jwt jwt
     ) {
+        iNotificationService.markAsRead(notificationId, jwt.getClaim(StringCommon.USER_ID));
         return ApiResponse.success(
-                iNotificationService.markAsRead(notificationId, jwt.getClaim(StringCommon.USER_ID)),
+                null,
                 "Đánh dấu đã đọc thành công",
                 Constants.SUCCESS_CODE
         );

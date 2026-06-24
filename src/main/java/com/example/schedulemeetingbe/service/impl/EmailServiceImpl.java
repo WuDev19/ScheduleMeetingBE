@@ -1,25 +1,20 @@
 package com.example.schedulemeetingbe.service.impl;
 
 import com.example.schedulemeetingbe.constant.StringCommon;
-import com.example.schedulemeetingbe.entity.Booking;
-import com.example.schedulemeetingbe.entity.Room;
-import com.example.schedulemeetingbe.entity.User;
-import com.example.schedulemeetingbe.entity.VerificationToken;
+import com.example.schedulemeetingbe.entity.*;
 import com.example.schedulemeetingbe.entity.payload.ApproveRejectRecurrencePayload;
 import com.example.schedulemeetingbe.entity.payload.BookingCancelledByMaintenancePayload;
 import com.example.schedulemeetingbe.entity.payload.ReceiverEmailPayload;
+import com.example.schedulemeetingbe.entity.payload.RemainingBookingPayload;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
-import com.example.schedulemeetingbe.repository.BookingRepository;
-import com.example.schedulemeetingbe.repository.RoomRepository;
-import com.example.schedulemeetingbe.repository.UserRepository;
 import com.example.schedulemeetingbe.repository.VerificationTokenRepository;
-import com.example.schedulemeetingbe.service.base.IEmailService;
-import com.example.schedulemeetingbe.service.base.IUserService;
+import com.example.schedulemeetingbe.service.base.*;
 import com.example.schedulemeetingbe.utils.EmailErrorParser;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -31,18 +26,20 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-// đổi repo -> service
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class EmailServiceImpl implements IEmailService {
 
     private final JavaMailSender javaMailSender;
     private final IUserService iUserService;
+    private final INotificationService iNotificationService;
+    private final IRoomService iRoomService;
+    private final IBookingService iBookingService;
 
-    private final UserRepository userRepository;
-    private final RoomRepository roomRepository;
-    private final BookingRepository bookingRepository;
     private final VerificationTokenRepository verificationTokenRepository;
+
+    @Value("${APP_EMAIL}")
+    private String APP_EMAIL;
 
     private static final String UTF8 = "UTF-8";
 
@@ -177,11 +174,11 @@ public class EmailServiceImpl implements IEmailService {
         Long userId = payload.userId();
         Long roomId = payload.roomId();
         Long bookingId = payload.bookingId();
-        User user = userRepository.findById(userId).orElseThrow(() ->
+        User user = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        Room room = roomRepository.findById(roomId).orElseThrow(() ->
+        Room room = iRoomService.getRoomDetail(roomId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
+        Booking booking = iBookingService.getBooking(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         MimeMessage mimeMessage = javaMailSender.createMimeMessage();
         try {
@@ -239,16 +236,19 @@ public class EmailServiceImpl implements IEmailService {
     }
 
     /* giả sử đang gửi đc 50/100 người thì server sập khi đó verification_token chưa được lưu
-    * -> sau khi retry tạo mới, dữ liệu cũ (rác) ko có trong db -> hợp lí hơn
-    * trường hợp những người đã nhận được mail, và bấm xác nhận sẽ check bên db
-    * -> khi đó thông báo link email ko còn hợp lệ, vui lòng chờ hệ thống gửi lại
-    * giả sử có 100 mail gửi mỗi cái 3s thì hết 5p, sau 5p thì mới save verification
-    * */
+     * -> sau khi retry tạo mới, dữ liệu cũ (rác) ko có trong db -> hợp lí hơn
+     * trường hợp những người đã nhận được mail, và bấm xác nhận sẽ check bên db
+     * -> khi đó thông báo link email ko còn hợp lệ, vui lòng chờ hệ thống gửi lại
+     * giả sử có 100 mail gửi mỗi cái 3s thì hết 5p, sau 5p thì mới save verification
+     * */
     @Override
     public void sendBulkEmailBookingContent(ReceiverEmailPayload payload) {
+        Booking booking = iBookingService.getBooking(payload.bookingId())
+                .orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         Map<String, User> userMap = iUserService.getUserEmailIn(payload.receivers())
                 .stream()
                 .collect(Collectors.toMap(User::getEmail, Function.identity()));
+        List<Notification> notifications = new ArrayList<>();
         List<VerificationToken> verificationTokens = new ArrayList<>();
         payload.receivers().forEach(email -> {
             String token = UUID.randomUUID().toString();
@@ -258,6 +258,26 @@ public class EmailServiceImpl implements IEmailService {
                     .expiresAt(ZonedDateTime.now().plusHours(5))
                     .user(userMap.get(email))
                     .build();
+            String mess = """
+                    Bạn được mời tham gia cuộc họp "%s".
+                    
+                    Phòng: %s
+                    Thời gian: %s - %s
+                    
+                    Nhấn để xem chi tiết.
+                    """.formatted(
+                    payload.title(),
+                    payload.room(),
+                    payload.startTime(),
+                    payload.endTime()
+            );
+            Notification notification = Notification.builder()
+                    .user(userMap.get(email))
+                    .title(StringCommon.TITLE_NOTIFICATION)
+                    .message(mess)
+                    .booking(booking)
+                    .build();
+            notifications.add(notification);
             verificationTokens.add(verificationToken);
             try {
                 MimeMessage message = javaMailSender.createMimeMessage();
@@ -272,6 +292,7 @@ public class EmailServiceImpl implements IEmailService {
                 EmailErrorParser.parseException(e);
             }
         });
+        iNotificationService.save(notifications);
         verificationTokenRepository.saveAll(verificationTokens);
     }
 
@@ -446,7 +467,6 @@ public class EmailServiceImpl implements IEmailService {
                 </body>
                 </html>
                 """;
-
         return html.formatted(
                 payload.bookingId(),
                 payload.title(),
@@ -463,10 +483,110 @@ public class EmailServiceImpl implements IEmailService {
 
     @Override
     public void sendEmailApproveReject(ApproveRejectRecurrencePayload payload) {
-        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
-        simpleMailMessage.setTo(payload.email());
-        simpleMailMessage.setSubject(payload.title());
-        simpleMailMessage.setText(payload.message());
-        javaMailSender.send(simpleMailMessage);
+        try {
+            MimeMessage mimeMessage = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(
+                    mimeMessage,
+                    true,
+                    "UTF-8"
+            );
+
+            helper.setTo(payload.email());
+            helper.setSubject(payload.title());
+
+            String html = """
+                    <!DOCTYPE html>
+                    <html>
+                    <body style="font-family: Arial, sans-serif;">
+                        <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                    
+                            <h2>%s</h2>
+                    
+                            <p>%s</p>
+                    
+                            <hr>
+                    
+                            <p style="color: #666;">
+                                Đây là email tự động từ hệ thống đặt lịch họp.
+                            </p>
+                    
+                        </div>
+                    </body>
+                    </html>
+                    """.formatted(
+                    payload.title(),
+                    payload.message()
+            );
+
+            helper.setText(html, true);
+
+            javaMailSender.send(mimeMessage);
+
+        } catch (MessagingException e) {
+            EmailErrorParser.parseException(e);
+        }
     }
+
+    //thêm cái xác nhận tham gia ở trong web nữa
+    @Override
+    public void sendEmailRemainingBooking(RemainingBookingPayload payload) {
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper =
+                    new MimeMessageHelper(message, true, "UTF-8");
+
+            helper.setSubject(StringCommon.APP_NAME_UPPER_CASE);
+
+            helper.setTo(APP_EMAIL);
+
+            helper.setBcc(payload.emails().toArray(new String[0]));
+
+            helper.setText(contentRemaining(payload), true);
+
+            javaMailSender.send(message);
+
+        } catch (Exception e) {
+            EmailErrorParser.parseException(e);
+        }
+    }
+
+    private String contentRemaining(RemainingBookingPayload payload) {
+        return """
+                <!DOCTYPE html>
+                <html>
+                <body style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
+                    <div style="max-width: 600px; margin: auto; background: white; padding: 24px; border-radius: 8px;">
+                
+                        <h2 style="color: #2563eb;">
+                            🔔 Nhắc lịch họp
+                        </h2>
+                
+                        <p>
+                            Cuộc họp <strong>%s</strong>
+                            tại phòng <strong>%s</strong>
+                            sẽ diễn ra sau <strong>%d phút</strong>.
+                        </p>
+                
+                        <p>
+                            Vui lòng chuẩn bị và tham gia đúng giờ.
+                        </p>
+                
+                        <hr style="margin: 24px 0;">
+                
+                        <p style="font-size: 12px; color: #6b7280;">
+                            Email được gửi tự động từ hệ thống %s.
+                        </p>
+                
+                    </div>
+                </body>
+                </html>
+                """
+                .formatted(
+                        payload.bookingTitle(),
+                        payload.roomName(),
+                        payload.minutes(),
+                        StringCommon.APP_NAME_UPPER_CASE
+                );
+    }
+
 }

@@ -17,6 +17,8 @@ public record UpdateBookingRequest(
         )
         ZonedDateTime end,
 
+        Boolean isCompleted,
+
         Long roomId,
 
         Long newRoomId

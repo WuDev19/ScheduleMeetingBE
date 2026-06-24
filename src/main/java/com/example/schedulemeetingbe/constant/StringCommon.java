@@ -25,7 +25,8 @@ public class StringCommon {
     public static final String NOT_BLANK = "không được để trống";
     public static final String NOT_NULL = "Thiếu dữ liệu trường ";
     public static final String ADMIN = "ADMIN";
-    public static final String TITLE_NOTIFICATION = "Thông báo về lịch họp đã đăng ký";
+    public static final String TITLE_NOTIFICATION_EMAIL = "Thông báo về lịch họp đã đăng ký";
+    public static final String TITLE_NOTIFICATION = "Thông báo lịch họp";
     public static final String CONFIRM_PARTICIPATE_HTML = """
             <!DOCTYPE html>
             <html lang="vi">

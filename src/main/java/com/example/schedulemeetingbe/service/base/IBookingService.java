@@ -3,10 +3,12 @@ package com.example.schedulemeetingbe.service.base;
 import com.example.schedulemeetingbe.dto.request.booking.*;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.booking.*;
+import com.example.schedulemeetingbe.entity.Booking;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /* về đặt phòng thì còn
  * 1. Thêm thiết bị sau khi đặt phòng - done
@@ -48,4 +50,10 @@ public interface IBookingService {
     PageResponse<BookingSummaryResponse> getBookingWaitingApprove(Pageable pageable);
 
     void verifyEmailAndUpsertBookingAttendee(String token, Long bookingId);
+
+    void confirmParticipateIn(Long bookingId, Long userId);
+
+    Optional<Booking> getBooking(Long bookingId);
+
+    List<Booking> getApprovedBooking();
 }

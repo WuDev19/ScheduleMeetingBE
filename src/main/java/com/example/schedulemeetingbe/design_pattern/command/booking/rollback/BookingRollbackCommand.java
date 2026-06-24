@@ -23,8 +23,8 @@ import java.time.format.DateTimeFormatter;
 @RequiredArgsConstructor
 public abstract class BookingRollbackCommand {
 
-    private final INotificationService iNotificationService;
-    private final OutboxEventRepository outboxEventRepository;
+    protected final INotificationService iNotificationService;
+    protected final OutboxEventRepository outboxEventRepository;
     protected final JsonMapper jsonMapper;
 
     abstract BookingActionType getActionType();
@@ -44,28 +44,31 @@ public abstract class BookingRollbackCommand {
         String roomName = booking.getRoom().getRoomName();
         User bookedBy = booking.getBookedBy();
         switch (request.actionType()) {
-            case CREATED ->
-                    message.append("Yêu cầu tạo lịch họp mới \"").append(booking.getTitle()).append("\" ")
+            case CREATED -> message.append("Yêu cầu tạo lịch họp mới \"").append(booking.getTitle()).append("\" ")
                     .append(timeRange).append(" tại ").append(roomName)
                     .append(" đã bị từ chối.");
             case UPDATED ->
                     message.append("Yêu cầu thay đổi thông tin lịch họp \"").append(booking.getTitle()).append("\" ")
-                    .append(timeRange).append(" tại ").append(roomName)
-                    .append(" đã bị từ chối.");
+                            .append(timeRange).append(" tại ").append(roomName)
+                            .append(" đã bị từ chối.");
             case ADD_EQUIPMENT ->
                     message.append("Yêu cầu cấp thêm thiết bị cho lịch họp \"").append(booking.getTitle()).append("\" ")
-                    .append(timeRange).append(" tại ").append(roomName)
-                    .append(" đã bị từ chối.");
+                            .append(timeRange).append(" tại ").append(roomName)
+                            .append(" đã bị từ chối.");
             case UPDATE_EQUIP_QUANTITY ->
                     message.append("Yêu cầu thay đổi số lượng thiết bị của lịch họp \"").append(booking.getTitle()).append("\" ")
-                    .append(timeRange).append(" đã bị từ chối.");
+                            .append(timeRange).append(" đã bị từ chối.");
         }
 
         if (request.reason() != null && !request.reason().isBlank()) {
             message.append(" Lý do: ").append(request.reason());
         }
 
-        Notification notification = iNotificationService.save(StringCommon.TITLE_NOTIFICATION, message.toString(), bookedBy);
+        Notification notification = iNotificationService.save(
+                StringCommon.TITLE_NOTIFICATION_EMAIL,
+                message.toString(),
+                bookedBy,
+                booking);
         ApproveRejectRecurrencePayload payload = new ApproveRejectRecurrencePayload(
                 bookedBy.getEmail(),
                 notification.getTitle(),

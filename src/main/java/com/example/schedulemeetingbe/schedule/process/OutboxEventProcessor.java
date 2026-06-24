@@ -26,6 +26,7 @@ public class OutboxEventProcessor {
 
     //vẫn chưa xử lý đc case đang PROCESSING thì server sập => kẹt ở PROCESSING
     //thêm một cái scheduler nữa check cái processing nếu ở trạng thái processing lâu thì đưa về failed
+    //tối ưu sử dụng command pattern sau
     @Async("outboxExecutor")
     public void processEvent(UUID eventId) {
         Optional<OutboxEvent> eventOptional = outboxEventRepository.findById(eventId);
