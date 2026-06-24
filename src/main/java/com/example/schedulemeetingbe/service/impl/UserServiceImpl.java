@@ -249,4 +249,14 @@ public class UserServiceImpl implements IUserService {
         return userRepository.findByEmailIn(emails);
     }
 
+    @Override
+    public Set<User> getUserUserIdIn(List<Long> ids) {
+        return userRepository.findByUserIdIn(ids);
+    }
+
+    @Override
+    public Set<User> getUserInDepartment(Long departmentId) {
+        return userRepository.findByDepartment_DepartmentId(departmentId);
+    }
+
 }

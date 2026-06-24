@@ -3,6 +3,7 @@ package com.example.schedulemeetingbe.mapper;
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.dto.response.booking.*;
 import com.example.schedulemeetingbe.entity.Booking;
+import com.example.schedulemeetingbe.entity.Notification;
 import com.example.schedulemeetingbe.entity.Room;
 import com.example.schedulemeetingbe.entity.User;
 
@@ -79,6 +80,32 @@ public class BookingMapper {
                 projection.getActionType(),
                 startTime,
                 endTime
+        );
+    }
+
+    public static BookingNotificationResponse mapToBookingNotificationResponse(
+            Booking booking,
+            Room room,
+            User user,
+            Notification notification
+    ) {
+        return new BookingNotificationResponse(
+                booking.getBookingId(),
+                booking.getTitle(),
+                booking.getDescription(),
+                room.getRoomId(),
+                room.getRoomName(),
+                room.getBuilding().getAddress(),
+                room.getFloorNumber(),
+                user.getFullName(),
+                user.getPhone(),
+                user.getEmail(),
+                booking.getStartTime(),
+                booking.getEndTime(),
+                booking.getAttendeeCount(),
+                booking.getCreatedAt(),
+                notification.getTitle(),
+                notification.getMessage()
         );
     }
 

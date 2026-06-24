@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
@@ -19,6 +20,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmailAndIsActiveIsTrue(String email);
 
     List<User> findByEmailIn(List<String> emails);
+
+    Set<User> findByUserIdIn(List<Long> userIds);
+
+    Set<User> findByDepartment_DepartmentId(Long departmentId);
 
     @Query("""
             SELECT u

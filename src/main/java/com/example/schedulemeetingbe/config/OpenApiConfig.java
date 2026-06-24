@@ -102,4 +102,12 @@ public class OpenApiConfig {
                 .build();
     }
 
+    @Bean
+    public GroupedOpenApi notificationGroup() {
+        return GroupedOpenApi.builder()
+                .group("Notification")
+                .pathsToMatch("/api/v1/notification/**")
+                .build();
+    }
+
 }

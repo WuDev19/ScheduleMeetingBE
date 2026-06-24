@@ -39,6 +39,8 @@ public interface IBookingService {
 
     BookingDetailResponse getBookingDetail(Long bookingId, Long userId);
 
+    BookingNotificationResponse getBookingAndNotification(Long bookingId, Long userId, Long notificationId);
+
     BookingEquipmentResponse updateBookingEquipmentQuantity(Long bookingId, Long userId, Long equipmentId, Long bookingEquipmentId, UpdateBookingEquipQuantityRequest request);
 
     BookingHistoryResponse getBookingHistoryDetailToApprove(Long bookingHistoryId);

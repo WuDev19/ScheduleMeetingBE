@@ -22,10 +22,7 @@ import com.example.schedulemeetingbe.exception.custom_exception.OverlapBookingEx
 import com.example.schedulemeetingbe.helper.CreatePayloadHelper;
 import com.example.schedulemeetingbe.mapper.BookingMapper;
 import com.example.schedulemeetingbe.repository.*;
-import com.example.schedulemeetingbe.service.base.IBookingService;
-import com.example.schedulemeetingbe.service.base.IEquipmentService;
-import com.example.schedulemeetingbe.service.base.IRoomService;
-import com.example.schedulemeetingbe.service.base.IUserService;
+import com.example.schedulemeetingbe.service.base.*;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -59,6 +56,7 @@ public class BookingServiceImpl implements IBookingService {
     private final IUserService iUserService;
     private final IRoomService iRoomService;
     private final IEquipmentService iEquipmentService;
+    private final INotificationService iNotificationService;
 
     private final JsonMapper jsonMapper;
     private final BookingRollbackCommandFactory factory;
@@ -505,6 +503,18 @@ public class BookingServiceImpl implements IBookingService {
         verificationToken.setVerified(true);
         verificationToken.setRevoked(true);
         bookingAttendeeRepository.save(bookingAttendee);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public BookingNotificationResponse getBookingAndNotification(Long bookingId, Long userId, Long notificationId) {
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        User user = iUserService.getDetail(userId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        Notification notification = iNotificationService.getNotification(notificationId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        return BookingMapper.mapToBookingNotificationResponse(booking, booking.getRoom(), user, notification);
     }
 
     private void addEquipmentToRoom(CreateBookingRequest request, Booking saved) {

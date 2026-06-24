@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.ZonedDateTime;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -89,4 +90,17 @@ public class User {
     protected void onUpdate() {
         updatedAt = TimeUtils.ZONE_DATE_TIME;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User user)) return false;
+        return Objects.equals(userId, user.userId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userId);
+    }
+
 }

@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 public interface IUserService {
     Map<String, Object> createUser(CreateUserRequest request);
@@ -44,4 +45,8 @@ public interface IUserService {
     Optional<Role> getRoleUser(String roleName);
 
     List<User> getUserEmailIn(List<String> emails);
+
+    Set<User> getUserUserIdIn(List<Long> ids);
+
+    Set<User> getUserInDepartment(Long departmentId);
 }
