@@ -8,19 +8,28 @@ import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.User;
 import com.example.schedulemeetingbe.entity.payload.AddBookingEquipmentPayload;
 import com.example.schedulemeetingbe.repository.BookingEquipmentRepository;
+import com.example.schedulemeetingbe.repository.OutboxEventRepository;
+import com.example.schedulemeetingbe.service.base.INotificationService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.util.List;
 
 @Component
-@RequiredArgsConstructor
-public class AddEquipmentRollbackCommand implements BookingRollbackCommand {
+public class AddEquipmentRollbackCommand extends BookingRollbackCommand {
 
     private final BookingEquipmentRepository bookingEquipmentRepository;
-    private final JsonMapper jsonMapper;
+
+    public AddEquipmentRollbackCommand(
+            INotificationService iNotificationService,
+            OutboxEventRepository outboxEventRepository,
+            JsonMapper jsonMapper,
+            BookingEquipmentRepository bookingEquipmentRepository
+    ) {
+        super(iNotificationService, outboxEventRepository, jsonMapper);
+        this.bookingEquipmentRepository = bookingEquipmentRepository;
+    }
 
     @Override
     public BookingActionType getActionType() {
@@ -29,6 +38,7 @@ public class AddEquipmentRollbackCommand implements BookingRollbackCommand {
 
     @Override
     public void execute(Booking booking, RollBackRequest request, User approver) {
+        super.execute(booking, request, approver);
         AddBookingEquipmentPayload oldData = jsonMapper.treeToValue(request.oldPayload(), AddBookingEquipmentPayload.class);
         AddBookingEquipmentPayload newData = jsonMapper.treeToValue(request.newPayload(), AddBookingEquipmentPayload.class);
         List<BookingDetailEquipmentResponse> oldList = oldData.equipments();

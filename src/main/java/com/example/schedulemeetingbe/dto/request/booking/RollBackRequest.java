@@ -5,6 +5,7 @@ import tools.jackson.databind.JsonNode;
 
 public record RollBackRequest (
         BookingActionType actionType,
+        String reason,
         JsonNode oldPayload,
         JsonNode newPayload
 ) {

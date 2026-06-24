@@ -8,16 +8,26 @@ import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.User;
 import com.example.schedulemeetingbe.entity.payload.UpdateBookingEquipmentQuantityPayload;
 import com.example.schedulemeetingbe.repository.BookingEquipmentReservationRepository;
+import com.example.schedulemeetingbe.repository.OutboxEventRepository;
+import com.example.schedulemeetingbe.service.base.INotificationService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
-@RequiredArgsConstructor
-public class UpdateEquipmentQuantityApproveCommand implements BookingApproveCommand {
-    private final JsonMapper jsonMapper;
+
+public class UpdateEquipmentQuantityApproveCommand extends BookingApproveCommand {
     private final BookingEquipmentReservationRepository bookingEquipmentReservationRepository;
+
+    public UpdateEquipmentQuantityApproveCommand(
+            INotificationService iNotificationService,
+            OutboxEventRepository outboxEventRepository,
+            JsonMapper jsonMapper,
+            BookingEquipmentReservationRepository bookingEquipmentReservationRepository
+    ) {
+        super(iNotificationService, outboxEventRepository, jsonMapper);
+        this.bookingEquipmentReservationRepository = bookingEquipmentReservationRepository;
+    }
 
     @Override
     public BookingActionType getActionType() {
@@ -26,6 +36,7 @@ public class UpdateEquipmentQuantityApproveCommand implements BookingApproveComm
 
     @Override
     public void execute(Booking booking, ApproveRequest request, User approver) {
+        super.execute(booking, request, approver);
         UpdateBookingEquipmentQuantityPayload newData = jsonMapper.treeToValue(request.newData(), UpdateBookingEquipmentQuantityPayload.class);
         bookingEquipmentReservationRepository.findByBookingEquipment_BookingEquipmentId(newData.beId())
                 .ifPresent(reservation -> reservation.setStatus(ReservationStatus.DONE));

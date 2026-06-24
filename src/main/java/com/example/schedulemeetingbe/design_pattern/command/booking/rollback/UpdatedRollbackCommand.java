@@ -10,9 +10,10 @@ import com.example.schedulemeetingbe.entity.User;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.repository.BookingReservationRepository;
+import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.repository.RoomRepository;
+import com.example.schedulemeetingbe.service.base.INotificationService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -22,12 +23,22 @@ import java.util.Map;
 import java.util.Objects;
 
 @Component
-@RequiredArgsConstructor
-public class UpdatedRollbackCommand implements BookingRollbackCommand {
+public class UpdatedRollbackCommand extends BookingRollbackCommand {
 
-    private final JsonMapper jsonMapper;
     private final RoomRepository roomRepository;
     private final BookingReservationRepository bookingReservationRepository;
+
+    public UpdatedRollbackCommand(
+            INotificationService iNotificationService,
+            OutboxEventRepository outboxEventRepository,
+            JsonMapper jsonMapper,
+            RoomRepository roomRepository,
+            BookingReservationRepository bookingReservationRepository
+    ) {
+        super(iNotificationService, outboxEventRepository, jsonMapper);
+        this.roomRepository = roomRepository;
+        this.bookingReservationRepository = bookingReservationRepository;
+    }
 
     @Override
     public BookingActionType getActionType() {
@@ -36,6 +47,7 @@ public class UpdatedRollbackCommand implements BookingRollbackCommand {
 
     @Override
     public void execute(Booking booking, RollBackRequest request, User approver) {
+        super.execute(booking, request, approver);
         for (Map.Entry<String, JsonNode> entry : request.newPayload().properties()) {
 
             String field = entry.getKey();

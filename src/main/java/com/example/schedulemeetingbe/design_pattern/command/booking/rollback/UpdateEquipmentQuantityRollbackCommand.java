@@ -12,18 +12,29 @@ import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.repository.BookingEquipmentRepository;
 import com.example.schedulemeetingbe.repository.BookingEquipmentReservationRepository;
+import com.example.schedulemeetingbe.repository.OutboxEventRepository;
+import com.example.schedulemeetingbe.service.base.INotificationService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
 @Component
-@RequiredArgsConstructor
-public class UpdateEquipmentQuantityRollbackCommand implements BookingRollbackCommand {
+public class UpdateEquipmentQuantityRollbackCommand extends BookingRollbackCommand {
 
     private final BookingEquipmentRepository bookingEquipmentRepository;
     private final BookingEquipmentReservationRepository bookingEquipmentReservationRepository;
-    private final JsonMapper jsonMapper;
+
+    public UpdateEquipmentQuantityRollbackCommand(
+            INotificationService iNotificationService,
+            OutboxEventRepository outboxEventRepository,
+            JsonMapper jsonMapper,
+            BookingEquipmentRepository bookingEquipmentRepository,
+            BookingEquipmentReservationRepository bookingEquipmentReservationRepository
+    ) {
+        super(iNotificationService, outboxEventRepository, jsonMapper);
+        this.bookingEquipmentRepository = bookingEquipmentRepository;
+        this.bookingEquipmentReservationRepository = bookingEquipmentReservationRepository;
+    }
 
     @Override
     public BookingActionType getActionType() {
@@ -32,6 +43,7 @@ public class UpdateEquipmentQuantityRollbackCommand implements BookingRollbackCo
 
     @Override
     public void execute(Booking booking, RollBackRequest request, User approver) {
+        super.execute(booking, request, approver);
         UpdateBookingEquipmentQuantityPayload oldData = jsonMapper.treeToValue(request.oldPayload(), UpdateBookingEquipmentQuantityPayload.class);
 
         bookingEquipmentReservationRepository.findByBookingEquipment_BookingEquipmentId(oldData.beId())

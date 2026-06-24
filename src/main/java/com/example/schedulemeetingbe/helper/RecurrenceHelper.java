@@ -46,27 +46,24 @@ public class RecurrenceHelper {
                 recurringPattern.getEndDate();
         if (request.status() == BookingStatus.APPROVED) {
             message += " đã được chấp thuân";
-            Notification notification = Notification.builder()
-                    .title(StringCommon.TITLE_NOTIFICATION)
-                    .message(message)
-                    .user(recurringPattern.getCreatedBy())
-                    .build();
-            createPayloadAndOutbox(recurringPattern, iNotificationService, jsonMapper, outboxEventRepository, notification);
+            createPayloadAndOutbox(recurringPattern, iNotificationService, jsonMapper, outboxEventRepository, message, recurringPattern.getCreatedBy());
         } else if (request.status() == BookingStatus.REJECTED) {
             message += " không được chấp thuận vì lý do " +
                     request.reason() +
                     ". Vui lòng tạo mới hoặc cập nhật lại thông tin!";
-            Notification notification = Notification.builder()
-                    .title(StringCommon.TITLE_NOTIFICATION)
-                    .message(message)
-                    .user(recurringPattern.getCreatedBy())
-                    .build();
-            createPayloadAndOutbox(recurringPattern, iNotificationService, jsonMapper, outboxEventRepository, notification);
+            createPayloadAndOutbox(recurringPattern, iNotificationService, jsonMapper, outboxEventRepository, message, recurringPattern.getCreatedBy());
         }
     }
 
-    private static void createPayloadAndOutbox(RecurringPattern recurringPattern, INotificationService iNotificationService, JsonMapper jsonMapper, OutboxEventRepository outboxEventRepository, Notification notification) {
-        iNotificationService.save(notification);
+    private static void createPayloadAndOutbox(
+            RecurringPattern recurringPattern,
+            INotificationService iNotificationService,
+            JsonMapper jsonMapper,
+            OutboxEventRepository outboxEventRepository,
+            String message,
+            User createdBy
+    ) {
+        Notification notification = iNotificationService.save(StringCommon.TITLE_NOTIFICATION, message, createdBy);
         ApproveRejectRecurrencePayload payload = new ApproveRejectRecurrencePayload(
                 recurringPattern.getCreatedBy().getEmail(),
                 notification.getTitle(),
