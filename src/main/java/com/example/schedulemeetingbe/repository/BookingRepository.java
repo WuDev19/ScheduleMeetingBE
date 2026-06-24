@@ -1,7 +1,9 @@
 package com.example.schedulemeetingbe.repository;
 
 import com.example.schedulemeetingbe.constant.enums.BookingActionType;
+import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import com.example.schedulemeetingbe.dto.response.booking.BookingHistoryResponse;
+import com.example.schedulemeetingbe.dto.response.booking.BookingRecurrenceResponse;
 import com.example.schedulemeetingbe.dto.response.booking.BookingSummaryProjection;
 import com.example.schedulemeetingbe.entity.Booking;
 import org.springframework.data.domain.Page;
@@ -11,6 +13,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
@@ -104,7 +107,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             JOIN booking_history bh ON bh.booking_id = b.booking_id
             WHERE b.status = 'PENDING'
             AND bh.is_revoked = false
-            AND bh.action_type IN ('UPDATED', 'ADD_EQUIPMENT', 'UPDATE_EQUIP_QUANTITY', 'CREATED')        
+            AND bh.action_type IN ('UPDATED', 'ADD_EQUIPMENT', 'UPDATE_EQUIP_QUANTITY', 'CREATED')   
+            AND b.title IS NOT NULL
             ORDER BY bh.created_at DESC 
             """,
             countQuery = """
@@ -115,7 +119,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                     JOIN booking_history bh ON bh.booking_id = b.booking_id
                     WHERE b.status = 'PENDING'
                     AND bh.is_revoked = false
-                    AND bh.action_type IN ('UPDATED', 'ADD_EQUIPMENT', 'UPDATE_EQUIP_QUANTITY', 'CREATED')    
+                    AND bh.action_type IN ('UPDATED', 'ADD_EQUIPMENT', 'UPDATE_EQUIP_QUANTITY', 'CREATED') 
+                    AND b.title IS NOT NULL
                     """,
             nativeQuery = true)
     Page<BookingSummaryProjection> getBookingWaitingApprove(Pageable pageable);
@@ -166,5 +171,46 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             @Param("bookingId") Long bookingId,
             @Param("actionType") BookingActionType actionType
     );
+
+    @Modifying
+    @Query(value = """
+            UPDATE bookings 
+            SET status = 'CANCEL',
+                cancellation_reason = :reason, 
+                cancelled_at = :cancelledAt
+            WHERE recurring_id = :recurringId
+            """,
+            nativeQuery = true)
+    void cancelBookingByRecurringPattern(@Param("recurringId") Long recurringId,
+                                         @Param("reason") String reason,
+                                         @Param("cancelledAt") OffsetDateTime cancelledAt);
+
+    @Modifying
+    @Query(value = """
+            UPDATE Booking 
+            SET status = :status,
+                approvedBy.userId = :approvedBy, 
+                approvedAt = :approvedAt
+            WHERE recurringPattern.recurringId = :recurringId
+            """)
+    void approveOrRejectBookingByRecurringPattern(
+            @Param("recurringId") Long recurringId,
+            @Param("status") BookingStatus status,
+            @Param("approvedBy") Long approvedBy,
+            @Param("approvedAt") OffsetDateTime approvedAt
+    );
+
+    @Query("""
+            SELECT new  com.example.schedulemeetingbe.dto.response.booking.BookingRecurrenceResponse(
+                b.bookingId,
+                b.recurringPattern.recurringId,
+                b.startTime,
+                b.endTime,
+                b.status
+                )
+            FROM Booking b
+            WHERE b.recurringPattern.recurringId IN (:recurringIds)
+            """)
+    List<BookingRecurrenceResponse> getBookingByRecurrence(@Param("recurringIds") List<Long> recurringIds);
 
 }

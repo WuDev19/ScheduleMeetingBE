@@ -3,7 +3,7 @@ package com.example.schedulemeetingbe.schedule.schedule;
 import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.entity.OutboxEvent;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
-import com.example.schedulemeetingbe.schedule.process.OutboxProcessor;
+import com.example.schedulemeetingbe.schedule.process.OutboxEventProcessor;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,8 +13,8 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class OutboxScheduler {
-    private final OutboxProcessor outboxProcessor;
+public class OutboxEventDispatcher {
+    private final OutboxEventProcessor outboxEventProcessor;
     private final OutboxEventRepository outboxEventRepository;
 
     @Scheduled(fixedDelay = 10000)
@@ -27,6 +27,6 @@ public class OutboxScheduler {
             event.setProcessedAt(TimeUtils.ZONE_DATE_TIME);
         });
         outboxEventRepository.saveAll(events);
-        events.forEach(event -> outboxProcessor.processEvent(event.getId()));
+        events.forEach(event -> outboxEventProcessor.processEvent(event.getId()));
     }
 }

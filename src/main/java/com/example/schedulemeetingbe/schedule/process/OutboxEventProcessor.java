@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-public class OutboxProcessor {
+public class OutboxEventProcessor {
 
     private final JsonMapper jsonMapper;
     private final IEmailService iEmailService;
@@ -97,11 +97,17 @@ public class OutboxProcessor {
                     );
                     iEmailService.sendBulkEmailBookingContent(payload);
                 }
+                case "SEND_EMAIL_APPROVE_REJECT" -> {
+                    ApproveRejectRecurrencePayload payload = jsonMapper.treeToValue(
+                            event.getPayload(),
+                            ApproveRejectRecurrencePayload.class);
+                    iEmailService.sendEmailApproveReject(payload);
+                }
             }
             iOutboxEventService.updateStatusSuccess(event.getId());
         } catch (Exception ex) {
-            ex.printStackTrace();
             iOutboxEventService.updateStatusDead(event.getId());
         }
     }
+
 }

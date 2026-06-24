@@ -5,7 +5,6 @@ import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 
 import java.time.ZonedDateTime;
 
-//thêm convert
 public record BookingSummaryResponse(
         Long bookingId,
         Long historyId,

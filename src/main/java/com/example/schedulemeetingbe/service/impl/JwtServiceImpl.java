@@ -43,7 +43,7 @@ public class JwtServiceImpl implements IJwtService {
         return Jwts.builder()
                 .subject(username)
                 .claim("roles", rolesUser)
-                .claim("permissions", permissions)
+                .claim(StringCommon.PERMISSIONS, permissions)
                 .claim(StringCommon.USER_ID, userId)
                 .id(UUID.randomUUID().toString())
                 .issuedAt(new Date())

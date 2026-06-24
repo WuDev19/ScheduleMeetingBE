@@ -1,5 +1,6 @@
 package com.example.schedulemeetingbe.service.base;
 
+import com.example.schedulemeetingbe.entity.payload.ApproveRejectRecurrencePayload;
 import com.example.schedulemeetingbe.entity.payload.BookingCancelledByMaintenancePayload;
 import com.example.schedulemeetingbe.entity.payload.ReceiverEmailPayload;
 
@@ -15,4 +16,6 @@ public interface IEmailService {
     void sendEmailCancelledBookingByMaintain(BookingCancelledByMaintenancePayload payload);
 
     void sendBulkEmailBookingContent(ReceiverEmailPayload payload);
+
+    void sendEmailApproveReject(ApproveRejectRecurrencePayload payload);
 }

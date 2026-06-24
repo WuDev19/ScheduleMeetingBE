@@ -11,6 +11,7 @@ public class StringCommon {
     public static final String SECURITY_SCHEME = "bearerAuth";
     public static final String TOKEN_IN_BLACKLIST = "Token đang trong danh sách đen";
     public static final String USER_ID = "userId";
+    public static final String PERMISSIONS = "permissions";
     public static final String TIME_ZONE_VN = "Asia/Ho_Chi_Minh";
     public static final String SUCCESS = "Success";
     public static final String ERROR = "Error";
@@ -24,6 +25,8 @@ public class StringCommon {
     public static final String NOT_BLANK = "không được để trống";
     public static final String NOT_NULL = "Thiếu dữ liệu trường ";
     public static final String ADMIN = "ADMIN";
+    public static final String TITLE_NOTIFICATION = "Thông báo về lịch họp đã đăng ký";
+    public static final String TITLE_EMAIL_REJECT = "Lịch họp của bạn không được chấp thuận vì";
     public static final String CONFIRM_PARTICIPATE_HTML = """
             <!DOCTYPE html>
             <html lang="vi">

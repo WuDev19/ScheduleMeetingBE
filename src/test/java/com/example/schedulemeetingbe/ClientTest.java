@@ -1,5 +1,6 @@
 package com.example.schedulemeetingbe;
 
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.net.URLEncoder;
@@ -21,5 +22,6 @@ public class ClientTest {
         System.out.println(token + " chưa mã hóa");
         System.out.println(URLEncoder.encode(Integer.toString(10), StandardCharsets.UTF_8) + " đã mã hóa");
         System.out.println(DayOfWeek.valueOf("MONDAY"));
+        System.out.println(TimeUtils.ZONE_DATE_TIME);
     }
 }

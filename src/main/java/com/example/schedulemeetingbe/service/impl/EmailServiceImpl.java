@@ -5,6 +5,7 @@ import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.Room;
 import com.example.schedulemeetingbe.entity.User;
 import com.example.schedulemeetingbe.entity.VerificationToken;
+import com.example.schedulemeetingbe.entity.payload.ApproveRejectRecurrencePayload;
 import com.example.schedulemeetingbe.entity.payload.BookingCancelledByMaintenancePayload;
 import com.example.schedulemeetingbe.entity.payload.ReceiverEmailPayload;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
@@ -460,4 +461,12 @@ public class EmailServiceImpl implements IEmailService {
         );
     }
 
+    @Override
+    public void sendEmailApproveReject(ApproveRejectRecurrencePayload payload) {
+        SimpleMailMessage simpleMailMessage = new SimpleMailMessage();
+        simpleMailMessage.setTo(payload.email());
+        simpleMailMessage.setSubject(payload.title());
+        simpleMailMessage.setText(payload.message());
+        javaMailSender.send(simpleMailMessage);
+    }
 }

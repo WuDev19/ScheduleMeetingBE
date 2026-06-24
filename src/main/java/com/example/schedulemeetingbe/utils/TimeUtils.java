@@ -24,5 +24,4 @@ public class TimeUtils {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT));
     }
 
-
 }
