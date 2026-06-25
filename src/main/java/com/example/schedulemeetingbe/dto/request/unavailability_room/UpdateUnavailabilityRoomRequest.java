@@ -1,8 +1,10 @@
 package com.example.schedulemeetingbe.dto.request.unavailability_room;
 
+import java.time.OffsetDateTime;
+
 public record UpdateUnavailabilityRoomRequest(
         String reason,
-        Long startTime,
-        Long endTime
+        OffsetDateTime startTime,
+        OffsetDateTime endTime
 ) {
 }

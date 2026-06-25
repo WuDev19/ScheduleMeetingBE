@@ -1,10 +1,10 @@
 package com.example.schedulemeetingbe.entity;
 
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.UUID;
 
 @Entity
@@ -46,15 +46,15 @@ public class VerificationToken {
 
     @Column(name = "expires_at",
             nullable = false)
-    private ZonedDateTime expiresAt;
+    private OffsetDateTime expiresAt;
 
     @Column(name = "created_at",
             nullable = false,
             updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = ZonedDateTime.now(ZoneOffset.UTC);
+        createdAt = TimeUtils.now();
     }
 }

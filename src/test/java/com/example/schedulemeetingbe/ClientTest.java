@@ -1,10 +1,27 @@
 package com.example.schedulemeetingbe;
 
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 
 public class ClientTest {
     public static void main(String[] args) {
         BCryptPasswordEncoder bCryptPasswordEncoder = new BCryptPasswordEncoder(10);
-        System.out.println(bCryptPasswordEncoder.encode("Aa123456@"));;
+        System.out.println(bCryptPasswordEncoder.encode("Aa123456@"));
+        System.out.println("Instant: " + Instant.now());
+        System.out.println("OffsetDateTime: " + OffsetDateTime.now());
+        System.out.println("ZonedDateTime: " + TimeUtils.now());
+        String token = UUID.randomUUID().toString();
+        System.out.println(token + " chưa mã hóa");
+        System.out.println(URLEncoder.encode(Integer.toString(10), StandardCharsets.UTF_8) + " đã mã hóa");
+        System.out.println(DayOfWeek.valueOf("MONDAY"));
+        System.out.println(TimeUtils.now());
+        System.out.println(TimeUtils.now());
     }
 }

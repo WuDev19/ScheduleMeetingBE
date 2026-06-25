@@ -1,12 +1,11 @@
 package com.example.schedulemeetingbe.entity;
 
-import com.example.schedulemeetingbe.constant.StringCommon;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.Set;
 
 @Entity
@@ -50,13 +49,13 @@ public class User {
     private Integer failedLoginCount = 0;
 
     @Column(name = "locked_until")
-    private ZonedDateTime lockedUntil;
+    private OffsetDateTime lockedUntil;
 
     @Column(name = "last_login_at")
-    private ZonedDateTime lastLoginAt;
+    private OffsetDateTime lastLoginAt;
 
     @Column(name = "password_changed_at")
-    private ZonedDateTime passwordChangedAt;
+    private OffsetDateTime passwordChangedAt;
 
     @Column(name = "avatar_url", length = 500)
     private String avatarUrl;
@@ -65,13 +64,13 @@ public class User {
     private String publicUrlId;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     @Column(name = "deleted_at")
-    private ZonedDateTime deletedAt;
+    private OffsetDateTime deletedAt;
 
     @ManyToMany
     @JoinTable(
@@ -83,12 +82,25 @@ public class User {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = ZonedDateTime.now(ZoneOffset.UTC);
-        updatedAt = ZonedDateTime.now(ZoneOffset.UTC);
+        createdAt = TimeUtils.now();
+        updatedAt = TimeUtils.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = ZonedDateTime.now(ZoneOffset.UTC);
+        updatedAt = TimeUtils.now();
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User user)) return false;
+        return Objects.equals(userId, user.userId);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userId);
+    }
+
 }

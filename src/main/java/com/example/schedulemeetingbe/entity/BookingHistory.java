@@ -1,10 +1,15 @@
 package com.example.schedulemeetingbe.entity;
 
+import com.example.schedulemeetingbe.constant.enums.BookingActionType;
+import com.example.schedulemeetingbe.entity.converter.Jackson3JsonNodeConverter;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import tools.jackson.databind.JsonNode;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "booking_history", indexes = {
@@ -30,20 +35,29 @@ public class BookingHistory {
     private User changedBy;
 
     @Column(name = "action_type", nullable = false, length = 50)
-    private String actionType;
+    @Enumerated(EnumType.STRING)
+    @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+    private BookingActionType actionType;
 
-    // Map cột JSONB của Postgres sang dạng String để xử lý thông qua Gson hoặc Jackson trong Service
+    @Convert(converter = Jackson3JsonNodeConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "old_data", columnDefinition = "jsonb")
-    private String oldData;
+    private JsonNode oldData;
 
+    @Convert(converter = Jackson3JsonNodeConverter.class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "new_data", columnDefinition = "jsonb")
-    private String newData;
+    private JsonNode newData;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
+
+    @Builder.Default
+    @Column(name = "is_revoked")
+    private Boolean isRevoked = false;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = ZonedDateTime.now(ZoneOffset.UTC);
+        createdAt = TimeUtils.now();
     }
 }

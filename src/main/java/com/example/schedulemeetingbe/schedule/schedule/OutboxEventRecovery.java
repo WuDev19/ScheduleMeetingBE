@@ -3,7 +3,7 @@ package com.example.schedulemeetingbe.schedule.schedule;
 import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.entity.OutboxEvent;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
-import com.example.schedulemeetingbe.schedule.process.OutboxProcessor;
+import com.example.schedulemeetingbe.schedule.process.OutboxEventRecoveryProcess;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -12,17 +12,16 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class OutboxScheduler {
-    private final OutboxProcessor outboxProcessor;
-    private final OutboxEventRepository outboxEventRepository;
+public class OutboxEventRecovery {
 
-    @Scheduled(fixedDelay = 10000)
+    private final OutboxEventRepository outboxEventRepository;
+    private final OutboxEventRecoveryProcess outboxEventRecoveryProcess;
+
+    @Scheduled(fixedDelay = 15000)
     public void process() {
-        List<OutboxEvent> events = outboxEventRepository.findTop50ByStatusInOrderByCreatedAtAsc(
-                List.of(OutboxStatus.PENDING, OutboxStatus.FAILED)
+        List<OutboxEvent> events = outboxEventRepository.findTop20ByStatusOrderByCreatedAtAsc(
+                OutboxStatus.PROCESSING
         );
-        events.forEach(event -> event.setStatus(OutboxStatus.PROCESSING));
-        outboxEventRepository.saveAll(events);
-        events.forEach(event -> outboxProcessor.processEvent(event.getId()));
+        events.forEach(event -> outboxEventRecoveryProcess.processEvent(event.getId()));
     }
 }

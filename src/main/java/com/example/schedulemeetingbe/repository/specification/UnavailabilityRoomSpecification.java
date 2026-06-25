@@ -4,7 +4,7 @@ import com.example.schedulemeetingbe.entity.RoomUnavailability;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,7 +12,7 @@ public class UnavailabilityRoomSpecification {
     private UnavailabilityRoomSpecification() {
     }
 
-    public static Specification<RoomUnavailability> filter(ZonedDateTime start, ZonedDateTime end) {
+    public static Specification<RoomUnavailability> filter(OffsetDateTime start, OffsetDateTime end) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
             if (start != null) {

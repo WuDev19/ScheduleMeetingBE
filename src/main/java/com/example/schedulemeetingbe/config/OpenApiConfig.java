@@ -86,4 +86,28 @@ public class OpenApiConfig {
                 .build();
     }
 
+    @Bean
+    public GroupedOpenApi bookingGroup() {
+        return GroupedOpenApi.builder()
+                .group("Booking")
+                .pathsToMatch("/api/v1/booking/**")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi recurringPatternGroup() {
+        return GroupedOpenApi.builder()
+                .group("Recurring Pattern")
+                .pathsToMatch("/api/v1/recurring-pattern/**")
+                .build();
+    }
+
+    @Bean
+    public GroupedOpenApi notificationGroup() {
+        return GroupedOpenApi.builder()
+                .group("Notification")
+                .pathsToMatch("/api/v1/notification/**")
+                .build();
+    }
+
 }

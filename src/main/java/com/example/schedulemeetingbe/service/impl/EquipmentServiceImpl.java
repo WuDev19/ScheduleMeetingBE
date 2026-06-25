@@ -3,6 +3,7 @@ package com.example.schedulemeetingbe.service.impl;
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
 import com.example.schedulemeetingbe.dto.request.equipment.CreateEquipmentRequest;
 import com.example.schedulemeetingbe.dto.request.equipment.UpdateEquipmentRequest;
+import com.example.schedulemeetingbe.dto.response.equipment.EquipmentAndQuantityResponse;
 import com.example.schedulemeetingbe.dto.response.equipment.EquipmentResponse;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.entity.Equipment;
@@ -19,7 +20,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -106,5 +109,25 @@ public class EquipmentServiceImpl implements IEquipmentService {
                         .map(EquipmentMapper::mapToEquipmentResponse)
                         .toList()
         );
+    }
+
+    @Override
+    public List<Equipment> findEquipmentIn(List<Long> ids) {
+        return equipmentRepository.findByEquipmentIdIn(ids);
+    }
+
+    @Override
+    public List<EquipmentAndQuantityResponse> findEquipmentAndRemainingQuantity(List<Long> eqIds) {
+        return equipmentRepository.findEquipmentAndRemainingQuantity(eqIds);
+    }
+
+    @Override
+    public EquipmentAndQuantityResponse findEquipmentAndRemainingQuantity(Long beId) {
+        return equipmentRepository.findEquipmentAndRemainingQuantity(beId);
+    }
+
+    @Override
+    public Optional<Equipment> getEquipmentDetail(Long id) {
+        return equipmentRepository.findById(id);
     }
 }

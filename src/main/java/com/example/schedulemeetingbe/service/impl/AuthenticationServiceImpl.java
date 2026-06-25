@@ -1,6 +1,6 @@
 package com.example.schedulemeetingbe.service.impl;
 
-import com.example.schedulemeetingbe.constant.enums.EVENT_TYPE;
+import com.example.schedulemeetingbe.constant.enums.EventType;
 import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
 import com.example.schedulemeetingbe.dto.request.auth.LoginByUsernameRequest;
@@ -17,6 +17,7 @@ import com.example.schedulemeetingbe.exception.custom_exception.CooldownResendEx
 import com.example.schedulemeetingbe.repository.*;
 import com.example.schedulemeetingbe.service.base.IAuthenticationService;
 import com.example.schedulemeetingbe.service.base.IJwtService;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.AllArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -25,8 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -70,7 +70,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         if (!isMatch) {
             throw new BusinessException(ErrorResponse.PASSWORD_NOT_TRUE);
         }
-        user.setLastLoginAt(ZonedDateTime.now(ZoneOffset.UTC));
+        user.setLastLoginAt(TimeUtils.now());
         user.setIsActive(true);
         String token = iJwtService.generateToken(username, user.getUserId(), user.getRoles());
         RefreshToken refreshToken = iJwtService.generateRefreshToken(user);
@@ -102,9 +102,9 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         VerificationToken verificationToken = VerificationToken.builder()
                 .token(UUID.randomUUID().toString())
                 .user(userSaved)
-                .expiresAt(ZonedDateTime.now(ZoneOffset.UTC).plusHours(1))
+                .expiresAt(TimeUtils.now().plusHours(1))
                 .build();
-        return createUserRegisterVerificationTokenAndOutboxEvent(userSaved, verificationToken, EVENT_TYPE.USER_REGISTER);
+        return createUserRegisterVerificationTokenAndOutboxEvent(userSaved, verificationToken, EventType.USER_REGISTER);
     }
 
     @Transactional
@@ -130,7 +130,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         refreshToken.setIsRevoked(true);
         String jwtId = iJwtService.extractJwtId(logoutRequest.accessToken());
-        ZonedDateTime expire = iJwtService.extractJwtExpire(logoutRequest.accessToken());
+        OffsetDateTime expire = iJwtService.extractJwtExpire(logoutRequest.accessToken());
         BlackListAccessToken blacklistAccessToken = BlackListAccessToken.builder()
                 .tokenId(jwtId)
                 .expireDate(expire)
@@ -192,11 +192,11 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         }
         verificationTokenRepository.revokeAllVerificationTokenOfUser(user.getUserId()); // revoke tất cả những token cũ
         VerificationToken verificationToken = VerificationToken.builder()
-                .expiresAt(ZonedDateTime.now(ZoneOffset.UTC).plusHours(1))
+                .expiresAt(TimeUtils.now().plusHours(1))
                 .token(UUID.randomUUID().toString())
                 .user(user)
                 .build();
-        return createUserRegisterVerificationTokenAndOutboxEvent(user, verificationToken, EVENT_TYPE.RESEND_EMAIL);
+        return createUserRegisterVerificationTokenAndOutboxEvent(user, verificationToken, EventType.RESEND_EMAIL);
     }
 
     @Transactional
@@ -214,7 +214,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         }
         UserResetPasswordPayload payload = new UserResetPasswordPayload(user.getUserId(), request.email());
         OutboxEvent outboxEvent = OutboxEvent.builder()
-                .eventType(EVENT_TYPE.RESET_PASSWORD.name())
+                .eventType(EventType.RESET_PASSWORD.name())
                 .payload(jsonMapper.valueToTree(payload))
                 .status(OutboxStatus.PENDING)
                 .build();
@@ -223,7 +223,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     }
 
     @NonNull
-    private Map<String, Object> createUserRegisterVerificationTokenAndOutboxEvent(User user, VerificationToken verificationToken, EVENT_TYPE eventType) {
+    private Map<String, Object> createUserRegisterVerificationTokenAndOutboxEvent(User user, VerificationToken verificationToken, EventType eventType) {
         verificationTokenRepository.save(verificationToken);
         UserRegisteredPayload payload = new UserRegisteredPayload(
                 user.getUserId(),
@@ -244,7 +244,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
             throw new BusinessException(ErrorResponse.VERIFY_TOKEN_REVOKED);
         }
         if (verification.getExpiresAt()
-                .isBefore(ZonedDateTime.now(ZoneOffset.UTC))) {
+                .isBefore(TimeUtils.now())) {
             verification.setRevoked(true);
             throw new BusinessException(ErrorResponse.VERIFY_TOKEN_EXPIRED);
         }

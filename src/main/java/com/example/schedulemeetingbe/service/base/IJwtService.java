@@ -5,8 +5,7 @@ import com.example.schedulemeetingbe.entity.Role;
 import com.example.schedulemeetingbe.entity.User;
 import io.jsonwebtoken.Claims;
 
-import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Set;
 
 
@@ -23,5 +22,5 @@ public interface IJwtService {
 
     String extractJwtId(String token);
 
-    ZonedDateTime extractJwtExpire(String token);
+    OffsetDateTime extractJwtExpire(String token);
 }

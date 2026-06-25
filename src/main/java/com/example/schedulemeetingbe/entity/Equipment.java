@@ -1,10 +1,10 @@
 package com.example.schedulemeetingbe.entity;
 
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "equipment")
@@ -26,7 +26,7 @@ public class Equipment {
     private String description;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @Column(name = "total_quantity", nullable = false)
     @Builder.Default
@@ -34,6 +34,6 @@ public class Equipment {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = ZonedDateTime.now(ZoneOffset.UTC);
+        createdAt = TimeUtils.now();
     }
 }

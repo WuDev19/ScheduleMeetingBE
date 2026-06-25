@@ -1,7 +1,10 @@
 package com.example.schedulemeetingbe.entity;
 
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.time.OffsetDateTime;
 
 @Setter
 @Getter
@@ -34,5 +37,22 @@ public class BookingEquipment {
     @Column(name = "quantity", nullable = false)
     @Builder.Default
     private Integer quantity = 1;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private OffsetDateTime createdAt;
+
+    @Column(name = "updated_at", nullable = false)
+    private OffsetDateTime updatedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        createdAt = TimeUtils.now();
+        updatedAt = TimeUtils.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = TimeUtils.now();
+    }
 
 }

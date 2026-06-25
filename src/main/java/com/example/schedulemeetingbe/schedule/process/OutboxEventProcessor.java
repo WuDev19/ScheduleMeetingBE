@@ -16,7 +16,7 @@ import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
-public class OutboxProcessor {
+public class OutboxEventProcessor {
 
     private final JsonMapper jsonMapper;
     private final IEmailService iEmailService;
@@ -24,6 +24,9 @@ public class OutboxProcessor {
     private final OutboxEventRepository outboxEventRepository;
     private final IOutboxEventService iOutboxEventService;
 
+    //vẫn chưa xử lý đc case đang PROCESSING thì server sập => kẹt ở PROCESSING
+    //thêm một cái scheduler nữa check cái processing nếu ở trạng thái processing lâu thì đưa về failed
+    //tối ưu sử dụng command pattern sau
     @Async("outboxExecutor")
     public void processEvent(UUID eventId) {
         Optional<OutboxEvent> eventOptional = outboxEventRepository.findById(eventId);
@@ -88,10 +91,31 @@ public class OutboxProcessor {
                             );
                     iEmailService.sendEmailCancelledBookingByMaintain(payload);
                 }
+                case "SEND_EMAIL_CONFIRM_PARTICIPATE" -> {
+                    ReceiverEmailPayload payload = jsonMapper.treeToValue(
+                            event.getPayload(),
+                            ReceiverEmailPayload.class
+                    );
+                    iEmailService.sendBulkEmailBookingContent(payload);
+                }
+                case "SEND_EMAIL_APPROVE_REJECT" -> {
+                    ApproveRejectRecurrencePayload payload = jsonMapper.treeToValue(
+                            event.getPayload(),
+                            ApproveRejectRecurrencePayload.class);
+                    iEmailService.sendEmailApproveReject(payload);
+                }
+                case "SEND_EMAIL_APPROVE_UPDATE" ->{
+                    UpdateApprovePayload payload = jsonMapper.treeToValue(
+                            event.getPayload(),
+                            UpdateApprovePayload.class
+                    );
+                    iEmailService.sendEmailApproveUpdate(payload);
+                }
             }
             iOutboxEventService.updateStatusSuccess(event.getId());
         } catch (Exception ex) {
             iOutboxEventService.updateStatusDead(event.getId());
         }
     }
+
 }

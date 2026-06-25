@@ -1,0 +1,5 @@
+ALTER TABLE booking_equipment
+    ADD COLUMN created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+
+ALTER TABLE booking_equipment
+    ADD COLUMN updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();

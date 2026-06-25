@@ -3,13 +3,16 @@ package com.example.schedulemeetingbe.service.base;
 import com.example.schedulemeetingbe.dto.request.equipment.RoomEquipmentQuantityRequest;
 import com.example.schedulemeetingbe.dto.request.room.CreateRoomRequest;
 import com.example.schedulemeetingbe.dto.request.room.RoomFilterRequest;
+import com.example.schedulemeetingbe.dto.request.room.StartEndTimeRequest;
 import com.example.schedulemeetingbe.dto.request.room.UpdateRoomRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.RoomResponse;
+import com.example.schedulemeetingbe.entity.Room;
 import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public interface IRoomService {
     Map<String, Long> createRoom(CreateRoomRequest request);
@@ -29,4 +32,8 @@ public interface IRoomService {
     RoomResponse getDetail(Long id);
 
     Map<String, Long> addEquipmentToRoom(Long roomId, List<RoomEquipmentQuantityRequest> requests);
+
+    PageResponse<RoomResponse> getRoomNotOverlapTime(Long roomId, StartEndTimeRequest request, Pageable pageable);
+
+    Optional<Room> getRoomDetail(Long id);
 }

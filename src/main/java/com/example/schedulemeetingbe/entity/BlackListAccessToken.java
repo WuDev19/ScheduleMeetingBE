@@ -1,13 +1,10 @@
 package com.example.schedulemeetingbe.entity;
 
-import com.example.schedulemeetingbe.constant.StringCommon;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "black_list_access_token")
@@ -29,14 +26,14 @@ public class BlackListAccessToken {
     // Lưu thời gian hết hạn gốc của JWT để sau này chạy ngầm
     // tự động xóa các token đã quá hạn ra khỏi DB cho nhẹ bảng.
     @Column(name = "expire_date", nullable = false)
-    private ZonedDateTime expireDate;
+    private OffsetDateTime expireDate;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @PrePersist
-    public void onCreate(){
-        this.createdAt = ZonedDateTime.now(ZoneOffset.UTC);
+    public void onCreate() {
+        this.createdAt = TimeUtils.now();
     }
 }
 

@@ -3,10 +3,17 @@ package com.example.schedulemeetingbe.service.base;
 import com.example.schedulemeetingbe.dto.request.user.CreateUserRequest;
 import com.example.schedulemeetingbe.dto.request.user.UpdateAvatarRequest;
 import com.example.schedulemeetingbe.dto.request.user.UpdateUserRequest;
+import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.UploadSignatureResponse;
 import com.example.schedulemeetingbe.dto.response.UserDetailResponse;
+import com.example.schedulemeetingbe.entity.Role;
+import com.example.schedulemeetingbe.entity.User;
+import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 public interface IUserService {
     Map<String, Object> createUser(CreateUserRequest request);
@@ -30,4 +37,16 @@ public interface IUserService {
     UploadSignatureResponse generateUploadSignature(Long id);
 
     void updatePassword(String email, String newPassword);
+
+    PageResponse<UserDetailResponse> searchUser(String keyword, Pageable pageable);
+
+    Optional<User> getDetail(Long id);
+
+    Optional<Role> getRoleUser(String roleName);
+
+    List<User> getUserEmailIn(List<String> emails);
+
+    Set<User> getUserUserIdIn(List<Long> ids);
+
+    Set<User> getUserInDepartment(Long departmentId);
 }
