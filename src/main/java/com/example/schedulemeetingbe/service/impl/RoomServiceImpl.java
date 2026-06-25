@@ -120,7 +120,7 @@ public class RoomServiceImpl implements IRoomService {
     public Map<String, Object> softDeleteRoom(Long id) {
         Room room = roomRepository.findById(id).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        room.setDeletedAt(TimeUtils.ZONE_DATE_TIME);
+        room.setDeletedAt(TimeUtils.now());
         return CRUDResponseHelper.deleteSuccess();
     }
 
@@ -208,8 +208,8 @@ public class RoomServiceImpl implements IRoomService {
         }
         Page<Room> rooms = roomRepository.findRoomNotOverlap(
                 roomId,
-                request.start().toOffsetDateTime(),
-                request.end().toOffsetDateTime(),
+                request.start(),
+                request.end(),
                 pageable
         );
         Map<Long, List<RoomEquipmentResponse>> equipments = roomEquipmentRepository.findEquipmentByRoomId(rooms

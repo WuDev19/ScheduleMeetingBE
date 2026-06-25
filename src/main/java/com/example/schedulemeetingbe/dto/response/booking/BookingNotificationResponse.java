@@ -1,6 +1,6 @@
 package com.example.schedulemeetingbe.dto.response.booking;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 public record BookingNotificationResponse(
         Long id,
@@ -13,10 +13,10 @@ public record BookingNotificationResponse(
         String userBooked,
         String phone,
         String email,
-        ZonedDateTime startTime,
-        ZonedDateTime endTime,
+        OffsetDateTime startTime,
+        OffsetDateTime endTime,
         Integer attendee,
-        ZonedDateTime createdAt,
+        OffsetDateTime createdAt,
         String titleNotification,
         String messageNotification
 ) {

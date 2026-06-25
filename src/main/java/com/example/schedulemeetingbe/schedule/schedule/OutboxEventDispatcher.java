@@ -24,7 +24,7 @@ public class OutboxEventDispatcher {
         );
         events.forEach(event -> {
             event.setStatus(OutboxStatus.PROCESSING);
-            event.setProcessedAt(TimeUtils.ZONE_DATE_TIME);
+            event.setProcessedAt(TimeUtils.now());
         });
         outboxEventRepository.saveAll(events);
         events.forEach(event -> outboxEventProcessor.processEvent(event.getId()));

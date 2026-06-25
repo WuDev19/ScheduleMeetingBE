@@ -42,6 +42,6 @@ public class UpdateEquipmentQuantityApproveCommand extends BookingApproveCommand
                 .ifPresent(reservation -> reservation.setStatus(ReservationStatus.DONE));
         booking.setStatus(BookingStatus.APPROVED);
         booking.setApprovedBy(approver);
-        booking.setApprovedAt(TimeUtils.ZONE_DATE_TIME);
+        booking.setApprovedAt(TimeUtils.now());
     }
 }

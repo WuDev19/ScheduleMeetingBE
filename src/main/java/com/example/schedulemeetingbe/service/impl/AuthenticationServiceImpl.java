@@ -26,7 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -70,7 +70,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         if (!isMatch) {
             throw new BusinessException(ErrorResponse.PASSWORD_NOT_TRUE);
         }
-        user.setLastLoginAt(TimeUtils.ZONE_DATE_TIME);
+        user.setLastLoginAt(TimeUtils.now());
         user.setIsActive(true);
         String token = iJwtService.generateToken(username, user.getUserId(), user.getRoles());
         RefreshToken refreshToken = iJwtService.generateRefreshToken(user);
@@ -102,7 +102,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         VerificationToken verificationToken = VerificationToken.builder()
                 .token(UUID.randomUUID().toString())
                 .user(userSaved)
-                .expiresAt(TimeUtils.ZONE_DATE_TIME.plusHours(1))
+                .expiresAt(TimeUtils.now().plusHours(1))
                 .build();
         return createUserRegisterVerificationTokenAndOutboxEvent(userSaved, verificationToken, EVENT_TYPE.USER_REGISTER);
     }
@@ -130,7 +130,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         refreshToken.setIsRevoked(true);
         String jwtId = iJwtService.extractJwtId(logoutRequest.accessToken());
-        ZonedDateTime expire = iJwtService.extractJwtExpire(logoutRequest.accessToken());
+        OffsetDateTime expire = iJwtService.extractJwtExpire(logoutRequest.accessToken());
         BlackListAccessToken blacklistAccessToken = BlackListAccessToken.builder()
                 .tokenId(jwtId)
                 .expireDate(expire)
@@ -192,7 +192,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         }
         verificationTokenRepository.revokeAllVerificationTokenOfUser(user.getUserId()); // revoke tất cả những token cũ
         VerificationToken verificationToken = VerificationToken.builder()
-                .expiresAt(TimeUtils.ZONE_DATE_TIME.plusHours(1))
+                .expiresAt(TimeUtils.now().plusHours(1))
                 .token(UUID.randomUUID().toString())
                 .user(user)
                 .build();
@@ -244,7 +244,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
             throw new BusinessException(ErrorResponse.VERIFY_TOKEN_REVOKED);
         }
         if (verification.getExpiresAt()
-                .isBefore(TimeUtils.ZONE_DATE_TIME)) {
+                .isBefore(TimeUtils.now())) {
             verification.setRevoked(true);
             throw new BusinessException(ErrorResponse.VERIFY_TOKEN_EXPIRED);
         }

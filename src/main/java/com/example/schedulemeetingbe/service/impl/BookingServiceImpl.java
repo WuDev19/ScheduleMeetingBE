@@ -1,7 +1,10 @@
 package com.example.schedulemeetingbe.service.impl;
 
 import com.example.schedulemeetingbe.constant.StringCommon;
-import com.example.schedulemeetingbe.constant.enums.*;
+import com.example.schedulemeetingbe.constant.enums.BookingActionType;
+import com.example.schedulemeetingbe.constant.enums.BookingEquipmentAction;
+import com.example.schedulemeetingbe.constant.enums.BookingStatus;
+import com.example.schedulemeetingbe.constant.enums.ReservationStatus;
 import com.example.schedulemeetingbe.design_pattern.command.booking.approve.BookingApproveCommandFactory;
 import com.example.schedulemeetingbe.design_pattern.command.booking.rollback.BookingRollbackCommandFactory;
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
@@ -12,7 +15,7 @@ import com.example.schedulemeetingbe.dto.response.equipment.EquipmentAndQuantity
 import com.example.schedulemeetingbe.entity.*;
 import com.example.schedulemeetingbe.entity.composite_key.BookingAttendeeId;
 import com.example.schedulemeetingbe.entity.payload.AddBookingEquipmentPayload;
-import com.example.schedulemeetingbe.entity.payload.ReceiverEmailPayload;
+import com.example.schedulemeetingbe.entity.payload.CreateBookingPayload;
 import com.example.schedulemeetingbe.entity.payload.UpdateBookingChangePayload;
 import com.example.schedulemeetingbe.entity.payload.UpdateBookingEquipmentQuantityPayload;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
@@ -31,8 +34,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
@@ -47,7 +49,6 @@ public class BookingServiceImpl implements IBookingService {
     private final BookingHistoryRepository bookingHistoryRepository;
     private final BookingReservationRepository bookingReservationRepository;
     private final BookingEquipmentReservationRepository bookingEquipmentReservationRepository;
-    private final OutboxEventRepository outboxEventRepository;
     private final VerificationTokenRepository verificationTokenRepository;
     private final BookingAttendeeRepository bookingAttendeeRepository;
 
@@ -104,10 +105,11 @@ public class BookingServiceImpl implements IBookingService {
         // người dùng đặt lịch và có chọn thêm thiết bị khi đặt lịch
         addEquipmentToRoom(request, saved);
 
-        UpdateBookingChangePayload payload = CreatePayloadHelper.create(
+        CreateBookingPayload payload = CreatePayloadHelper.create(
                 booking,
                 user.getUserId(),
-                room.getRoomId()
+                room.getRoomId(),
+                request.receivers() != null ? request.receivers() : List.of()
         );
 
         //lưu vết lịch sử đặt phòng, thay đổi phòng phục vụ cho APPROVER so sánh trực quan để dễ phê duyệt
@@ -119,31 +121,7 @@ public class BookingServiceImpl implements IBookingService {
                 .build();
         bookingHistoryRepository.save(bookingHistory);
 
-        if (request.receivers() != null) {
-            createOutboxEvent(request.receivers(), saved, room);
-        }
-
         return BookingMapper.mapToBookingResponse(saved, user, room);
-    }
-
-    private void createOutboxEvent(List<String> receivers, Booking booking, Room room) {
-        Building building = room.getBuilding();
-        ReceiverEmailPayload payload = new ReceiverEmailPayload(
-                booking.getBookingId(),
-                booking.getTitle(),
-                booking.getDescription(),
-                "Tòa nhà " + building.getBuildingName() + ", " + building.getAddress(),
-                "Tầng " + room.getFloorNumber() + ", phòng " + room.getRoomName(),
-                booking.getStartTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ)),
-                booking.getEndTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ)),
-                receivers
-        );
-        OutboxEvent event = OutboxEvent.builder()
-                .status(OutboxStatus.PENDING)
-                .eventType(EVENT_TYPE.SEND_EMAIL_CONFIRM_PARTICIPATE.name())
-                .payload(jsonMapper.valueToTree(payload))
-                .build();
-        outboxEventRepository.save(event);
     }
 
     @Transactional
@@ -151,7 +129,7 @@ public class BookingServiceImpl implements IBookingService {
     public Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request, Long userId) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        if (ChronoUnit.HOURS.between(TimeUtils.ZONE_DATE_TIME, booking.getStartTime()) < 1) {
+        if (ChronoUnit.HOURS.between(TimeUtils.now(), booking.getStartTime()) < 1) {
             throw new BusinessException(ErrorResponse.UPDATE_BOOKING_ERROR);
         }
         UpdateBookingChangePayload oldPayload = CreatePayloadHelper.create(
@@ -355,7 +333,7 @@ public class BookingServiceImpl implements IBookingService {
         );
         booking.setStatus(BookingStatus.CANCELLED);
         booking.setCancellationReason(request.reason());
-        booking.setCancelledAt(TimeUtils.ZONE_DATE_TIME);
+        booking.setCancelledAt(TimeUtils.now());
         User register = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         UpdateBookingChangePayload newPayload = CreatePayloadHelper.create(
@@ -381,7 +359,7 @@ public class BookingServiceImpl implements IBookingService {
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         User admin = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        booking.setDeletedAt(TimeUtils.ZONE_DATE_TIME);
+        booking.setDeletedAt(TimeUtils.now());
         UpdateBookingChangePayload payload = CreatePayloadHelper.create(
                 booking,
                 booking.getBookedBy().getUserId(),
@@ -486,7 +464,7 @@ public class BookingServiceImpl implements IBookingService {
             throw new BusinessException(ErrorResponse.VERIFY_TOKEN_REVOKED);
         }
         if (verificationToken.getExpiresAt()
-                .isBefore(TimeUtils.ZONE_DATE_TIME)) {
+                .isBefore(TimeUtils.now())) {
             verificationToken.setRevoked(true);
             throw new BusinessException(ErrorResponse.VERIFY_TOKEN_EXPIRED);
         }
@@ -497,7 +475,7 @@ public class BookingServiceImpl implements IBookingService {
                 .id(new BookingAttendeeId(bookingId, user.getUserId()))
                 .booking(booking)
                 .user(user)
-                .joinedAt(TimeUtils.ZONE_DATE_TIME)
+                .joinedAt(TimeUtils.now())
                 .build();
         verificationToken.setVerified(true);
         verificationToken.setRevoked(true);
@@ -526,7 +504,7 @@ public class BookingServiceImpl implements IBookingService {
         BookingAttendee bookingAttendee = BookingAttendee.builder()
                 .user(participant)
                 .booking(booking)
-                .joinedAt(TimeUtils.ZONE_DATE_TIME)
+                .joinedAt(TimeUtils.now())
                 .build();
         bookingAttendeeRepository.save(bookingAttendee);
     }
@@ -648,7 +626,7 @@ public class BookingServiceImpl implements IBookingService {
         bookingEquipmentRepository.saveAll(bookingEquipments);
     }
 
-    private void checkOverlap(Long bookingId, Long roomId, ZonedDateTime start, ZonedDateTime end, boolean isCreate) {
+    private void checkOverlap(Long bookingId, Long roomId, OffsetDateTime start, OffsetDateTime end, boolean isCreate) {
         List<String> reasons;
         if (isCreate) {
             reasons = bookingRepository.checkOverlap(
@@ -656,8 +634,8 @@ public class BookingServiceImpl implements IBookingService {
                     new String[]{
                             String.format(
                                     "[%s, %s)",
-                                    start.toOffsetDateTime(),
-                                    end.toOffsetDateTime()
+                                    start,
+                                    end
                             )}
             );
         } else {
@@ -667,8 +645,8 @@ public class BookingServiceImpl implements IBookingService {
                     new String[]{
                             String.format(
                                     "[%s, %s)",
-                                    start.toOffsetDateTime(),
-                                    end.toOffsetDateTime()
+                                    start,
+                                    end
                             )}
             );
         }

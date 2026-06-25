@@ -32,6 +32,6 @@ public class AddEquipmentApproveCommand extends BookingApproveCommand {
         super.execute(booking, request, approver);
         booking.setStatus(BookingStatus.APPROVED);
         booking.setApprovedBy(approver);
-        booking.setApprovedAt(TimeUtils.ZONE_DATE_TIME);
+        booking.setApprovedAt(TimeUtils.now());
     }
 }

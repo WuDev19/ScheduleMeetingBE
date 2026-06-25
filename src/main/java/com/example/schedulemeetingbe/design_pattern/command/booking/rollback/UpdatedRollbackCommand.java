@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Objects;
 
@@ -59,12 +59,12 @@ public class UpdatedRollbackCommand extends BookingRollbackCommand {
                     case "startTime" -> booking.setStartTime(
                             jsonMapper.treeToValue(
                                     oldValue,
-                                    ZonedDateTime.class)
+                                    OffsetDateTime.class)
                     );
                     case "endTime" -> booking.setEndTime(
                             jsonMapper.treeToValue(
                                     oldValue,
-                                    ZonedDateTime.class)
+                                    OffsetDateTime.class)
                     );
                     case "roomId" -> {
                         Long roomId = oldValue.asLong();
@@ -82,6 +82,6 @@ public class UpdatedRollbackCommand extends BookingRollbackCommand {
 
         booking.setStatus(BookingStatus.APPROVED); // approve lại giá trị cũ
         booking.setApprovedBy(approver);
-        booking.setApprovedAt(TimeUtils.ZONE_DATE_TIME);
+        booking.setApprovedAt(TimeUtils.now());
     }
 }

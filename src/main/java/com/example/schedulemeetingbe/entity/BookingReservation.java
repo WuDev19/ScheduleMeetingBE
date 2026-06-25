@@ -7,9 +7,7 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Set;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "booking_reservation")
@@ -34,10 +32,10 @@ public class BookingReservation {
     private Room oldRoom;
 
     @Column(name = "old_start_time")
-    private ZonedDateTime oldStartTime;
+    private OffsetDateTime oldStartTime;
 
     @Column(name = "old_end_time")
-    private ZonedDateTime oldEndTime;
+    private OffsetDateTime oldEndTime;
 
     @Builder.Default
     @Enumerated(EnumType.STRING)
@@ -46,19 +44,19 @@ public class BookingReservation {
     private ReservationStatus status = ReservationStatus.AWAIT_APPROVE;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = TimeUtils.ZONE_DATE_TIME;
-        updatedAt = TimeUtils.ZONE_DATE_TIME;
+        createdAt = TimeUtils.now();
+        updatedAt = TimeUtils.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = TimeUtils.ZONE_DATE_TIME;
+        updatedAt = TimeUtils.now();
     }
 }

@@ -4,7 +4,7 @@ import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "room_unavailability")
@@ -27,13 +27,13 @@ public class RoomUnavailability {
     private String reason;
 
     @Column(name = "start_time", nullable = false)
-    private ZonedDateTime startTime;
+    private OffsetDateTime startTime;
 
     @Column(name = "end_time", nullable = false)
-    private ZonedDateTime endTime;
+    private OffsetDateTime endTime;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @Builder.Default
     @Column(name = "is_deleted")
@@ -41,6 +41,6 @@ public class RoomUnavailability {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = TimeUtils.ZONE_DATE_TIME;
+        createdAt = TimeUtils.now();
     }
 }

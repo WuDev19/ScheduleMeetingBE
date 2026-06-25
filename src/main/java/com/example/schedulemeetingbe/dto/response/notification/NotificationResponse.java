@@ -1,6 +1,6 @@
 package com.example.schedulemeetingbe.dto.response.notification;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 public record NotificationResponse(
         Long notificationId,
@@ -9,6 +9,6 @@ public record NotificationResponse(
         String title,
         String message,
         Boolean isRead,
-        ZonedDateTime createdAt
+        OffsetDateTime createdAt
 ) {
 }

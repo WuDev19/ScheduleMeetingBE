@@ -1,6 +1,3 @@
-INSERT INTO role_permissions(role_id, permission_id)
-VALUES (3, 28);
-
 INSERT INTO permissions (permission_code, description)
 VALUES ('RECURRING_BOOKING:APPROVE', 'Duyệt lịch định kì'),
        ('RECURRING_BOOKING:VIEW_ALL', 'Xem lịch định kì chưa được duyệt');

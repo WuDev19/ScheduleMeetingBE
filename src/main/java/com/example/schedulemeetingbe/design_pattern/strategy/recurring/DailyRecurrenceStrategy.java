@@ -15,7 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,8 +38,8 @@ public class DailyRecurrenceStrategy implements RecurrencePatternStrategy {
         int interval = request.interval() != null ? request.interval() : 1;
         LocalDate startDate = request.startDate();
         LocalDate endDate = request.endDate();
-        ZonedDateTime startTime = ZonedDateTime.of(startDate, request.meetingStartTime(), TimeUtils.ZONE_ID);
-        ZonedDateTime endTime = ZonedDateTime.of(startDate, request.meetingEndTime(), TimeUtils.ZONE_ID);
+        OffsetDateTime startTime = OffsetDateTime.of(startDate, request.meetingStartTime(), TimeUtils.ZONE_OFFSET);
+        OffsetDateTime endTime = OffsetDateTime.of(startDate, request.meetingEndTime(), TimeUtils.ZONE_OFFSET);
         long gapInMinutes = ChronoUnit.MINUTES.between(startTime, endTime);
         List<Booking> bookings = new ArrayList<>();
         List<String> rangesTime = new ArrayList<>();
@@ -54,7 +54,7 @@ public class DailyRecurrenceStrategy implements RecurrencePatternStrategy {
                     .recurringPattern(recurringPattern)
                     .build();
             bookings.add(booking);
-            String rangeStr = String.format("[%s, %s)", startTime.toOffsetDateTime(), endTime.toOffsetDateTime());
+            String rangeStr = String.format("[%s, %s)", startTime, endTime);
             rangesTime.add(rangeStr);
             startDate = startDate.plusDays(interval);
             startTime = startTime.plusDays(interval);

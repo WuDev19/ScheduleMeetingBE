@@ -4,11 +4,11 @@ import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "notifications", indexes = {
-        @Index(name = "idx_notifications_user_read_created", columnList = "user_id, is_read, created_at")
+        @Index(name = "now()", columnList = "user_id, is_read, created_at")
 })
 @Getter
 @Setter
@@ -40,10 +40,10 @@ public class Notification {
     private Boolean isRead = false;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = TimeUtils.ZONE_DATE_TIME;
+        createdAt = TimeUtils.now();
     }
 }

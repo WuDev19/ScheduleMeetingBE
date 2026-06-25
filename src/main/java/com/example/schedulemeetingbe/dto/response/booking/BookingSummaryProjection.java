@@ -4,7 +4,6 @@ import com.example.schedulemeetingbe.constant.enums.BookingActionType;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 
 import java.time.Instant;
-import java.time.ZonedDateTime;
 
 public interface BookingSummaryProjection {
 

@@ -9,7 +9,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 import tools.jackson.databind.JsonNode;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "booking_history", indexes = {
@@ -50,7 +50,7 @@ public class BookingHistory {
     private JsonNode newData;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @Builder.Default
     @Column(name = "is_revoked")
@@ -58,6 +58,6 @@ public class BookingHistory {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = TimeUtils.ZONE_DATE_TIME;
+        createdAt = TimeUtils.now();
     }
 }

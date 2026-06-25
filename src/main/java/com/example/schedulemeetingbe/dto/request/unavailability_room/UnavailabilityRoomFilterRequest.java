@@ -1,7 +1,9 @@
 package com.example.schedulemeetingbe.dto.request.unavailability_room;
 
+import java.time.OffsetDateTime;
+
 public record UnavailabilityRoomFilterRequest(
-        Long start,
-        Long end
+        OffsetDateTime start,
+        OffsetDateTime end
 ) {
 }

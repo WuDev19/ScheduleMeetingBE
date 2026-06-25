@@ -4,7 +4,7 @@ import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 @Setter
 @Getter
@@ -39,20 +39,20 @@ public class BookingEquipment {
     private Integer quantity = 1;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = TimeUtils.ZONE_DATE_TIME;
-        updatedAt = TimeUtils.ZONE_DATE_TIME;
+        createdAt = TimeUtils.now();
+        updatedAt = TimeUtils.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = TimeUtils.ZONE_DATE_TIME;
+        updatedAt = TimeUtils.now();
     }
 
 }

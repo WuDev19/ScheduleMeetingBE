@@ -1,20 +1,21 @@
 package com.example.schedulemeetingbe.dto.request.booking;
 
+import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 public record SearchBookingRequest(
         @JsonFormat(
-                pattern = "yyyy-MM-dd HH:mm:ssX"
+                pattern = StringCommon.OFFSET_FORMAT
         )
-        ZonedDateTime start,
+        OffsetDateTime start,
 
         @JsonFormat(
-                pattern = "yyyy-MM-dd HH:mm:ssX"
+                pattern = StringCommon.OFFSET_FORMAT
         )
-        ZonedDateTime end,
+        OffsetDateTime end,
 
         BookingStatus status,
 

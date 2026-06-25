@@ -5,7 +5,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public record CreateBookingRequest(
@@ -22,15 +22,15 @@ public record CreateBookingRequest(
 
         @NotNull(message = StringCommon.NOT_NULL + "start")
         @JsonFormat(
-                pattern = "yyyy-MM-dd HH:mm:ssX"
+                pattern = StringCommon.OFFSET_FORMAT
         )
-        ZonedDateTime start,
+        OffsetDateTime start,
 
         @NotNull(message = StringCommon.NOT_NULL + "end")
         @JsonFormat(
-                pattern = "yyyy-MM-dd HH:mm:ssX"
+                pattern = StringCommon.OFFSET_FORMAT
         )
-        ZonedDateTime end,
+        OffsetDateTime end,
 
         @NotNull(message = StringCommon.NOT_NULL + "attendee")
         Integer attendee,

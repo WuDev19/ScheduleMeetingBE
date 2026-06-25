@@ -1,6 +1,6 @@
 package com.example.schedulemeetingbe.dto.response.booking;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 public record BookingResponse(
     Long id,
@@ -12,9 +12,9 @@ public record BookingResponse(
     String userBooked,
     String phone,
     String email,
-    ZonedDateTime startTime,
-    ZonedDateTime endTime,
+    OffsetDateTime startTime,
+    OffsetDateTime endTime,
     Integer attendee,
-    ZonedDateTime createdAt
+    OffsetDateTime createdAt
 ) {
 }

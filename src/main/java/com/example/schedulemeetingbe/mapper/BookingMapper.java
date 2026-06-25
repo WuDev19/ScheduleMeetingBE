@@ -1,14 +1,13 @@
 package com.example.schedulemeetingbe.mapper;
 
-import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.dto.response.booking.*;
 import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.Notification;
 import com.example.schedulemeetingbe.entity.Room;
 import com.example.schedulemeetingbe.entity.User;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public class BookingMapper {
@@ -67,8 +66,8 @@ public class BookingMapper {
     }
 
     public static BookingSummaryResponse mapToBookingSummaryResponse(BookingSummaryProjection projection) {
-        ZonedDateTime startTime = projection.getStartTime().atZone(ZoneId.of(StringCommon.TIME_ZONE_VN));
-        ZonedDateTime endTime = projection.getEndTime().atZone(ZoneId.of(StringCommon.TIME_ZONE_VN));
+        OffsetDateTime startTime = projection.getStartTime().atOffset(TimeUtils.ZONE_OFFSET);
+        OffsetDateTime endTime = projection.getEndTime().atOffset(TimeUtils.ZONE_OFFSET);
         return new BookingSummaryResponse(
                 projection.getBookingId(),
                 projection.getHistoryId(),

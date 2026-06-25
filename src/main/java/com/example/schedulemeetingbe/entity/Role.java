@@ -4,7 +4,7 @@ import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Set;
 
 @Entity
@@ -27,7 +27,7 @@ public class Role {
     private String description;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @ManyToMany
     @JoinTable(
@@ -39,6 +39,6 @@ public class Role {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = TimeUtils.ZONE_DATE_TIME;
+        createdAt = TimeUtils.now();
     }
 }

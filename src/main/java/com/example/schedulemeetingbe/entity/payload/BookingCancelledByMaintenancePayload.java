@@ -1,13 +1,13 @@
 package com.example.schedulemeetingbe.entity.payload;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 public record BookingCancelledByMaintenancePayload(
         Long bookingId,
         Long userId,
         Long roomId,
         String reason,
-        ZonedDateTime startTime,
-        ZonedDateTime endTime
+        OffsetDateTime startTime,
+        OffsetDateTime endTime
 ) {
 }

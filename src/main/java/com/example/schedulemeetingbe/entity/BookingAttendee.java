@@ -5,7 +5,7 @@ import com.example.schedulemeetingbe.entity.composite_key.BookingAttendeeId;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "booking_attendees")
@@ -30,6 +30,6 @@ public class BookingAttendee {
     private User user;
 
     @Column(name = "joined_at", nullable = false)
-    private ZonedDateTime joinedAt;
+    private OffsetDateTime joinedAt;
 
 }

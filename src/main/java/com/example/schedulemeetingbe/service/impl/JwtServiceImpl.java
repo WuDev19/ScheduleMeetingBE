@@ -17,8 +17,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
+import java.time.OffsetDateTime;
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.util.*;
 
 @Component
@@ -58,7 +58,7 @@ public class JwtServiceImpl implements IJwtService {
         return RefreshToken.builder()
                 .userRefreshToken(user)
                 .refreshToken(token)
-                .expireDate(TimeUtils.ZONE_DATE_TIME.plusDays(7))
+                .expireDate(TimeUtils.now().plusDays(7))
                 .build();
     }
 
@@ -68,7 +68,7 @@ public class JwtServiceImpl implements IJwtService {
             refreshTokenRepository.deleteByUserRefreshToken(refreshToken.getUserRefreshToken());
             throw new BusinessException(ErrorResponse.REFRESH_TOKEN_REVOKED);
         }
-        if (refreshToken.getExpireDate().isBefore(TimeUtils.ZONE_DATE_TIME)) {
+        if (refreshToken.getExpireDate().isBefore(TimeUtils.now())) {
             throw new BusinessException(ErrorResponse.JWT_EXCEPTION);
         }
         return refreshToken;
@@ -96,10 +96,11 @@ public class JwtServiceImpl implements IJwtService {
     }
 
     @Override
-    public ZonedDateTime extractJwtExpire(String token) {
+    public OffsetDateTime extractJwtExpire(String token) {
         return extractJwtClaims(token)
                 .getExpiration()
                 .toInstant()
-                .atZone(ZoneId.of(StringCommon.TIME_ZONE_VN));
+                .atZone(ZoneId.of(StringCommon.TIME_ZONE_VN))
+                .toOffsetDateTime();
     }
 }

@@ -3,7 +3,7 @@ package com.example.schedulemeetingbe.dto.response.booking;
 import com.example.schedulemeetingbe.constant.enums.BookingActionType;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 public record BookingSummaryResponse(
         Long bookingId,
@@ -14,7 +14,7 @@ public record BookingSummaryResponse(
         String roomName,
         BookingStatus status,
         BookingActionType actionType,
-        ZonedDateTime startTime,
-        ZonedDateTime endTime
+        OffsetDateTime startTime,
+        OffsetDateTime endTime
 ) {
 }

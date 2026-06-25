@@ -32,6 +32,6 @@ public class CreatedCommand extends BookingRollbackCommand {
         super.execute(booking, request, approver);
         booking.setStatus(BookingStatus.REJECTED);
         booking.setApprovedBy(approver);
-        booking.setApprovedAt(TimeUtils.ZONE_DATE_TIME);
+        booking.setApprovedAt(TimeUtils.now());
     }
 }

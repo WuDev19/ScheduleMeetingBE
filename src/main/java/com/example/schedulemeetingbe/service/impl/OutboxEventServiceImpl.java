@@ -21,7 +21,7 @@ public class OutboxEventServiceImpl implements IOutboxEventService {
     public void updateStatusSuccess(UUID eventId) {
         outboxEventRepository.findById(eventId).ifPresent(event -> {
             event.setStatus(OutboxStatus.SUCCESS);
-            event.setProcessedAt(TimeUtils.ZONE_DATE_TIME);
+            event.setProcessedAt(TimeUtils.now());
         });
     }
 

@@ -4,7 +4,7 @@ import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "buildings")
@@ -26,22 +26,22 @@ public class Building {
     private String address;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     @Column(name = "deleted_at")
-    private ZonedDateTime deletedAt;
+    private OffsetDateTime deletedAt;
 
     @PrePersist
     protected void onCreate() {
-        createdAt = TimeUtils.ZONE_DATE_TIME;
-        updatedAt = TimeUtils.ZONE_DATE_TIME;
+        createdAt = TimeUtils.now();
+        updatedAt = TimeUtils.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = TimeUtils.ZONE_DATE_TIME;
+        updatedAt = TimeUtils.now();
     }
 }

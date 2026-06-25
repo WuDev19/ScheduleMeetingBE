@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,12 +61,12 @@ public class WeeklyRecurrenceStrategy implements RecurrencePatternStrategy {
                 if (bookingDate.isAfter(endDate)) {
                     continue;
                 }
-                ZonedDateTime startTime = ZonedDateTime.of(
+                OffsetDateTime startTime = OffsetDateTime.of(
                         bookingDate,
                         request.meetingStartTime(),
-                        TimeUtils.ZONE_ID
+                        TimeUtils.ZONE_OFFSET
                 );
-                ZonedDateTime endTime = startTime.plusMinutes(gapInMinutes);
+                OffsetDateTime endTime = startTime.plusMinutes(gapInMinutes);
                 bookings.add(Booking.builder()
                         .room(room)
                         .bookedBy(register)
@@ -75,7 +75,7 @@ public class WeeklyRecurrenceStrategy implements RecurrencePatternStrategy {
                         .recurringPattern(recurringPattern)
                         .build()
                 );
-                String rangeStr = String.format("[%s, %s)", startTime.toOffsetDateTime(), endTime.toOffsetDateTime());
+                String rangeStr = String.format("[%s, %s)", startTime, endTime);
                 rangesTime.add(rangeStr);
             }
             startDate = startDate.plusWeeks(interval);

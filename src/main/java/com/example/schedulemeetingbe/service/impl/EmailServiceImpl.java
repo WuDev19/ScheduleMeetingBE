@@ -11,6 +11,7 @@ import com.example.schedulemeetingbe.exception.custom_exception.BusinessExceptio
 import com.example.schedulemeetingbe.repository.VerificationTokenRepository;
 import com.example.schedulemeetingbe.service.base.*;
 import com.example.schedulemeetingbe.utils.EmailErrorParser;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import jakarta.mail.MessagingException;
 import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
@@ -255,7 +255,7 @@ public class EmailServiceImpl implements IEmailService {
             VerificationToken verificationToken = VerificationToken
                     .builder()
                     .token(token)
-                    .expiresAt(ZonedDateTime.now().plusHours(5))
+                    .expiresAt(TimeUtils.now().plusHours(5))
                     .user(userMap.get(email))
                     .build();
             String mess = """

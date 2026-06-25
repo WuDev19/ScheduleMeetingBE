@@ -4,19 +4,19 @@ import com.example.schedulemeetingbe.constant.StringCommon;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.NotNull;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 public record StartEndTimeRequest (
         @NotNull(message = StringCommon.NOT_NULL + "start")
         @JsonFormat(
-                pattern = "yyyy-MM-dd HH:mm:ssX"
+                pattern = StringCommon.OFFSET_FORMAT
         )
-        ZonedDateTime start,
+        OffsetDateTime start,
 
         @NotNull(message = StringCommon.NOT_NULL + "end")
         @JsonFormat(
-                pattern = "yyyy-MM-dd HH:mm:ssX"
+                pattern = StringCommon.OFFSET_FORMAT
         )
-        ZonedDateTime end
+        OffsetDateTime end
 ) {
 }

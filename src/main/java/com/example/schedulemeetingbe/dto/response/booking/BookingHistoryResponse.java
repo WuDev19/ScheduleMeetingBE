@@ -1,14 +1,13 @@
 package com.example.schedulemeetingbe.dto.response.booking;
 
-import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.constant.enums.BookingActionType;
 import com.example.schedulemeetingbe.entity.converter.Jackson3JsonParser;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.Getter;
 import tools.jackson.databind.JsonNode;
 
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 
 @Getter
 public class BookingHistoryResponse {
@@ -22,8 +21,8 @@ public class BookingHistoryResponse {
     private final String userBooked;
     private final String phone;
     private final String email;
-    private final ZonedDateTime startTime;
-    private final ZonedDateTime endTime;
+    private final OffsetDateTime startTime;
+    private final OffsetDateTime endTime;
     private final Integer attendee;
     private final Long bookingHistoryId;
     private final String userChanged;
@@ -59,8 +58,8 @@ public class BookingHistoryResponse {
         this.userBooked = userBooked;
         this.phone = phone;
         this.email = email;
-        this.startTime = startTime.atZone(ZoneId.of(StringCommon.TIME_ZONE_VN));
-        this.endTime = endTime.atZone(ZoneId.of(StringCommon.TIME_ZONE_VN));
+        this.startTime = startTime.atOffset(TimeUtils.ZONE_OFFSET);
+        this.endTime = endTime.atOffset(TimeUtils.ZONE_OFFSET);
         this.attendee = attendee;
         this.bookingHistoryId = bookingHistoryId;
         this.userChanged = userChanged;

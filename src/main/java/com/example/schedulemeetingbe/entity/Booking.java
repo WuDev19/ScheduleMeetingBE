@@ -7,7 +7,7 @@ import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
-import java.time.ZonedDateTime;
+import java.time.OffsetDateTime;
 import java.util.Set;
 
 @Entity
@@ -47,10 +47,10 @@ public class Booking {
     private String description;
 
     @Column(name = "start_time", nullable = false)
-    private ZonedDateTime startTime;
+    private OffsetDateTime startTime;
 
     @Column(name = "end_time", nullable = false)
-    private ZonedDateTime endTime;
+    private OffsetDateTime endTime;
 
     @Column(name = "attendee_count", nullable = false)
     @Builder.Default
@@ -67,10 +67,10 @@ public class Booking {
     private User approvedBy;
 
     @Column(name = "approved_at")
-    private ZonedDateTime approvedAt;
+    private OffsetDateTime approvedAt;
 
     @Column(name = "cancelled_at")
-    private ZonedDateTime cancelledAt;
+    private OffsetDateTime cancelledAt;
 
     @Column(name = "cancellation_reason", columnDefinition = "TEXT")
     private String cancellationReason;
@@ -82,13 +82,13 @@ public class Booking {
     private Integer version = 0;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private ZonedDateTime createdAt;
+    private OffsetDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)
-    private ZonedDateTime updatedAt;
+    private OffsetDateTime updatedAt;
 
     @Column(name = "deleted_at")
-    private ZonedDateTime deletedAt;
+    private OffsetDateTime deletedAt;
 
     @ManyToMany
     @JoinTable(
@@ -100,12 +100,12 @@ public class Booking {
 
     @PrePersist
     protected void onCreate() {
-        createdAt = TimeUtils.ZONE_DATE_TIME;
-        updatedAt = TimeUtils.ZONE_DATE_TIME;
+        createdAt = TimeUtils.now();
+        updatedAt = TimeUtils.now();
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updatedAt = TimeUtils.ZONE_DATE_TIME;
+        updatedAt = TimeUtils.now();
     }
 }

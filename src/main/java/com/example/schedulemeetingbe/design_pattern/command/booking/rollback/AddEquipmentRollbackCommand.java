@@ -51,7 +51,7 @@ public class AddEquipmentRollbackCommand extends BookingRollbackCommand {
 
         booking.setStatus(BookingStatus.APPROVED); // approve lại giá trị cũ
         booking.setApprovedBy(approver);
-        booking.setApprovedAt(TimeUtils.ZONE_DATE_TIME);
+        booking.setApprovedAt(TimeUtils.now());
     }
 
 }

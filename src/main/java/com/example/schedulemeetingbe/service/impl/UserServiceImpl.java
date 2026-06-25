@@ -38,7 +38,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -113,7 +112,7 @@ public class UserServiceImpl implements IUserService {
         }
         if (request.newPassword() != null) {
             user.setPasswordHash(bCryptPasswordEncoder.encode(request.newPassword()));
-            user.setPasswordChangedAt(TimeUtils.ZONE_DATE_TIME);
+            user.setPasswordChangedAt(TimeUtils.now());
         }
         return UserMapper.mapToUserDetailResponse(user);
     }
@@ -134,7 +133,7 @@ public class UserServiceImpl implements IUserService {
         VerificationToken verificationToken = VerificationToken
                 .builder()
                 .token(UUID.randomUUID().toString())
-                .expiresAt(ZonedDateTime.now().plusHours(1))
+                .expiresAt(TimeUtils.now().plusHours(1))
                 .user(user)
                 .build();
         verificationTokenRepository.save(verificationToken);
@@ -216,7 +215,7 @@ public class UserServiceImpl implements IUserService {
         User user = userRepository.findByEmailAndIsActiveIsTrue(email).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         user.setPasswordHash(bCryptPasswordEncoder.encode(newPassword));
-        user.setPasswordChangedAt(TimeUtils.ZONE_DATE_TIME);
+        user.setPasswordChangedAt(TimeUtils.now());
     }
 
     @Override

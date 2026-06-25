@@ -21,7 +21,7 @@ public class OutboxEventRecoveryProcess {
         Optional<OutboxEvent> eventOptional = outboxEventRepository.findById(eventId);
         if (eventOptional.isEmpty()) return;
         OutboxEvent event = eventOptional.get();
-        if (ChronoUnit.MINUTES.between(event.getProcessedAt(), TimeUtils.ZONE_DATE_TIME) > 10) {
+        if (ChronoUnit.MINUTES.between(event.getProcessedAt(), TimeUtils.now()) > 10) {
             event.setStatus(OutboxStatus.FAILED);
             outboxEventRepository.save(event);
         }

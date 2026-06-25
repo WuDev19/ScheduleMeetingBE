@@ -6,8 +6,8 @@ import com.example.schedulemeetingbe.dto.response.booking.BookingRecurrenceRespo
 import com.example.schedulemeetingbe.dto.response.recurrence.*;
 import com.example.schedulemeetingbe.entity.RecurringPattern;
 import com.example.schedulemeetingbe.entity.User;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 
-import java.time.ZonedDateTime;
 import java.util.List;
 
 public class RecurringPatternMapper {
@@ -50,7 +50,7 @@ public class RecurringPatternMapper {
                 recurringId,
                 reason,
                 BookingStatus.CANCELLED,
-                ZonedDateTime.now()
+                TimeUtils.now()
         );
     }
 

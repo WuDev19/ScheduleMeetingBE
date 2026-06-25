@@ -15,7 +15,6 @@ import com.example.schedulemeetingbe.repository.RoomRepository;
 import com.example.schedulemeetingbe.repository.UnavailabilityRoomRepository;
 import com.example.schedulemeetingbe.repository.specification.UnavailabilityRoomSpecification;
 import com.example.schedulemeetingbe.service.base.IUnavailabilityRoomService;
-import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -39,8 +38,8 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
         RoomUnavailability roomUnavailability = RoomUnavailability.builder()
                 .room(room)
                 .reason(request.reason())
-                .startTime(TimeUtils.fromLongToZoneDateTime(request.startTime()))
-                .endTime(TimeUtils.fromLongToZoneDateTime(request.endTime()))
+                .startTime(request.startTime())
+                .endTime(request.endTime())
                 .build();
         RoomUnavailability saved = unavailabilityRoomRepository.save(roomUnavailability);
         return RoomMapper.mapToUnavailabilityRoomResponse(saved);
@@ -55,10 +54,10 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
             roomUnavailability.setReason(request.reason());
         }
         if (request.startTime() != null) {
-            roomUnavailability.setStartTime(TimeUtils.fromLongToZoneDateTime(request.startTime()));
+            roomUnavailability.setStartTime(request.startTime());
         }
         if (request.endTime() != null) {
-            roomUnavailability.setEndTime(TimeUtils.fromLongToZoneDateTime(request.endTime()));
+            roomUnavailability.setEndTime(request.endTime());
         }
         return RoomMapper.mapToUnavailabilityRoomResponse(roomUnavailability);
     }
@@ -125,8 +124,8 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
     public PageResponse<UnavailabilityRoomResponse> filter(UnavailabilityRoomFilterRequest request, Pageable pageable) {
         Page<RoomUnavailability> roomPage = unavailabilityRoomRepository.findAll(
                 UnavailabilityRoomSpecification.filter(
-                        TimeUtils.fromLongToZoneDateTime(request.start()),
-                        TimeUtils.fromLongToZoneDateTime(request.end())),
+                        request.start(),
+                        request.end()),
                 pageable
         );
         return new PageResponse<>(

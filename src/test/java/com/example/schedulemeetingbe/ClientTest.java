@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.OffsetDateTime;
-import java.time.ZonedDateTime;
 import java.util.UUID;
 
 public class ClientTest {
@@ -17,11 +16,12 @@ public class ClientTest {
         System.out.println(bCryptPasswordEncoder.encode("Aa123456@"));
         System.out.println("Instant: " + Instant.now());
         System.out.println("OffsetDateTime: " + OffsetDateTime.now());
-        System.out.println("ZonedDateTime: " + ZonedDateTime.now());
+        System.out.println("ZonedDateTime: " + TimeUtils.now());
         String token = UUID.randomUUID().toString();
         System.out.println(token + " chưa mã hóa");
         System.out.println(URLEncoder.encode(Integer.toString(10), StandardCharsets.UTF_8) + " đã mã hóa");
         System.out.println(DayOfWeek.valueOf("MONDAY"));
-        System.out.println(TimeUtils.ZONE_DATE_TIME);
+        System.out.println(TimeUtils.now());
+        System.out.println(TimeUtils.now());
     }
 }

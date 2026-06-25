@@ -21,6 +21,7 @@ public class StringCommon {
     public static final String UPDATED_AT = "updatedAt";
     public static final String DATE_TIME_FORMAT = "dd-MM-yyyy HH:mm:ss Z";
     public static final String DATE_TIME_FORMAT_NO_TZ = "dd-MM-yyyy HH:mm:ss";
+    public static final String OFFSET_FORMAT = "yyyy-MM-dd HH:mm:ssXXX";
     public static final String DATE_FORMAT = "dd-MM-yyyy";
     public static final String NOT_BLANK = "không được để trống";
     public static final String NOT_NULL = "Thiếu dữ liệu trường ";
