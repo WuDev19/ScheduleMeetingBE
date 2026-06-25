@@ -104,6 +104,13 @@ public class OutboxEventProcessor {
                             ApproveRejectRecurrencePayload.class);
                     iEmailService.sendEmailApproveReject(payload);
                 }
+                case "SEND_EMAIL_APPROVE_UPDATE" ->{
+                    UpdateApprovePayload payload = jsonMapper.treeToValue(
+                            event.getPayload(),
+                            UpdateApprovePayload.class
+                    );
+                    iEmailService.sendEmailApproveUpdate(payload);
+                }
             }
             iOutboxEventService.updateStatusSuccess(event.getId());
         } catch (Exception ex) {

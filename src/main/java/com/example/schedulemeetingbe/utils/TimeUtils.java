@@ -17,7 +17,7 @@ public class TimeUtils {
     }
 
     public static OffsetDateTime now() {
-        return OffsetDateTime.now(ZONE_OFFSET);
+        return OffsetDateTime.now(ZONE_ID);
     }
 
     public static String dateTimeFormat() {

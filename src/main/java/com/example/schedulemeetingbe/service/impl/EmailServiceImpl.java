@@ -2,10 +2,7 @@ package com.example.schedulemeetingbe.service.impl;
 
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.entity.*;
-import com.example.schedulemeetingbe.entity.payload.ApproveRejectRecurrencePayload;
-import com.example.schedulemeetingbe.entity.payload.BookingCancelledByMaintenancePayload;
-import com.example.schedulemeetingbe.entity.payload.ReceiverEmailPayload;
-import com.example.schedulemeetingbe.entity.payload.RemainingBookingPayload;
+import com.example.schedulemeetingbe.entity.payload.*;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.repository.VerificationTokenRepository;
@@ -589,4 +586,106 @@ public class EmailServiceImpl implements IEmailService {
                 );
     }
 
+    @Override
+    public void sendEmailApproveUpdate(UpdateApprovePayload payload) {
+
+        String subject = "[THÔNG BÁO] Lịch họp đã được cập nhật";
+
+        String html = approveUpdateContent(payload);
+
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(
+                    message,
+                    true,
+                    UTF8
+            );
+
+            helper.setSubject(subject);
+            helper.setTo(APP_EMAIL);
+            helper.setBcc(payload.receivers().toArray(new String[0]));
+            helper.setText(html, true);
+
+            javaMailSender.send(message);
+
+        } catch (MessagingException e) {
+            throw new RuntimeException("Failed to send update meeting email", e);
+        }
+    }
+
+    private String approveUpdateContent(UpdateApprovePayload payload) {
+        return """
+                <html>
+                <body style="font-family: Arial, sans-serif">
+                
+                    <h2>📢 Thông báo cập nhật lịch họp</h2>
+                
+                    <p>Lịch họp mà bạn tham gia đã được cập nhật. Vui lòng kiểm tra thông tin mới nhất:</p>
+                
+                    <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse">
+                        <tr>
+                            <td><b>Tiêu đề</b></td>
+                            <td>%s</td>
+                        </tr>
+                        <tr>
+                            <td><b>Mô tả</b></td>
+                            <td>%s</td>
+                        </tr>
+                        <tr>
+                            <td><b>Địa điểm</b></td>
+                            <td>%s</td>
+                        </tr>
+                        <tr>
+                            <td><b>Phòng họp</b></td>
+                            <td>%s</td>
+                        </tr>
+                        <tr>
+                            <td><b>Bắt đầu</b></td>
+                            <td>%s</td>
+                        </tr>
+                        <tr>
+                            <td><b>Kết thúc</b></td>
+                            <td>%s</td>
+                        </tr>
+                    </table>
+                
+                    <br/>
+                
+                    <p>
+                        Vui lòng kiểm tra lại lịch trình của bạn để đảm bảo có thể tham gia cuộc họp.
+                    </p>
+                
+                    <p>
+                        Trân trọng,<br/>
+                        Hệ thống quản lý lịch họp
+                    </p>
+                
+                </body>
+                </html>
+                """
+                .formatted(
+                        payload.title(),
+                        payload.description(),
+                        payload.address(),
+                        payload.room(),
+                        payload.startTime(),
+                        payload.endTime()
+                );
+    }
 }
+
+/*
+payload.emails().forEach(email -> {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            try {
+                MimeMessageHelper helper =
+                        new MimeMessageHelper(message, true, UTF8);
+                helper.setSubject(StringCommon.APP_NAME_UPPER_CASE);
+                helper.setTo(email);
+                helper.setText(contentRemaining(payload), true);
+                javaMailSender.send(message);
+            } catch (Exception e) {
+                EmailErrorParser.parseException(e);
+            }
+        });
+*/

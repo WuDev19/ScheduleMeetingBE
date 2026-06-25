@@ -4,6 +4,7 @@ import com.example.schedulemeetingbe.entity.payload.ApproveRejectRecurrencePaylo
 import com.example.schedulemeetingbe.entity.payload.BookingCancelledByMaintenancePayload;
 import com.example.schedulemeetingbe.entity.payload.ReceiverEmailPayload;
 import com.example.schedulemeetingbe.entity.payload.RemainingBookingPayload;
+import com.example.schedulemeetingbe.entity.payload.UpdateApprovePayload;
 
 public interface IEmailService {
     void sendEmailActiveAccount(String email, String token);
@@ -21,4 +22,6 @@ public interface IEmailService {
     void sendEmailApproveReject(ApproveRejectRecurrencePayload payload);
 
     void sendEmailRemainingBooking(RemainingBookingPayload payload);
+
+    void sendEmailApproveUpdate(UpdateApprovePayload payload);
 }

@@ -1,6 +1,6 @@
 package com.example.schedulemeetingbe.service.impl;
 
-import com.example.schedulemeetingbe.constant.enums.EVENT_TYPE;
+import com.example.schedulemeetingbe.constant.enums.EventType;
 import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
 import com.example.schedulemeetingbe.dto.request.auth.LoginByUsernameRequest;
@@ -104,7 +104,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
                 .user(userSaved)
                 .expiresAt(TimeUtils.now().plusHours(1))
                 .build();
-        return createUserRegisterVerificationTokenAndOutboxEvent(userSaved, verificationToken, EVENT_TYPE.USER_REGISTER);
+        return createUserRegisterVerificationTokenAndOutboxEvent(userSaved, verificationToken, EventType.USER_REGISTER);
     }
 
     @Transactional
@@ -196,7 +196,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
                 .token(UUID.randomUUID().toString())
                 .user(user)
                 .build();
-        return createUserRegisterVerificationTokenAndOutboxEvent(user, verificationToken, EVENT_TYPE.RESEND_EMAIL);
+        return createUserRegisterVerificationTokenAndOutboxEvent(user, verificationToken, EventType.RESEND_EMAIL);
     }
 
     @Transactional
@@ -214,7 +214,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         }
         UserResetPasswordPayload payload = new UserResetPasswordPayload(user.getUserId(), request.email());
         OutboxEvent outboxEvent = OutboxEvent.builder()
-                .eventType(EVENT_TYPE.RESET_PASSWORD.name())
+                .eventType(EventType.RESET_PASSWORD.name())
                 .payload(jsonMapper.valueToTree(payload))
                 .status(OutboxStatus.PENDING)
                 .build();
@@ -223,7 +223,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     }
 
     @NonNull
-    private Map<String, Object> createUserRegisterVerificationTokenAndOutboxEvent(User user, VerificationToken verificationToken, EVENT_TYPE eventType) {
+    private Map<String, Object> createUserRegisterVerificationTokenAndOutboxEvent(User user, VerificationToken verificationToken, EventType eventType) {
         verificationTokenRepository.save(verificationToken);
         UserRegisteredPayload payload = new UserRegisteredPayload(
                 user.getUserId(),

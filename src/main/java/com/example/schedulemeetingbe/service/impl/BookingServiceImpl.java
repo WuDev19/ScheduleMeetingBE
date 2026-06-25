@@ -14,10 +14,7 @@ import com.example.schedulemeetingbe.dto.response.booking.*;
 import com.example.schedulemeetingbe.dto.response.equipment.EquipmentAndQuantityResponse;
 import com.example.schedulemeetingbe.entity.*;
 import com.example.schedulemeetingbe.entity.composite_key.BookingAttendeeId;
-import com.example.schedulemeetingbe.entity.payload.AddBookingEquipmentPayload;
-import com.example.schedulemeetingbe.entity.payload.CreateBookingPayload;
-import com.example.schedulemeetingbe.entity.payload.UpdateBookingChangePayload;
-import com.example.schedulemeetingbe.entity.payload.UpdateBookingEquipmentQuantityPayload;
+import com.example.schedulemeetingbe.entity.payload.*;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.exception.custom_exception.ExceedEquipmentException;
@@ -129,13 +126,19 @@ public class BookingServiceImpl implements IBookingService {
     public Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request, Long userId) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        if (ChronoUnit.HOURS.between(TimeUtils.now(), booking.getStartTime()) < 1) {
-            throw new BusinessException(ErrorResponse.UPDATE_BOOKING_ERROR);
-        }
-        UpdateBookingChangePayload oldPayload = CreatePayloadHelper.create(
+        //còn dưới 1 tiếng thì ko cho sửa nữa
+//        if (ChronoUnit.HOURS.between(TimeUtils.now(), booking.getStartTime()) < 1) {
+//            throw new BusinessException(ErrorResponse.UPDATE_BOOKING_ERROR);
+//        }
+        List<String> emailParticipants = bookingAttendeeRepository.getAttendeeOfBooking(bookingId)
+                .stream()
+                .map(User::getEmail)
+                .toList();
+        UpdateFocusRoomOrTimePayload oldPayload = CreatePayloadHelper.createUpdateRoomOrTime(
                 booking,
                 booking.getBookedBy().getUserId(),
-                booking.getRoom().getRoomId()
+                booking.getRoom().getRoomId(),
+                emailParticipants
         );
         if (request.isCompleted() != null) booking.setStatus(BookingStatus.COMPLETED);
         if (request.title() != null) booking.setTitle(request.title());
@@ -150,6 +153,8 @@ public class BookingServiceImpl implements IBookingService {
         /* bao trọn được trường hợp chỉ đổi room hoặc chỉ đổi start-end hoặc đổi cả hai
             (room sẽ được lọc ra những room nào thỏa mãn trước dựa vào start-end)
          */
+        boolean isChangeRoom = false;
+        boolean isChangeTime = false;
         if (request.newRoomId() != null || (request.start() != null && request.end() != null)) {
             BookingReservation bookingReservation = bookingReservationRepository
                     .findBookingReservationsByBooking_BookingId(bookingId)
@@ -164,6 +169,7 @@ public class BookingServiceImpl implements IBookingService {
             bookingReservation.setOldEndTime(booking.getEndTime());
 
             if (request.newRoomId() != null) {
+                isChangeRoom = true;
                 //lưu lại để có thể rollback từ cập nhật nếu approver reject
                 Room room = iRoomService.getRoomDetail(request.newRoomId()).orElseThrow(() ->
                         new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
@@ -175,6 +181,7 @@ public class BookingServiceImpl implements IBookingService {
                     throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
                 } else {
                     checkOverlap(bookingId, request.roomId(), request.start(), request.end(), false);
+                    isChangeTime = true;
                     booking.setStartTime(request.start());
                     booking.setEndTime(request.end());
                     booking.setStatus(BookingStatus.PENDING);
@@ -195,17 +202,25 @@ public class BookingServiceImpl implements IBookingService {
             //revoke những cái lịch sử thay đổi cũ, chỉ để hiện cái thay đổi mới nhất để cho approver duyệt
             bookingRepository.revokeAllOldChangeHistory(bookingId, BookingActionType.UPDATED);
         }
-        UpdateBookingChangePayload newPayload = CreatePayloadHelper.create(
+
+        // nếu thay đổi room hoặc time thì thêm cái emails để có thể gửi thông báo cho những người tham gia
+
+        UpdateFocusRoomOrTimePayload newPayload = CreatePayloadHelper.createUpdateRoomOrTime(
                 booking,
                 booking.getBookedBy().getUserId(),
-                booking.getRoom().getRoomId()
+                booking.getRoom().getRoomId(),
+                emailParticipants //empty là thay đổi bình thường
         );
-        User user = iUserService.getDetail(userId).orElse(null);
+        if (!isChangeRoom && !isChangeTime) {
+            oldPayload.setEmails(List.of());
+            newPayload.setEmails(List.of());
+        }
+        User userChange = iUserService.getDetail(userId).orElse(null);
 
         BookingHistory bookingHistory = BookingHistory.builder()
                 .booking(booking)
                 .actionType(BookingActionType.UPDATED)
-                .changedBy(user)
+                .changedBy(userChange)
                 .oldData(jsonMapper.valueToTree(oldPayload))
                 .newData(jsonMapper.valueToTree(newPayload))
                 .build();
@@ -497,6 +512,8 @@ public class BookingServiceImpl implements IBookingService {
     @Transactional
     @Override
     public void confirmParticipateIn(Long bookingId, Long userId) {
+        boolean exist = bookingAttendeeRepository.existsById(new BookingAttendeeId(bookingId, userId));
+        if (exist) return;
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         User participant = iUserService.getDetail(userId).orElseThrow(() ->

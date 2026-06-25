@@ -5,6 +5,7 @@ import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import java.time.OffsetDateTime;
 import java.util.List;
 
+// đang để record để tối ưu bộ nhớ tuy nhiên sẽ ko tái sử dụng field đc, nào có time sẽ xem xét lại kế thừa 1 lớp base
 public record CreateBookingPayload (
         Long bookingId,
         String title,

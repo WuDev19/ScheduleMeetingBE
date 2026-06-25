@@ -1,6 +1,6 @@
 package com.example.schedulemeetingbe.service.impl;
 
-import com.example.schedulemeetingbe.constant.enums.EVENT_TYPE;
+import com.example.schedulemeetingbe.constant.enums.EventType;
 import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
 import com.example.schedulemeetingbe.dto.request.user.CreateUserRequest;
@@ -80,7 +80,7 @@ public class UserServiceImpl implements IUserService {
                 request.password()
         );
         OutboxEvent event = OutboxEvent.builder()
-                .eventType(EVENT_TYPE.CREATE_USER.name())
+                .eventType(EventType.CREATE_USER.name())
                 .payload(jsonMapper.valueToTree(payload))
                 .status(OutboxStatus.PENDING)
                 .build();
@@ -140,7 +140,7 @@ public class UserServiceImpl implements IUserService {
         UserChangeEmailPayload payload = new UserChangeEmailPayload(user.getUserId(), newEmail, verificationToken.getToken());
         OutboxEvent event = OutboxEvent.builder()
                 .status(OutboxStatus.PENDING)
-                .eventType(EVENT_TYPE.UPDATE_EMAIL.name())
+                .eventType(EventType.UPDATE_EMAIL.name())
                 .payload(jsonMapper.valueToTree(payload))
                 .build();
         outboxEventRepository.save(event);
@@ -200,7 +200,7 @@ public class UserServiceImpl implements IUserService {
         UserDeleteAvatarPayload payload = new UserDeleteAvatarPayload(user.getPublicUrlId());
         OutboxEvent event = OutboxEvent.builder()
                 .payload(jsonMapper.valueToTree(payload))
-                .eventType(EVENT_TYPE.DELETE_AVATAR.name())
+                .eventType(EventType.DELETE_AVATAR.name())
                 .status(OutboxStatus.PENDING)
                 .build();
         outboxEventRepository.save(event);

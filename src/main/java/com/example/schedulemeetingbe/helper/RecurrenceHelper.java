@@ -2,7 +2,7 @@ package com.example.schedulemeetingbe.helper;
 
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
-import com.example.schedulemeetingbe.constant.enums.EVENT_TYPE;
+import com.example.schedulemeetingbe.constant.enums.EventType;
 import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.dto.request.recurrence.ApproveRejectRecurringRequest;
 import com.example.schedulemeetingbe.entity.*;
@@ -71,7 +71,7 @@ public class RecurrenceHelper {
         );
         OutboxEvent outboxEvent = OutboxEvent.builder()
                 .payload(jsonMapper.valueToTree(payload))
-                .eventType(EVENT_TYPE.SEND_EMAIL_APPROVE_REJECT.name())
+                .eventType(EventType.SEND_EMAIL_APPROVE_REJECT.name())
                 .status(OutboxStatus.PENDING)
                 .build();
         outboxEventRepository.save(outboxEvent);

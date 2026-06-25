@@ -2,7 +2,7 @@ package com.example.schedulemeetingbe.design_pattern.command.booking.rollback;
 
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.constant.enums.BookingActionType;
-import com.example.schedulemeetingbe.constant.enums.EVENT_TYPE;
+import com.example.schedulemeetingbe.constant.enums.EventType;
 import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.dto.request.booking.RollBackRequest;
 import com.example.schedulemeetingbe.entity.Booking;
@@ -76,7 +76,7 @@ public abstract class BookingRollbackCommand {
         );
         OutboxEvent outboxEvent = OutboxEvent.builder()
                 .payload(jsonMapper.valueToTree(payload))
-                .eventType(EVENT_TYPE.SEND_EMAIL_APPROVE_REJECT.name())
+                .eventType(EventType.SEND_EMAIL_APPROVE_REJECT.name())
                 .status(OutboxStatus.PENDING)
                 .build();
         outboxEventRepository.save(outboxEvent);
