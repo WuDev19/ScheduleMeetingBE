@@ -566,6 +566,7 @@ public class EmailServiceImpl implements IEmailService {
                 
                         <p>
                             Vui lòng chuẩn bị và tham gia đúng giờ.
+                            (Nếu chưa xác nhận tham gia, hãy xác nhận trước!).
                         </p>
                 
                         <hr style="margin: 24px 0;">

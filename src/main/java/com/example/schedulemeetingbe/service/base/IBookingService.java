@@ -62,4 +62,6 @@ public interface IBookingService {
     Optional<Booking> getBooking(Long bookingId);
 
     List<Booking> getApprovedBooking();
+
+    Optional<BookingRemainingResponse> getBookingRemaining(Long bookingId);
 }

@@ -719,6 +719,11 @@ public class BookingServiceImpl implements IBookingService {
         return bookingRepository.findByStatusApproved();
     }
 
+    @Override
+    public Optional<BookingRemainingResponse> getBookingRemaining(Long bookingId) {
+        return bookingRepository.getBookingRemain(bookingId);
+    }
+
     private void addEquipmentToRoom(CreateBookingRequest request, Booking saved) {
         List<CreateBookingEquipmentRequest> bookingEquipmentRequests = request.equipments();
         if (bookingEquipmentRequests != null && !bookingEquipmentRequests.isEmpty()) {
