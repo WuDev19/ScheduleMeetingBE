@@ -26,7 +26,7 @@ public class OutboxEventRemind {
         List<Booking> bookings = iBookingService.getApprovedBooking();
         bookings.forEach(booking -> {
             long timeRemain = ChronoUnit.MINUTES.between(TimeUtils.now(), booking.getStartTime());
-            if (timeRemain <= 30) {
+            if (timeRemain <= 30 && timeRemain >= 0) {
                 Boolean set = iRedisService.setIfAbsent(booking.getBookingId().toString(), "Sent", Duration.ofMinutes(15));
                 if (Boolean.TRUE.equals(set)){
                     outboxEventRemindProcess.process(booking.getBookingId(), timeRemain);

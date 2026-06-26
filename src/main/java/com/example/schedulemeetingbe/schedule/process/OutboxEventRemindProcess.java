@@ -1,8 +1,8 @@
 package com.example.schedulemeetingbe.schedule.process;
 
 import com.example.schedulemeetingbe.constant.StringCommon;
+import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.Notification;
-import com.example.schedulemeetingbe.entity.Room;
 import com.example.schedulemeetingbe.entity.User;
 import com.example.schedulemeetingbe.entity.payload.RemainingBookingPayload;
 import com.example.schedulemeetingbe.service.base.IBookingAttendeeService;
@@ -27,17 +27,17 @@ public class OutboxEventRemindProcess {
 
     @Async("outboxExecutor")
     public void process(Long bookingId, long minutes) {
-        iBookingService.getBooking(bookingId).ifPresent(booking -> {
-            Room room = booking.getRoom();
+        iBookingService.getBookingRemaining(bookingId).ifPresent(bookingRemain -> {
 
             //gửi thông báo cho những người đã xác nhân tham gia
+            Booking booking = iBookingService.getBooking(bookingId).orElse(null);
             List<User> users = iBookingAttendeeService.getAttendOfBooking(bookingId);
             List<Notification> notifications = new ArrayList<>();
             List<String> emails = new ArrayList<>();
             String message = "Cuộc họp " +
-                    booking.getTitle() +
+                    bookingRemain.title() +
                     " tại phòng " +
-                    room.getRoomName() +
+                    bookingRemain.roomName() +
                     " còn " +
                     minutes +
                     " sẽ diễn ra";
@@ -54,8 +54,8 @@ public class OutboxEventRemindProcess {
             iNotificationService.save(notifications);
             RemainingBookingPayload payload = new RemainingBookingPayload(
                     emails,
-                    booking.getTitle(),
-                    room.getRoomName(),
+                    bookingRemain.title(),
+                    bookingRemain.roomName(),
                     minutes
             );
             iEmailService.sendEmailRemainingBooking(payload);

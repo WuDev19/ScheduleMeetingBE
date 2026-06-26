@@ -32,7 +32,6 @@ import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -534,6 +533,11 @@ public class BookingServiceImpl implements IBookingService {
     @Override
     public List<Booking> getApprovedBooking() {
         return bookingRepository.findByStatusApproved();
+    }
+
+    @Override
+    public Optional<BookingRemainingResponse> getBookingRemaining(Long bookingId) {
+        return bookingRepository.getBookingRemain(bookingId);
     }
 
     private void addEquipmentToRoom(CreateBookingRequest request, Booking saved) {

@@ -4,6 +4,7 @@ import com.example.schedulemeetingbe.constant.enums.BookingActionType;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import com.example.schedulemeetingbe.dto.response.booking.BookingHistoryResponse;
 import com.example.schedulemeetingbe.dto.response.booking.BookingRecurrenceResponse;
+import com.example.schedulemeetingbe.dto.response.booking.BookingRemainingResponse;
 import com.example.schedulemeetingbe.dto.response.booking.BookingSummaryProjection;
 import com.example.schedulemeetingbe.entity.Booking;
 import org.springframework.data.domain.Page;
@@ -15,6 +16,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
@@ -219,4 +221,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
             WHERE b.status = 'APPROVED'
             """)
     List<Booking> findByStatusApproved();
+
+    @Query("""
+            SELECT new com.example.schedulemeetingbe.dto.response.booking.BookingRemainingResponse(
+                b.title,
+                b.room.roomName
+            )
+            FROM Booking b
+            WHERE b.bookingId = :bookingId
+            """)
+    Optional<BookingRemainingResponse> getBookingRemain(@Param("bookingId") Long bookingId);
 }
