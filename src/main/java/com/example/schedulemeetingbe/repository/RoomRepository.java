@@ -34,6 +34,14 @@ public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificat
                         AND tstzrange(ru.start_time, ru.end_time)
                             && tstzrange(:start, :end) 
                 )
+            AND NOT EXISTS(
+                SELECT 1
+                FROM booking_reservation br
+                WHERE br.old_room_id = r.room_id
+                AND br.status = 'AWAIT_APPROVE'
+                AND tstzrange(br.old_start_time, br.old_end_time)
+                     && tstzrange(:start, :end)
+                )
             """,
             nativeQuery = true)
     Page<Room> findRoomNotOverlap(
