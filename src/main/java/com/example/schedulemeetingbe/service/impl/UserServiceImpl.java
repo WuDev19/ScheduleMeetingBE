@@ -20,12 +20,9 @@ import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.exception.custom_exception.CooldownResendException;
 import com.example.schedulemeetingbe.mapper.UserMapper;
-import com.example.schedulemeetingbe.repository.DepartmentRepository;
-import com.example.schedulemeetingbe.repository.OutboxEventRepository;
-import com.example.schedulemeetingbe.repository.RoleRepository;
-import com.example.schedulemeetingbe.repository.UserRepository;
-import com.example.schedulemeetingbe.repository.VerificationTokenRepository;
+import com.example.schedulemeetingbe.repository.*;
 import com.example.schedulemeetingbe.service.base.ICloudinaryService;
+import com.example.schedulemeetingbe.service.base.IRedisService;
 import com.example.schedulemeetingbe.service.base.IUserService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
@@ -33,12 +30,12 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -58,7 +55,7 @@ public class UserServiceImpl implements IUserService {
     private final ICloudinaryService iCloudinaryService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final JsonMapper jsonMapper;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final IRedisService iRedisService;
 
     @Transactional
     @Override
@@ -132,10 +129,10 @@ public class UserServiceImpl implements IUserService {
     @Override
     public Map<String, Object> updateEmail(Long id, String newEmail) {
         String redisKey = "update_email:cooldown:" + id;
-        Boolean isFirstRequest = redisTemplate.opsForValue()
-                .setIfAbsent(redisKey, "locked", COOLDOWN_UPDATE_EMAIL, TimeUnit.SECONDS);
+        Boolean isFirstRequest = iRedisService
+                .setIfAbsent(redisKey, "locked", Duration.ofSeconds(COOLDOWN_UPDATE_EMAIL));
         if (Boolean.FALSE.equals(isFirstRequest)) {
-            Long expireTime = redisTemplate.getExpire(redisKey, TimeUnit.SECONDS);
+            Long expireTime = iRedisService.getExpire(redisKey, TimeUnit.SECONDS);
             throw new CooldownResendException("Bạn vừa gửi mail, vui lòng đợi " + expireTime + " giây nữa để tiếp tục gửi lại mail.");
         }
         User user = userRepository.findById(id).orElseThrow(() ->

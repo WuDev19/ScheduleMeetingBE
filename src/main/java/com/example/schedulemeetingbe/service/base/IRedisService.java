@@ -1,6 +1,7 @@
 package com.example.schedulemeetingbe.service.base;
 
 import java.time.Duration;
+import java.util.concurrent.TimeUnit;
 
 public interface IRedisService {
     Boolean setIfAbsent(String key, Object value);
@@ -12,4 +13,5 @@ public interface IRedisService {
     boolean exists(String key);
     Boolean expire(String key, Duration ttl);
     Long getExpire(String key);
+    Long getExpire(String key, TimeUnit timeUnit);
 }
