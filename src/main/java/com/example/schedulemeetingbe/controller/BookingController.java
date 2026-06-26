@@ -15,6 +15,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -220,6 +222,36 @@ public class BookingController {
         );
     }
 
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api lọc lịch đặt theo thông tin phòng, người đặt, trạng thái và thời gian")
+    @GetMapping("/filter")
+    @PreAuthorize("hasAuthority('BOOKING:VIEW')")
+    public ResponseEntity<ApiResult<PageResponse<BookingResponse>>> filterBookings(
+            @ModelAttribute BookingFilterRequest request,
+            @PageableDefault Pageable pageable
+    ) {
+        return ApiResponse.success(
+                iBookingService.filterBooking(request, pageable),
+                "Lọc lịch đặt thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api lấy lịch đặt theo ngày/tuần/tháng")
+    @GetMapping("/view")
+    @PreAuthorize("hasAuthority('BOOKING:VIEW')")
+    public ResponseEntity<ApiResult<PageResponse<BookingResponse>>> viewBookings(
+            @ModelAttribute BookingViewRequest request,
+            @PageableDefault Pageable pageable
+    ) {
+        return ApiResponse.success(
+                iBookingService.viewBookings(request, pageable),
+                "Lấy lịch đặt theo view thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
     @GetMapping("/attendee/confirm")
     public String confirmParticipateEmail(
             @RequestParam String token,
@@ -244,5 +276,20 @@ public class BookingController {
                 Constants.SUCCESS_CODE
         );
     }
-
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Export booking list to Excel")
+    @GetMapping("/export")
+    @PreAuthorize("hasAuthority('BOOKING:VIEW')")
+    public ResponseEntity<byte[]> exportBookings(
+            @ModelAttribute BookingExportRequest request,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        byte[] excel = iBookingService.exportBookings(request, jwt.getClaim(StringCommon.USER_ID));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=bookings.xlsx");
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(excel);
+    }
 }

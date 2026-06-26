@@ -110,4 +110,12 @@ public class OpenApiConfig {
                 .build();
     }
 
+    @Bean
+    public GroupedOpenApi departmentGroup() {
+        return GroupedOpenApi.builder()
+                .group("Department")
+                .pathsToMatch("/api/v1/department/**")
+                .build();
+    }
+
 }

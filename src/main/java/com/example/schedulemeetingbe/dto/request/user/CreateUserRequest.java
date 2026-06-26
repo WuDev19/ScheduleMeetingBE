@@ -28,6 +28,8 @@ public record CreateUserRequest(
         String phone,
 
         @NotBlank(message = "Dữ liệu role " + StringCommon.NOT_BLANK)
-        String role
+        String role,
+
+        Long departmentId
 ) {
 }

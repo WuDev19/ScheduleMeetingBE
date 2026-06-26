@@ -8,7 +8,9 @@ import com.example.schedulemeetingbe.dto.response.booking.BookingSummaryProjecti
 import com.example.schedulemeetingbe.entity.Booking;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -16,7 +18,28 @@ import org.springframework.data.repository.query.Param;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public interface BookingRepository extends JpaRepository<Booking, Long> {
+public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpecificationExecutor<Booking> {
+
+    @EntityGraph(attributePaths = {"room", "room.building", "bookedBy"})
+    Page<Booking> findAllWithRoomAndBookedBy(org.springframework.data.jpa.domain.Specification<Booking> spec, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"room", "room.building", "bookedBy"})
+    List<Booking> findAllWithRoomAndBookedBy(org.springframework.data.jpa.domain.Specification<Booking> spec);
+
+    @EntityGraph(attributePaths = {"room", "room.building", "bookedBy"})
+    @Query(""
+            + "select distinct b from Booking b "
+            + "left join b.attendees a "
+            + "where (b.bookedBy.userId = :userId or a.userId = :userId) "
+            + "and b.status in :statuses "
+            + "and b.deletedAt is null"
+            + ""
+    )
+    List<Booking> findAllBookingsForRegisterExport(@Param("userId") Long userId, @Param("statuses") List<BookingStatus> statuses);
+
+    @EntityGraph(attributePaths = {"room", "room.building", "bookedBy"})
+    @Query("select b from Booking b where b.deletedAt is null")
+    List<Booking> findAllBookingsForApproverExport();
 
     //check lúc cập nhật
     @Query(value = """

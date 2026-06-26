@@ -49,6 +49,12 @@ public interface IBookingService {
 
     PageResponse<BookingSummaryResponse> getBookingWaitingApprove(Pageable pageable);
 
+    PageResponse<BookingResponse> filterBooking(BookingFilterRequest request, Pageable pageable);
+
+    PageResponse<BookingResponse> viewBookings(BookingViewRequest request, Pageable pageable);
+
+    byte[] exportBookings(BookingExportRequest request, Long userId);
+
     void verifyEmailAndUpsertBookingAttendee(String token, Long bookingId);
 
     void confirmParticipateIn(Long bookingId, Long userId);

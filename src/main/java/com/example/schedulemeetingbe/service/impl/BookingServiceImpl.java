@@ -3,6 +3,7 @@ package com.example.schedulemeetingbe.service.impl;
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.constant.enums.BookingActionType;
 import com.example.schedulemeetingbe.constant.enums.BookingEquipmentAction;
+import com.example.schedulemeetingbe.constant.enums.BookingExportType;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import com.example.schedulemeetingbe.constant.enums.ReservationStatus;
 import com.example.schedulemeetingbe.design_pattern.command.booking.approve.BookingApproveCommandFactory;
@@ -22,17 +23,30 @@ import com.example.schedulemeetingbe.exception.custom_exception.OverlapBookingEx
 import com.example.schedulemeetingbe.helper.CreatePayloadHelper;
 import com.example.schedulemeetingbe.mapper.BookingMapper;
 import com.example.schedulemeetingbe.repository.*;
+import com.example.schedulemeetingbe.repository.specification.BookingSpecification;
 import com.example.schedulemeetingbe.service.base.*;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.time.temporal.ChronoUnit;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -507,6 +521,175 @@ public class BookingServiceImpl implements IBookingService {
         Notification notification = iNotificationService.getNotification(notificationId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         return BookingMapper.mapToBookingNotificationResponse(booking, booking.getRoom(), user, notification);
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public PageResponse<BookingResponse> filterBooking(BookingFilterRequest request, Pageable pageable) {
+        OffsetDateTime fromDate = parseOffsetDateTime(request.fromDate());
+        OffsetDateTime toDate = parseOffsetDateTime(request.toDate());
+        Page<Booking> page = bookingRepository.findAllWithRoomAndBookedBy(
+                BookingSpecification.filter(
+                        request.roomId(),
+                        request.bookedBy(),
+                        request.status() != null ? List.of(request.status()) : null,
+                        fromDate,
+                        toDate
+                ),
+                pageable
+        );
+        List<BookingResponse> content = page.getContent().stream()
+                .map(booking -> BookingMapper.mapToBookingResponse(
+                        booking,
+                        booking.getBookedBy(),
+                        booking.getRoom()
+                ))
+                .toList();
+        return new PageResponse<>(
+                page.getNumber(),
+                page.getNumberOfElements(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                content
+        );
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public PageResponse<BookingResponse> viewBookings(BookingViewRequest request, Pageable pageable) {
+        LocalDate targetDate = request.targetDate();
+        if (request.viewType() == null || targetDate == null) {
+            throw new BusinessException(ErrorResponse.FIELD_INVALID);
+        }
+        OffsetDateTime startDateTime;
+        OffsetDateTime endDateTime;
+        switch (request.viewType()) {
+            case DAY -> {
+                startDateTime = targetDate.atStartOfDay().atOffset(TimeUtils.ZONE_OFFSET);
+                endDateTime = targetDate.atTime(LocalTime.MAX).atOffset(TimeUtils.ZONE_OFFSET);
+            }
+            case WEEK -> {
+                LocalDate monday = targetDate.with(DayOfWeek.MONDAY);
+                LocalDate sunday = monday.plusDays(6);
+                startDateTime = monday.atStartOfDay().atOffset(TimeUtils.ZONE_OFFSET);
+                endDateTime = sunday.atTime(LocalTime.MAX).atOffset(TimeUtils.ZONE_OFFSET);
+            }
+            case MONTH -> {
+                LocalDate firstDay = targetDate.with(TemporalAdjusters.firstDayOfMonth());
+                LocalDate lastDay = targetDate.with(TemporalAdjusters.lastDayOfMonth());
+                startDateTime = firstDay.atStartOfDay().atOffset(TimeUtils.ZONE_OFFSET);
+                endDateTime = lastDay.atTime(LocalTime.MAX).atOffset(TimeUtils.ZONE_OFFSET);
+            }
+            default -> throw new BusinessException(ErrorResponse.FIELD_INVALID);
+        }
+        Page<Booking> page = bookingRepository.findAllWithRoomAndBookedBy(
+                BookingSpecification.filter(
+                        null,
+                        null,
+                        null,
+                        startDateTime,
+                        endDateTime
+                ),
+                pageable
+        );
+        List<BookingResponse> content = page.getContent().stream()
+                .map(booking -> BookingMapper.mapToBookingResponse(
+                        booking,
+                        booking.getBookedBy(),
+                        booking.getRoom()
+                ))
+                .toList();
+        return new PageResponse<>(
+                page.getNumber(),
+                page.getNumberOfElements(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                content
+        );
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public byte[] exportBookings(BookingExportRequest request, Long userId) {
+        List<Booking> bookings;
+        if (request.exportType() == null) {
+            throw new BusinessException(ErrorResponse.FIELD_INVALID);
+        }
+        if (request.exportType() == BookingExportType.REGISTER) {
+            bookings = bookingRepository.findAllBookingsForRegisterExport(
+                    userId,
+                    List.of(BookingStatus.PENDING, BookingStatus.APPROVED)
+            );
+        } else {
+            bookings = bookingRepository.findAllBookingsForApproverExport();
+        }
+        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            Sheet sheet = workbook.createSheet("Bookings");
+            Row header = sheet.createRow(0);
+            String[] headings = {
+                    "Booking ID",
+                    "Title",
+                    "Description",
+                    "Room Name",
+                    "Building Address",
+                    "Floor Number",
+                    "Booked By",
+                    "Booked Email",
+                    "Booked Phone",
+                    "Status",
+                    "Start Time",
+                    "End Time",
+                    "Attendee Count"
+            };
+            for (int i = 0; i < headings.length; i++) {
+                Cell cell = header.createCell(i);
+                cell.setCellValue(headings[i]);
+            }
+            int rowIndex = 1;
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT);
+            for (Booking booking : bookings) {
+                Row row = sheet.createRow(rowIndex++);
+                row.createCell(0).setCellValue(booking.getBookingId());
+                row.createCell(1).setCellValue(booking.getTitle() != null ? booking.getTitle() : "");
+                row.createCell(2).setCellValue(booking.getDescription() != null ? booking.getDescription() : "");
+                row.createCell(3).setCellValue(booking.getRoom().getRoomName());
+                row.createCell(4).setCellValue(booking.getRoom().getBuilding().getAddress());
+                row.createCell(5).setCellValue(booking.getRoom().getFloorNumber());
+                row.createCell(6).setCellValue(booking.getBookedBy().getFullName());
+                row.createCell(7).setCellValue(booking.getBookedBy().getEmail());
+                row.createCell(8).setCellValue(booking.getBookedBy().getPhone() != null ? booking.getBookedBy().getPhone() : "");
+                row.createCell(9).setCellValue(booking.getStatus().name());
+                row.createCell(10).setCellValue(booking.getStartTime().format(formatter));
+                row.createCell(11).setCellValue(booking.getEndTime().format(formatter));
+                row.createCell(12).setCellValue(booking.getAttendeeCount());
+            }
+            for (int i = 0; i < headings.length; i++) {
+                sheet.autoSizeColumn(i);
+            }
+            workbook.write(outputStream);
+            return outputStream.toByteArray();
+        } catch (IOException ex) {
+            throw new BusinessException(ErrorResponse.FILE_ACCESS_ERROR);
+        }
+    }
+
+    private OffsetDateTime parseOffsetDateTime(String dateTime) {
+        if (dateTime == null || dateTime.isBlank()) {
+            return null;
+        }
+        try {
+            return OffsetDateTime.parse(dateTime, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        } catch (DateTimeParseException ex) {
+            try {
+                return OffsetDateTime.parse(dateTime, DateTimeFormatter.ofPattern(StringCommon.OFFSET_FORMAT));
+            } catch (DateTimeParseException e) {
+                try {
+                    return OffsetDateTime.parse(dateTime + TimeUtils.ZONE_OFFSET, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                } catch (DateTimeParseException ignore) {
+                    throw new BusinessException(ErrorResponse.PARSE_JSON);
+                }
+            }
+        }
     }
 
     @Transactional

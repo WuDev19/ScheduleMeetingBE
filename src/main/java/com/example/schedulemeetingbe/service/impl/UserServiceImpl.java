@@ -20,6 +20,7 @@ import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.exception.custom_exception.CooldownResendException;
 import com.example.schedulemeetingbe.mapper.UserMapper;
+import com.example.schedulemeetingbe.repository.DepartmentRepository;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.repository.RoleRepository;
 import com.example.schedulemeetingbe.repository.UserRepository;
@@ -50,6 +51,7 @@ import static com.example.schedulemeetingbe.constant.Constants.COOLDOWN_UPDATE_E
 public class UserServiceImpl implements IUserService {
 
     private final UserRepository userRepository;
+    private final DepartmentRepository departmentRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final VerificationTokenRepository verificationTokenRepository;
     private final RoleRepository roleRepository;
@@ -63,15 +65,19 @@ public class UserServiceImpl implements IUserService {
     public Map<String, Object> createUser(CreateUserRequest request) {
         Role role = roleRepository.findByRoleName(request.role()).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        User user = User.builder()
+        User.UserBuilder builder = User.builder()
                 .username(request.username())
                 .phone(request.phone() != null ? request.phone() : null)
                 .email(request.email())
                 .passwordHash(bCryptPasswordEncoder.encode(request.password()))
                 .fullName(request.fullName())
                 .roles(Set.of(role))
-                .isActive(true)
-                .build();
+                .isActive(true);
+        if (request.departmentId() != null) {
+            builder.department(departmentRepository.findById(request.departmentId())
+                    .orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND)));
+        }
+        User user = builder.build();
         User saved = userRepository.save(user);
         UserCreatePayload payload = new UserCreatePayload(
                 saved.getUserId(),
@@ -113,6 +119,10 @@ public class UserServiceImpl implements IUserService {
         if (request.newPassword() != null) {
             user.setPasswordHash(bCryptPasswordEncoder.encode(request.newPassword()));
             user.setPasswordChangedAt(TimeUtils.now());
+        }
+        if (request.departmentId() != null) {
+            user.setDepartment(departmentRepository.findById(request.departmentId())
+                    .orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND)));
         }
         return UserMapper.mapToUserDetailResponse(user);
     }
