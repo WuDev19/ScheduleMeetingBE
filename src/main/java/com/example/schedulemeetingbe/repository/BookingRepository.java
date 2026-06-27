@@ -22,8 +22,8 @@ import java.util.Optional;
 
 public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpecificationExecutor<Booking> {
 
-    @EntityGraph(attributePaths = {"room", "room.building", "bookedBy"})
-    Page<Booking> findAllWithRoomAndBookedBy(org.springframework.data.jpa.domain.Specification<Booking> spec, Pageable pageable);
+//    @EntityGraph(attributePaths = {"room", "room.building", "bookedBy"})
+//    Page<Booking> findAllWithRoomAndBookedBy(org.springframework.data.jpa.domain.Specification<Booking> spec, Pageable pageable);
 
     @EntityGraph(attributePaths = {"room", "room.building", "bookedBy"})
     List<Booking> findAllWithRoomAndBookedBy(org.springframework.data.jpa.domain.Specification<Booking> spec);

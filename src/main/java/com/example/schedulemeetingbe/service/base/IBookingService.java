@@ -49,9 +49,9 @@ public interface IBookingService {
 
     PageResponse<BookingSummaryResponse> getBookingWaitingApprove(Pageable pageable);
 
-    PageResponse<BookingResponse> filterBooking(BookingFilterRequest request, Pageable pageable);
+    List<BookingResponse> filterBooking(BookingFilterRequest request);
 
-    PageResponse<BookingResponse> viewBookings(BookingViewRequest request, Pageable pageable);
+    List<BookingResponse> viewBookings(BookingViewRequest request);
 
     byte[] exportBookings(BookingExportRequest request, Long userId);
 

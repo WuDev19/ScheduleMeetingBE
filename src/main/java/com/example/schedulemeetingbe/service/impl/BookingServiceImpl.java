@@ -1,11 +1,7 @@
 package com.example.schedulemeetingbe.service.impl;
 
 import com.example.schedulemeetingbe.constant.StringCommon;
-import com.example.schedulemeetingbe.constant.enums.BookingActionType;
-import com.example.schedulemeetingbe.constant.enums.BookingEquipmentAction;
-import com.example.schedulemeetingbe.constant.enums.BookingExportType;
-import com.example.schedulemeetingbe.constant.enums.BookingStatus;
-import com.example.schedulemeetingbe.constant.enums.ReservationStatus;
+import com.example.schedulemeetingbe.constant.enums.*;
 import com.example.schedulemeetingbe.design_pattern.command.booking.approve.BookingApproveCommandFactory;
 import com.example.schedulemeetingbe.design_pattern.command.booking.rollback.BookingRollbackCommandFactory;
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
@@ -525,38 +521,30 @@ public class BookingServiceImpl implements IBookingService {
 
     @Transactional(readOnly = true)
     @Override
-    public PageResponse<BookingResponse> filterBooking(BookingFilterRequest request, Pageable pageable) {
+    public List<BookingResponse> filterBooking(BookingFilterRequest request) {
         OffsetDateTime fromDate = parseOffsetDateTime(request.fromDate());
         OffsetDateTime toDate = parseOffsetDateTime(request.toDate());
-        Page<Booking> page = bookingRepository.findAllWithRoomAndBookedBy(
+        List<Booking> result = bookingRepository.findAllWithRoomAndBookedBy(
                 BookingSpecification.filter(
                         request.roomId(),
                         request.bookedBy(),
                         request.status() != null ? List.of(request.status()) : null,
                         fromDate,
                         toDate
-                ),
-                pageable
+                )
         );
-        List<BookingResponse> content = page.getContent().stream()
+        return result.stream()
                 .map(booking -> BookingMapper.mapToBookingResponse(
                         booking,
                         booking.getBookedBy(),
                         booking.getRoom()
                 ))
                 .toList();
-        return new PageResponse<>(
-                page.getNumber(),
-                page.getNumberOfElements(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                content
-        );
     }
 
     @Transactional(readOnly = true)
     @Override
-    public PageResponse<BookingResponse> viewBookings(BookingViewRequest request, Pageable pageable) {
+    public List<BookingResponse> viewBookings(BookingViewRequest request) {
         LocalDate targetDate = request.targetDate();
         if (request.viewType() == null || targetDate == null) {
             throw new BusinessException(ErrorResponse.FIELD_INVALID);
@@ -582,30 +570,22 @@ public class BookingServiceImpl implements IBookingService {
             }
             default -> throw new BusinessException(ErrorResponse.FIELD_INVALID);
         }
-        Page<Booking> page = bookingRepository.findAllWithRoomAndBookedBy(
+        List<Booking> result = bookingRepository.findAllWithRoomAndBookedBy(
                 BookingSpecification.filter(
                         null,
                         null,
                         null,
                         startDateTime,
                         endDateTime
-                ),
-                pageable
+                )
         );
-        List<BookingResponse> content = page.getContent().stream()
+        return result.stream()
                 .map(booking -> BookingMapper.mapToBookingResponse(
                         booking,
                         booking.getBookedBy(),
                         booking.getRoom()
                 ))
                 .toList();
-        return new PageResponse<>(
-                page.getNumber(),
-                page.getNumberOfElements(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                content
-        );
     }
 
     @Transactional(readOnly = true)
