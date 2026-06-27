@@ -22,7 +22,7 @@ public class BookingSpecification {
     public static Specification<Booking> filter(
             Long roomId,
             String bookedBy,
-            BookingStatus statuses,
+            BookingStatus status, // Nhận status ở đây
             OffsetDateTime fromDate,
             OffsetDateTime toDate
     ) {
@@ -43,8 +43,8 @@ public class BookingSpecification {
                 predicates.add(criteriaBuilder.like(fullNameLower, searchPattern));
             }
 
-            if (statuses != null) {
-                predicates.add(criteriaBuilder.equal(root.get("status"), statuses));
+            if (status != null) {
+                predicates.add(criteriaBuilder.equal(root.get("status"), status));
             }
 
             if (fromDate != null && toDate != null) {

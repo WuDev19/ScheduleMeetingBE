@@ -525,7 +525,7 @@ public class BookingServiceImpl implements IBookingService {
     public List<BookingResponse> filterBooking(BookingFilterRequest request) {
         OffsetDateTime fromDate = parseOffsetDateTime(request.fromDate());
         OffsetDateTime toDate = parseOffsetDateTime(request.toDate());
-        List<Booking> result = bookingRepository.findAllWithRoomAndBookedBy(
+        List<Booking> result = bookingRepository.findAll(
                 BookingSpecification.filter(
                         request.roomId(),
                         request.bookedBy(),
@@ -571,7 +571,7 @@ public class BookingServiceImpl implements IBookingService {
             }
             default -> throw new BusinessException(ErrorResponse.FIELD_INVALID);
         }
-        List<Booking> result = bookingRepository.findAllWithRoomAndBookedBy(
+        List<Booking> result = bookingRepository.findAll(
                 BookingSpecification.filter(
                         null,
                         null,

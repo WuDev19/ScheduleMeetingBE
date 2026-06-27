@@ -9,6 +9,7 @@ import com.example.schedulemeetingbe.dto.response.booking.BookingSummaryProjecti
 import com.example.schedulemeetingbe.entity.Booking;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
@@ -22,7 +23,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
 //    Page<Booking> findAllWithRoomAndBookedBy(org.springframework.data.jpa.domain.Specification<Booking> spec, Pageable pageable);
 
     @EntityGraph(attributePaths = {"room", "room.building", "bookedBy"})
-    List<Booking> findAllWithRoomAndBookedBy(org.springframework.data.jpa.domain.Specification<Booking> spec);
+    List<Booking> findAll(Specification<Booking> spec);
 
     @EntityGraph(attributePaths = {"room", "room.building", "bookedBy"})
     @Query(""
