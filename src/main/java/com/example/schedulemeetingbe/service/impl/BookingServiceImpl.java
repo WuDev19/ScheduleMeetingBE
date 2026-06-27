@@ -400,6 +400,7 @@ public class BookingServiceImpl implements IBookingService {
         return CRUDResponseHelper.deleteSuccess();
     }
 
+    // ko cho xem lịch của người khác, chỉ hiện preview vài thông tin (nội bộ nên có thể triển khai như này)
     @Transactional(readOnly = true)
     @Override
     public BookingDetailResponse getBookingDetail(Long bookingId, Long userId) {
@@ -528,7 +529,7 @@ public class BookingServiceImpl implements IBookingService {
                 BookingSpecification.filter(
                         request.roomId(),
                         request.bookedBy(),
-                        request.status() != null ? List.of(request.status()) : null,
+                        request.status(),
                         fromDate,
                         toDate
                 )

@@ -16,8 +16,8 @@ public class BookingSpecification {
 
     public static Specification<Booking> filter(
             Long roomId,
-            Long bookedById,
-            List<BookingStatus> statuses,
+            String bookedBy,
+            BookingStatus statuses,
             OffsetDateTime fromDate,
             OffsetDateTime toDate
     ) {
@@ -28,11 +28,11 @@ public class BookingSpecification {
             if (roomId != null) {
                 predicates.add(criteriaBuilder.equal(root.get("room").get("roomId"), roomId));
             }
-            if (bookedById != null) {
-                predicates.add(criteriaBuilder.equal(root.get("bookedBy").get("userId"), bookedById));
+            if (bookedBy != null) {
+                predicates.add(criteriaBuilder.like(root.get("bookedBy").get("fullName"), bookedBy + "%"));
             }
-            if (statuses != null && !statuses.isEmpty()) {
-                predicates.add(root.get("status").in(statuses));
+            if (statuses != null) {
+                predicates.add(criteriaBuilder.equal(root.get("status"), statuses));
             }
             if (fromDate != null && toDate != null) {
                 predicates.add(criteriaBuilder.and(
