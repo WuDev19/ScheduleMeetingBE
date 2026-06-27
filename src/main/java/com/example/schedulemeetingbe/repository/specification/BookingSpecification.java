@@ -2,6 +2,11 @@ package com.example.schedulemeetingbe.repository.specification;
 
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import com.example.schedulemeetingbe.entity.Booking;
+import com.example.schedulemeetingbe.entity.Room;
+import com.example.schedulemeetingbe.entity.User;
+import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -23,17 +28,25 @@ public class BookingSpecification {
     ) {
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
+
             predicates.add(criteriaBuilder.isNull(root.get("deletedAt")));
 
             if (roomId != null) {
-                predicates.add(criteriaBuilder.equal(root.get("room").get("roomId"), roomId));
+                Join<Booking, Room> roomJoin = root.join("room", JoinType.LEFT);
+                predicates.add(criteriaBuilder.equal(roomJoin.get("roomId"), roomId));
             }
-            if (bookedBy != null) {
-                predicates.add(criteriaBuilder.like(root.get("bookedBy").get("fullName"), bookedBy + "%"));
+
+            if (bookedBy != null && !bookedBy.trim().isEmpty()) {
+                Join<Booking, User> bookedByJoin = root.join("bookedBy", JoinType.LEFT);
+                Expression<String> fullNameLower = criteriaBuilder.lower(bookedByJoin.get("fullName"));
+                String searchPattern = bookedBy.trim().toLowerCase() + "%";
+                predicates.add(criteriaBuilder.like(fullNameLower, searchPattern));
             }
+
             if (statuses != null) {
                 predicates.add(criteriaBuilder.equal(root.get("status"), statuses));
             }
+
             if (fromDate != null && toDate != null) {
                 predicates.add(criteriaBuilder.and(
                         criteriaBuilder.lessThanOrEqualTo(root.get("startTime"), toDate),
