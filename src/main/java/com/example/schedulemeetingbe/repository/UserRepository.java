@@ -13,7 +13,7 @@ import java.util.Set;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    Optional<User> findByUsername(String username);
+    Optional<User> findByUsernameAndIsActiveIsTrue(String username);
 
     Optional<User> findByEmail(String email);
 

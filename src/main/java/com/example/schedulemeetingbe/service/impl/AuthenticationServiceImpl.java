@@ -65,7 +65,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     public LoginResponse login(LoginByUsernameRequest loginRequest) {
         String username = loginRequest.username();
         String password = loginRequest.password();
-        User user = userRepository.findByUsername(username).orElseThrow(() ->
+        User user = userRepository.findByUsernameAndIsActiveIsTrue(username).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         boolean isMatch = bCryptPasswordEncoder.matches(password, user.getPasswordHash());
         if (!isMatch) {
