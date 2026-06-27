@@ -62,10 +62,11 @@ public class DepartmentController {
     @GetMapping("/all")
     @PreAuthorize("hasAuthority('DEPARTMENT:VIEW')")
     public ResponseEntity<ApiResult<PageResponse<DepartmentResponse>>> getDepartments(
+            @RequestParam(value = "keyword", required = false) String keyword,
             @PageableDefault Pageable pageable
     ) {
         return ApiResponse.success(
-                iDepartmentService.getDepartments(pageable),
+                iDepartmentService.getDepartments(keyword, pageable),
                 "Lấy danh sách department thành công",
                 Constants.SUCCESS_CODE
         );

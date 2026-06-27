@@ -14,7 +14,7 @@ public interface IDepartmentService {
 
     DepartmentResponse getDepartment(Long id);
 
-    PageResponse<DepartmentResponse> getDepartments(Pageable pageable);
+    PageResponse<DepartmentResponse> getDepartments(String keyword, Pageable pageable);
 
     Map<String, Object> updateDepartment(Long id, UpdateDepartmentRequest request);
 

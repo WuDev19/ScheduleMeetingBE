@@ -6,6 +6,8 @@ public record UserDetailResponse(
         String email,
         String fullName,
         String phone,
+        String avatarUrl,
+        Boolean isActive,
         DepartmentResponse department
 ) {
 }

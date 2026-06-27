@@ -101,7 +101,7 @@ public class UserController {
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
     @Operation(summary = "Api cho xóa mềm tài khoản")
     @PatchMapping("/lock/{id}")
-    @PreAuthorize("hasAuthority('USER:LOCK')")
+    @PreAuthorize("hasAuthority('USER:LOCK') or (authentication != null and principal.claims['userId'].toString().equals(#id.toString()))")
     public ResponseEntity<ApiResult<Map<String, Object>>> lockAccount(@PathVariable Long id) {
         return ApiResponse.success(
                 iUserService.lockAccount(id),

@@ -62,8 +62,13 @@ public class DepartmentServiceImpl implements IDepartmentService {
     }
 
     @Override
-    public PageResponse<DepartmentResponse> getDepartments(Pageable pageable) {
-        Page<Department> departmentPage = departmentRepository.findByDeletedAtIsNull(pageable);
+    public PageResponse<DepartmentResponse> getDepartments(String keyword, Pageable pageable) {
+        Page<Department> departmentPage;
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            departmentPage = departmentRepository.searchDepartments(keyword.trim(), pageable);
+        } else {
+            departmentPage = departmentRepository.findByDeletedAtIsNull(pageable);
+        }
         return new PageResponse<>(
                 departmentPage.getNumber(),
                 departmentPage.getNumberOfElements(),
