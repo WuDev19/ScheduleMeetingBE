@@ -256,7 +256,7 @@ public class BookingController {
     }
 
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
-    @Operation(summary = "Api cho người dung xác nhận tham giá lịch họp")
+    @Operation(summary = "Api cho người dùng xác nhận tham gia lịch họp")
     @PostMapping("/{bookingId}/attendee/confirm")
     @PreAuthorize("hasAuthority('BOOKING:CONFIRM')")
     public ResponseEntity<ApiResult<Void>> confirmParticipateEmail(
