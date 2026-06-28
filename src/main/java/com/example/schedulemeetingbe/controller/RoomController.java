@@ -154,6 +154,37 @@ public class RoomController {
     }
 
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cập nhật số lượng thiết bị trong phòng họp")
+    @PatchMapping("/{roomId}/equipment/{reId}")
+    @PreAuthorize("hasAuthority('ROOM:UPDATE')")
+    public ResponseEntity<ApiResult<Map<String, Object>>> updateRoomEquipmentQuantity(
+            @PathVariable Long roomId,
+            @PathVariable Long reId,
+            @RequestBody Map<String, Integer> body
+    ) {
+        return ApiResponse.success(
+                iRoomService.updateRoomEquipmentQuantity(roomId, reId, body.get("quantity")),
+                "Cập nhật số lượng thiết bị phòng thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api xóa thiết bị khỏi phòng họp")
+    @DeleteMapping("/{roomId}/equipment/{reId}")
+    @PreAuthorize("hasAuthority('ROOM:UPDATE')")
+    public ResponseEntity<ApiResult<Map<String, Object>>> deleteRoomEquipment(
+            @PathVariable Long roomId,
+            @PathVariable Long reId
+    ) {
+        return ApiResponse.success(
+                iRoomService.deleteRoomEquipment(roomId, reId),
+                "Xóa thiết bị khỏi phòng họp thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
     @Operation(summary = "Api lọc phòng họp trong khoảng thời gian")
     @GetMapping("/not-overlap")
     @PreAuthorize("hasAuthority('ROOM:VIEW')")

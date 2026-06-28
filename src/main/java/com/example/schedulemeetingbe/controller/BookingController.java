@@ -226,9 +226,12 @@ public class BookingController {
     @Operation(summary = "Api lọc lịch đặt theo thông tin phòng, người đặt, trạng thái và thời gian")
     @GetMapping("/filter")
     @PreAuthorize("hasAuthority('BOOKING:VIEW')")
-    public ResponseEntity<ApiResult<List<BookingResponse>>> filterBookings(@ModelAttribute BookingFilterRequest request) {
+    public ResponseEntity<ApiResult<PageResponse<BookingResponse>>> filterBookings(
+            @ModelAttribute BookingFilterRequest request,
+            @PageableDefault Pageable pageable
+    ) {
         return ApiResponse.success(
-                iBookingService.filterBooking(request),
+                iBookingService.filterBooking(request, pageable),
                 "Lọc lịch đặt thành công",
                 Constants.SUCCESS_CODE
         );

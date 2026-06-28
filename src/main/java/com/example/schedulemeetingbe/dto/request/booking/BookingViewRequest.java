@@ -8,6 +8,7 @@ import java.time.LocalDate;
 public record BookingViewRequest(
         BookingViewType viewType,
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-        LocalDate targetDate
+        LocalDate targetDate,
+        String fullName
 ) {
 }

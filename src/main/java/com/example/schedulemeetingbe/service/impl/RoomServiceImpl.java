@@ -201,6 +201,27 @@ public class RoomServiceImpl implements IRoomService {
         return Map.of(ROOM_ID, roomId);
     }
 
+    @Transactional
+    @Override
+    public Map<String, Object> updateRoomEquipmentQuantity(Long roomId, Long roomEquipmentId, Integer quantity) {
+        roomRepository.findById(roomId).orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        RoomEquipment re = roomEquipmentRepository.findById(roomEquipmentId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        re.setQuantity(quantity);
+        roomEquipmentRepository.save(re);
+        return Map.of("roomEquipmentId", roomEquipmentId, "quantity", quantity);
+    }
+
+    @Transactional
+    @Override
+    public Map<String, Object> deleteRoomEquipment(Long roomId, Long roomEquipmentId) {
+        roomRepository.findById(roomId).orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        RoomEquipment re = roomEquipmentRepository.findById(roomEquipmentId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        roomEquipmentRepository.delete(re);
+        return CRUDResponseHelper.deleteSuccess();
+    }
+
     @Override
     public PageResponse<RoomResponse> getRoomNotOverlapTime(StartEndTimeRequest request, Pageable pageable) {
         if (request.start().isAfter(request.end())) {

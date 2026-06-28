@@ -23,12 +23,14 @@ public class BookingMapper {
                 room.getBuilding().getAddress(),
                 room.getFloorNumber(),
                 user.getFullName(),
+                user.getUsername(),
                 user.getPhone(),
                 user.getEmail(),
                 booking.getStartTime(),
                 booking.getEndTime(),
                 booking.getAttendeeCount(),
-                booking.getCreatedAt()
+                booking.getCreatedAt(),
+                booking.getStatus()
         );
     }
 
@@ -61,7 +63,8 @@ public class BookingMapper {
                 booking.getEndTime(),
                 booking.getAttendeeCount(),
                 booking.getCreatedAt(),
-                equipments
+                equipments,
+                booking.getStatus()
         );
     }
 

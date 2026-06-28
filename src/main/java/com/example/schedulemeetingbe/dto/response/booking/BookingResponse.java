@@ -1,5 +1,6 @@
 package com.example.schedulemeetingbe.dto.response.booking;
 
+import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import java.time.OffsetDateTime;
 
 public record BookingResponse(
@@ -10,11 +11,13 @@ public record BookingResponse(
     String roomAddress,
     Integer floorNumber,
     String userBooked,
+    String username,
     String phone,
     String email,
     OffsetDateTime startTime,
     OffsetDateTime endTime,
     Integer attendee,
-    OffsetDateTime createdAt
+    OffsetDateTime createdAt,
+    BookingStatus status
 ) {
 }

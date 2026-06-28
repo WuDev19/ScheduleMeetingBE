@@ -22,7 +22,7 @@ public class BookingSpecification {
     public static Specification<Booking> filter(
             Long roomId,
             String bookedBy,
-            BookingStatus status, // Nhận status ở đây
+            BookingStatus status,
             OffsetDateTime fromDate,
             OffsetDateTime toDate
     ) {
@@ -39,8 +39,14 @@ public class BookingSpecification {
             if (bookedBy != null && !bookedBy.trim().isEmpty()) {
                 Join<Booking, User> bookedByJoin = root.join("bookedBy", JoinType.LEFT);
                 Expression<String> fullNameLower = criteriaBuilder.lower(bookedByJoin.get("fullName"));
-                String searchPattern = bookedBy.trim().toLowerCase() + "%";
-                predicates.add(criteriaBuilder.like(fullNameLower, searchPattern));
+                Expression<String> usernameLower = criteriaBuilder.lower(bookedByJoin.get("username"));
+                Expression<String> emailLower = criteriaBuilder.lower(bookedByJoin.get("email"));
+                String searchPattern = "%" + bookedBy.trim().toLowerCase() + "%";
+                predicates.add(criteriaBuilder.or(
+                        criteriaBuilder.like(fullNameLower, searchPattern),
+                        criteriaBuilder.like(usernameLower, searchPattern),
+                        criteriaBuilder.like(emailLower, searchPattern)
+                ));
             }
 
             if (status != null) {

@@ -49,7 +49,7 @@ public interface IBookingService {
 
     PageResponse<BookingSummaryResponse> getBookingWaitingApprove(Pageable pageable);
 
-    List<BookingResponse> filterBooking(BookingFilterRequest request);
+    PageResponse<BookingResponse> filterBooking(BookingFilterRequest request, Pageable pageable);
 
     List<BookingResponse> viewBookings(BookingViewRequest request);
 

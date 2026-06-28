@@ -407,18 +407,23 @@ public class BookingServiceImpl implements IBookingService {
     @Transactional(readOnly = true)
     @Override
     public BookingDetailResponse getBookingDetail(Long bookingId, Long userId) {
-        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
-                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        //phải call user trước, tại trong cùng 1 transaction bên booking cũng có user có id là 4
+        //mà user bên booking để lazy nên nó tạo proxy có data là null
         User user = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        Role role = iUserService.getRoleUser(StringCommon.ADMIN).orElseThrow(() ->
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        if (!user.equals(booking.getBookedBy()) && !user.getRoles().contains(role)) {
+        Role adminRole = iUserService.getRoleUser(StringCommon.ADMIN).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        Role approverRole = iUserService.getRoleUser(StringCommon.APPROVER).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        boolean isPrivileged = user.getRoles().contains(adminRole) || user.getRoles().contains(approverRole);
+        if (!user.equals(booking.getBookedBy()) && !isPrivileged) {
             throw new BusinessException(ErrorResponse.BOOKING_DETAIL_ERROR);
         }
         List<BookingDetailEquipmentResponse> bookingDetailEquipments = bookingEquipmentRepository
                 .getBookingEquipments(bookingId);
-        return BookingMapper.mapToBookingDetailResponse(booking, user, booking.getRoom(), bookingDetailEquipments);
+        return BookingMapper.mapToBookingDetailResponse(booking, booking.getBookedBy(), booking.getRoom(), bookingDetailEquipments);
     }
 
     @Transactional
@@ -525,25 +530,34 @@ public class BookingServiceImpl implements IBookingService {
 
     @Transactional(readOnly = true)
     @Override
-    public List<BookingResponse> filterBooking(BookingFilterRequest request) {
+    public PageResponse<BookingResponse> filterBooking(BookingFilterRequest request, Pageable pageable) {
         OffsetDateTime fromDate = parseOffsetDateTime(request.fromDate());
         OffsetDateTime toDate = parseOffsetDateTime(request.toDate());
-        List<Booking> result = bookingRepository.findAll(
+        Page<Booking> page = bookingRepository.findAll(
                 BookingSpecification.filter(
                         request.roomId(),
                         request.bookedBy(),
                         request.status(),
                         fromDate,
                         toDate
-                )
+                ),
+                pageable
         );
-        return result.stream()
+        List<BookingResponse> content = page.getContent()
+                .stream()
                 .map(booking -> BookingMapper.mapToBookingResponse(
                         booking,
                         booking.getBookedBy(),
                         booking.getRoom()
                 ))
                 .toList();
+        return new PageResponse<>(
+                page.getNumber(),
+                page.getNumberOfElements(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                content
+        );
     }
 
     @Transactional(readOnly = true)
@@ -577,7 +591,7 @@ public class BookingServiceImpl implements IBookingService {
         List<Booking> result = bookingRepository.findAll(
                 BookingSpecification.filter(
                         null,
-                        null,
+                        request.fullName(),
                         null,
                         startDateTime,
                         endDateTime
@@ -596,10 +610,8 @@ public class BookingServiceImpl implements IBookingService {
     @Override
     public byte[] exportBookings(BookingExportRequest request, Long userId) {
         List<Booking> bookings;
-        if (request.exportType() == null) {
-            throw new BusinessException(ErrorResponse.FIELD_INVALID);
-        }
-        if (request.exportType() == BookingExportType.REGISTER) {
+        BookingExportType effectiveType = request.exportType() != null ? request.exportType() : BookingExportType.REGISTER;
+        if (effectiveType == BookingExportType.REGISTER) {
             bookings = bookingRepository.findAllBookingsForRegisterExport(
                     userId,
                     List.of(BookingStatus.PENDING, BookingStatus.APPROVED)
