@@ -80,4 +80,6 @@ public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificat
             @Param("end") OffsetDateTime end,
             Pageable pageable
     );
+
+    
 }

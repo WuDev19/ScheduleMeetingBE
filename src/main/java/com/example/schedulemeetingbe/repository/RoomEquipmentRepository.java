@@ -24,4 +24,5 @@ public interface RoomEquipmentRepository extends JpaRepository<RoomEquipment, Lo
             """)
     List<RoomEquipmentResponse> findEquipmentByRoomId(@Param("roomIds") List<Long> roomIds);
 
+    List<RoomEquipment> findRoomEquipmentByRoom_RoomId(Long roomId);
 }

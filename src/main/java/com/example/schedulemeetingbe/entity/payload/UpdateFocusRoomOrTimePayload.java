@@ -1,6 +1,8 @@
 package com.example.schedulemeetingbe.entity.payload;
 
+import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,13 +21,21 @@ public class UpdateFocusRoomOrTimePayload{
     private Long bookingId;
     private String title;
     private String description;
-    private  OffsetDateTime startTime;
+
+    @JsonFormat(pattern = StringCommon.OFFSET_FORMAT)
+    private OffsetDateTime startTime;
+
+    @JsonFormat(pattern = StringCommon.OFFSET_FORMAT)
     private OffsetDateTime endTime;
+
     private Integer attendeeCount;
     private BookingStatus status;
     private String cancellationReason;
     private Long roomId;
     private Long bookedBy;
+
+    @JsonFormat(pattern = StringCommon.OFFSET_FORMAT)
     private OffsetDateTime createdAt;
+
     private List<String> emails;
 }

@@ -24,4 +24,22 @@ public class TimeUtils {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ));
     }
 
+    public static OffsetDateTime parseOffsetDateTime(String dateTime) {
+        if (dateTime == null || dateTime.isBlank()) {
+            return null;
+        }
+        try {
+            return OffsetDateTime.parse(dateTime, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+        } catch (java.time.format.DateTimeParseException ex) {
+            try {
+                return OffsetDateTime.parse(dateTime, DateTimeFormatter.ofPattern(StringCommon.OFFSET_FORMAT));
+            } catch (java.time.format.DateTimeParseException e) {
+                try {
+                    return OffsetDateTime.parse(dateTime + ZONE_OFFSET.toString(), DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+                } catch (java.time.format.DateTimeParseException ignore) {
+                    throw new RuntimeException("Could not parse OffsetDateTime: " + dateTime);
+                }
+            }
+        }
+    }
 }

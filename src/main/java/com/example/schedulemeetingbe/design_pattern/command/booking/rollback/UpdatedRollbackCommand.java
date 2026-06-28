@@ -57,14 +57,10 @@ public class UpdatedRollbackCommand extends BookingRollbackCommand {
             if (!Objects.equals(oldValue, newValue)) {
                 switch (field) {
                     case "startTime" -> booking.setStartTime(
-                            jsonMapper.treeToValue(
-                                    oldValue,
-                                    OffsetDateTime.class)
+                            TimeUtils.parseOffsetDateTime(oldValue.asText())
                     );
                     case "endTime" -> booking.setEndTime(
-                            jsonMapper.treeToValue(
-                                    oldValue,
-                                    OffsetDateTime.class)
+                            TimeUtils.parseOffsetDateTime(oldValue.asText())
                     );
                     case "roomId" -> {
                         Long roomId = oldValue.asLong();
