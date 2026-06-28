@@ -73,7 +73,10 @@ public class BookingServiceImpl implements IBookingService {
     @Transactional
     @Override
     public BookingResponse createBooking(CreateBookingRequest request, String username) {
-        if (request.receivers() != null && !request.attendee().equals(request.receivers().size())) {
+        if (request.receivers() != null &&
+                !request.receivers().isEmpty() &&
+                !request.attendee().equals(request.receivers().size())
+        ) {
             throw new BusinessException(ErrorResponse.INCONSISTENCY_ATTENDEE);
         }
         //kiểm tra ngày bắt đầu phải nhỏ hơn ngày kết thúc

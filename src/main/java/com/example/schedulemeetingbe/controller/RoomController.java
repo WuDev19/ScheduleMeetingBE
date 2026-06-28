@@ -154,16 +154,15 @@ public class RoomController {
     }
 
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
-    @Operation(summary = "Api thêm thiết bị vào phòng họp")
-    @GetMapping("/not-overlap/{roomId}")
+    @Operation(summary = "Api lọc phòng họp trong khoảng thời gian")
+    @GetMapping("/not-overlap")
     @PreAuthorize("hasAuthority('ROOM:VIEW')")
     public ResponseEntity<ApiResult<PageResponse<RoomResponse>>> getRoomNotOverlap(
-            @PathVariable Long roomId,
             @RequestBody StartEndTimeRequest request,
             @PageableDefault Pageable pageable
     ) {
         return ApiResponse.success(
-                iRoomService.getRoomNotOverlapTime(roomId, request, pageable),
+                iRoomService.getRoomNotOverlapTime(request, pageable),
                 "Lấy danh sách phòng trống trong khoảng thời gian này thành công",
                 Constants.SUCCESS_CODE
         );

@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -85,7 +86,12 @@ public class EquipmentController {
     @Operation(summary = "Api lấy tất cả thiết bị")
     @GetMapping("/all")
     @PreAuthorize("hasAuthority('EQUIPMENT:VIEW')")
-    public ResponseEntity<ApiResult<PageResponse<EquipmentResponse>>> getAll(@PageableDefault Pageable pageable) {
+    public ResponseEntity<ApiResult<PageResponse<EquipmentResponse>>> getAll(
+            @PageableDefault(
+                    sort = "createdAt",
+                    direction = Sort.Direction.DESC
+            ) Pageable pageable
+    ) {
         return ApiResponse.success(
                 iEquipmentService.getAll(pageable),
                 "Lấy danh sách thiết bị thành công",

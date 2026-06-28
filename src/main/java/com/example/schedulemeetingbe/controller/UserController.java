@@ -77,7 +77,7 @@ public class UserController {
     @PreAuthorize("hasAuthority('USER:UPDATE')")
     public ResponseEntity<ApiResult<UserDetailResponse>> updateUser(
             @PathVariable Long id,
-            @Valid @ModelAttribute UpdateUserRequest request
+            @RequestBody UpdateUserRequest request
     ) {
         return ApiResponse.success(
                 iUserService.updateUser(id, request),
