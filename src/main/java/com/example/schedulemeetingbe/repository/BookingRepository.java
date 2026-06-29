@@ -127,7 +127,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
             JOIN rooms r ON r.room_id = b.room_id 
             JOIN users u ON u.user_id = b.booked_by 
             JOIN booking_history bh ON bh.booking_id = b.booking_id
-            WHERE b.status = 'PENDING'
             AND bh.is_revoked = false
             AND bh.action_type IN ('UPDATED', 'ADD_EQUIPMENT', 'UPDATE_EQUIP_QUANTITY', 'CREATED')   
             AND b.title IS NOT NULL
@@ -139,7 +138,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
                     JOIN rooms r ON r.room_id = b.room_id 
                     JOIN users u ON u.user_id = b.booked_by 
                     JOIN booking_history bh ON bh.booking_id = b.booking_id
-                    WHERE b.status = 'PENDING'
                     AND bh.is_revoked = false
                     AND bh.action_type IN ('UPDATED', 'ADD_EQUIPMENT', 'UPDATE_EQUIP_QUANTITY', 'CREATED') 
                     AND b.title IS NOT NULL

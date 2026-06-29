@@ -6,6 +6,7 @@ import com.example.schedulemeetingbe.dto.request.booking.ApproveRequest;
 import com.example.schedulemeetingbe.entity.*;
 import com.example.schedulemeetingbe.entity.payload.UpdateApprovePayload;
 import com.example.schedulemeetingbe.entity.payload.UpdateFocusRoomOrTimePayload;
+import com.example.schedulemeetingbe.repository.BookingHistoryRepository;
 import com.example.schedulemeetingbe.repository.BookingReservationRepository;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.service.base.INotificationService;
@@ -22,10 +23,11 @@ public class UpdateApproveCommand extends BookingApproveCommand {
 
     public UpdateApproveCommand(INotificationService iNotificationService,
                                 OutboxEventRepository outboxEventRepository,
+                                BookingHistoryRepository bookingHistoryRepository,
                                 JsonMapper jsonMapper,
                                 BookingReservationRepository bookingReservationRepository
     ) {
-        super(iNotificationService, outboxEventRepository, jsonMapper);
+        super(iNotificationService, outboxEventRepository, bookingHistoryRepository, jsonMapper);
         this.bookingReservationRepository = bookingReservationRepository;
     }
 

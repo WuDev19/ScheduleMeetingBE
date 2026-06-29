@@ -13,6 +13,7 @@ public record BookingDetailResponse(
         String roomAddress,
         Integer floorNumber,
         String userBooked,
+        String username,
         String phone,
         String email,
         OffsetDateTime startTime,

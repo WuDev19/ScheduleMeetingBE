@@ -139,6 +139,9 @@ public class BookingServiceImpl implements IBookingService {
     public Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request, Long userId) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        if(booking.getStatus() == BookingStatus.REJECTED || booking.getStatus() == BookingStatus.CANCELLED){
+            throw new BusinessException(ErrorResponse.BOOKING_STATUS_ERROR);
+        }
         //còn dưới 1 tiếng thì ko cho sửa nữa
 //        if (ChronoUnit.HOURS.between(TimeUtils.now(), booking.getStartTime()) < 1) {
 //            throw new BusinessException(ErrorResponse.UPDATE_BOOKING_ERROR);
@@ -213,7 +216,7 @@ public class BookingServiceImpl implements IBookingService {
             bookingReservationRepository.save(bookingReservation);
 
             //revoke những cái lịch sử thay đổi cũ, chỉ để hiện cái thay đổi mới nhất để cho approver duyệt
-            bookingRepository.revokeAllOldChangeHistory(bookingId, BookingActionType.UPDATED);
+//            bookingRepository.revokeAllOldChangeHistory(bookingId, BookingActionType.UPDATED);
         }
 
         // nếu thay đổi room hoặc time thì thêm cái emails để có thể gửi thông báo cho những người tham gia
@@ -453,7 +456,7 @@ public class BookingServiceImpl implements IBookingService {
         User user = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
 
-        bookingRepository.revokeAllOldChangeHistory(bookingId, BookingActionType.UPDATE_EQUIP_QUANTITY);
+//        bookingRepository.revokeAllOldChangeHistory(bookingId, BookingActionType.UPDATE_EQUIP_QUANTITY);
         BookingHistory bookingHistory = BookingHistory.builder()
                 .booking(booking)
                 .actionType(BookingActionType.UPDATE_EQUIP_QUANTITY)
@@ -484,8 +487,8 @@ public class BookingServiceImpl implements IBookingService {
     }
 
     @Override
-    public BookingHistoryResponse getBookingHistoryDetailToApprove(Long bookingHistoryId) {
-        return bookingRepository.getDetailBookingWaitingToApprove(bookingHistoryId);
+    public BookingHistoryResponse getBookingHistoryDetailToApprove(Long historyId) {
+        return bookingRepository.getDetailBookingWaitingToApprove(historyId);
     }
 
     @Transactional

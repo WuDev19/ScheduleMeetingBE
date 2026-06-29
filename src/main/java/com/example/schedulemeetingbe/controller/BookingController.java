@@ -126,6 +126,7 @@ public class BookingController {
         );
     }
 
+    //chưa
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
     @Operation(summary = "Api cho admin xóa lịch họp từ giao diện")
     @DeleteMapping("/{bookingId}")
@@ -206,6 +207,7 @@ public class BookingController {
         );
     }
 
+    //chưa
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
     @Operation(summary = "Api cho approver xem chi tiết về lịch họp trong thông báo")
     @GetMapping("/{bookingId}/detail/notification/{notificationId}")
@@ -249,6 +251,7 @@ public class BookingController {
         );
     }
 
+    //chưa
     @GetMapping("/attendee/confirm")
     public String confirmParticipateEmail(
             @RequestParam String token,
@@ -258,6 +261,7 @@ public class BookingController {
         return StringCommon.CONFIRM_PARTICIPATE_HTML;
     }
 
+    //chưa
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
     @Operation(summary = "Api cho người dùng xác nhận tham gia lịch họp")
     @PostMapping("/{bookingId}/attendee/confirm")
@@ -273,6 +277,7 @@ public class BookingController {
                 Constants.SUCCESS_CODE
         );
     }
+
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
     @Operation(summary = "Export booking list to Excel")
     @GetMapping("/export")

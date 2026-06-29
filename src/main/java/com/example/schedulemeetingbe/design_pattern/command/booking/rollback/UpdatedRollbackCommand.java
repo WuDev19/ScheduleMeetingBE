@@ -9,6 +9,7 @@ import com.example.schedulemeetingbe.entity.Room;
 import com.example.schedulemeetingbe.entity.User;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
+import com.example.schedulemeetingbe.repository.BookingHistoryRepository;
 import com.example.schedulemeetingbe.repository.BookingReservationRepository;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.repository.RoomRepository;
@@ -18,7 +19,6 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Objects;
 
@@ -31,11 +31,12 @@ public class UpdatedRollbackCommand extends BookingRollbackCommand {
     public UpdatedRollbackCommand(
             INotificationService iNotificationService,
             OutboxEventRepository outboxEventRepository,
+            BookingHistoryRepository bookingHistoryRepository,
             JsonMapper jsonMapper,
             RoomRepository roomRepository,
             BookingReservationRepository bookingReservationRepository
     ) {
-        super(iNotificationService, outboxEventRepository, jsonMapper);
+        super(iNotificationService, outboxEventRepository, bookingHistoryRepository, jsonMapper);
         this.roomRepository = roomRepository;
         this.bookingReservationRepository = bookingReservationRepository;
     }

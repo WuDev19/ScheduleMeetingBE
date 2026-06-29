@@ -5,6 +5,7 @@ import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import com.example.schedulemeetingbe.dto.request.booking.ApproveRequest;
 import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.User;
+import com.example.schedulemeetingbe.repository.BookingHistoryRepository;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.service.base.INotificationService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
@@ -17,9 +18,10 @@ public class AddEquipmentApproveCommand extends BookingApproveCommand {
     public AddEquipmentApproveCommand(
             INotificationService iNotificationService,
             OutboxEventRepository outboxEventRepository,
+            BookingHistoryRepository bookingHistoryRepository,
             JsonMapper jsonMapper
     ) {
-        super(iNotificationService, outboxEventRepository, jsonMapper);
+        super(iNotificationService, outboxEventRepository, bookingHistoryRepository, jsonMapper);
     }
 
     @Override

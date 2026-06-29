@@ -45,7 +45,7 @@ public interface IBookingService {
 
     BookingEquipmentResponse updateBookingEquipmentQuantity(Long bookingId, Long userId, Long equipmentId, Long bookingEquipmentId, UpdateBookingEquipQuantityRequest request);
 
-    BookingHistoryResponse getBookingHistoryDetailToApprove(Long bookingHistoryId);
+    BookingHistoryResponse getBookingHistoryDetailToApprove(Long historyId);
 
     PageResponse<BookingSummaryResponse> getBookingWaitingApprove(Pageable pageable);
 

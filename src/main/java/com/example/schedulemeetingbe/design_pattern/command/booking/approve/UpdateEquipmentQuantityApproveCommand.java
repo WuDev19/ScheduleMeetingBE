@@ -8,6 +8,7 @@ import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.User;
 import com.example.schedulemeetingbe.entity.payload.UpdateBookingEquipmentQuantityPayload;
 import com.example.schedulemeetingbe.repository.BookingEquipmentReservationRepository;
+import com.example.schedulemeetingbe.repository.BookingHistoryRepository;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.service.base.INotificationService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
@@ -22,10 +23,11 @@ public class UpdateEquipmentQuantityApproveCommand extends BookingApproveCommand
     public UpdateEquipmentQuantityApproveCommand(
             INotificationService iNotificationService,
             OutboxEventRepository outboxEventRepository,
+            BookingHistoryRepository bookingHistoryRepository,
             JsonMapper jsonMapper,
             BookingEquipmentReservationRepository bookingEquipmentReservationRepository
     ) {
-        super(iNotificationService, outboxEventRepository, jsonMapper);
+        super(iNotificationService, outboxEventRepository, bookingHistoryRepository, jsonMapper);
         this.bookingEquipmentReservationRepository = bookingEquipmentReservationRepository;
     }
 

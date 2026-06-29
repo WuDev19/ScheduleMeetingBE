@@ -12,6 +12,7 @@ import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.repository.BookingEquipmentRepository;
 import com.example.schedulemeetingbe.repository.BookingEquipmentReservationRepository;
+import com.example.schedulemeetingbe.repository.BookingHistoryRepository;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.service.base.INotificationService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
@@ -27,11 +28,12 @@ public class UpdateEquipmentQuantityRollbackCommand extends BookingRollbackComma
     public UpdateEquipmentQuantityRollbackCommand(
             INotificationService iNotificationService,
             OutboxEventRepository outboxEventRepository,
+            BookingHistoryRepository bookingHistoryRepository,
             JsonMapper jsonMapper,
             BookingEquipmentRepository bookingEquipmentRepository,
             BookingEquipmentReservationRepository bookingEquipmentReservationRepository
     ) {
-        super(iNotificationService, outboxEventRepository, jsonMapper);
+        super(iNotificationService, outboxEventRepository, bookingHistoryRepository, jsonMapper);
         this.bookingEquipmentRepository = bookingEquipmentRepository;
         this.bookingEquipmentReservationRepository = bookingEquipmentReservationRepository;
     }

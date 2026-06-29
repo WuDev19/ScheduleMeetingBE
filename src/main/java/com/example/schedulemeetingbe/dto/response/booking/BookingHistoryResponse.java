@@ -24,7 +24,7 @@ public class BookingHistoryResponse {
     private final OffsetDateTime startTime;
     private final OffsetDateTime endTime;
     private final Integer attendee;
-    private final Long bookingHistoryId;
+    private final Long historyId;
     private final String userChanged;
     private final BookingActionType actionType;
     private final JsonNode oldData;
@@ -43,7 +43,7 @@ public class BookingHistoryResponse {
             Instant startTime,
             Instant endTime,
             Integer attendee,
-            Long bookingHistoryId,
+            Long historyId,
             String userChanged,
             String actionType,
             String oldDataRaw,
@@ -61,7 +61,7 @@ public class BookingHistoryResponse {
         this.startTime = startTime.atOffset(TimeUtils.ZONE_OFFSET);
         this.endTime = endTime.atOffset(TimeUtils.ZONE_OFFSET);
         this.attendee = attendee;
-        this.bookingHistoryId = bookingHistoryId;
+        this.historyId = historyId;
         this.userChanged = userChanged;
         this.actionType = BookingActionType.valueOf(actionType);
         this.oldData = Jackson3JsonParser.parse(oldDataRaw);

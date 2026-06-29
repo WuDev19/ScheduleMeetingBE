@@ -9,6 +9,7 @@ import com.example.schedulemeetingbe.dto.request.booking.ApproveRequest;
 import com.example.schedulemeetingbe.entity.*;
 import com.example.schedulemeetingbe.entity.payload.CreateBookingPayload;
 import com.example.schedulemeetingbe.entity.payload.ReceiverEmailPayload;
+import com.example.schedulemeetingbe.repository.BookingHistoryRepository;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.service.base.INotificationService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
@@ -24,9 +25,10 @@ public class CreatedApproveCommand extends BookingApproveCommand {
     public CreatedApproveCommand(
             INotificationService iNotificationService,
             OutboxEventRepository outboxEventRepository,
+            BookingHistoryRepository bookingHistoryRepository,
             JsonMapper jsonMapper
     ) {
-        super(iNotificationService, outboxEventRepository, jsonMapper);
+        super(iNotificationService, outboxEventRepository, bookingHistoryRepository, jsonMapper);
     }
 
     @Override

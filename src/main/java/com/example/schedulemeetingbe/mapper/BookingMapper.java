@@ -57,6 +57,7 @@ public class BookingMapper {
                 room.getBuilding().getAddress(),
                 room.getFloorNumber(),
                 user.getFullName(),
+                user.getUsername(),
                 user.getPhone(),
                 user.getEmail(),
                 booking.getStartTime(),
