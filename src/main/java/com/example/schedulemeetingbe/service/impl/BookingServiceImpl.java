@@ -57,6 +57,7 @@ public class BookingServiceImpl implements IBookingService {
     private final BookingReservationRepository bookingReservationRepository;
     private final BookingEquipmentReservationRepository bookingEquipmentReservationRepository;
     private final VerificationTokenRepository verificationTokenRepository;
+    private final OutboxEventRepository outboxEventRepository;
     private final BookingAttendeeRepository bookingAttendeeRepository;
 
     private final IUserService iUserService;
@@ -65,14 +66,14 @@ public class BookingServiceImpl implements IBookingService {
     private final INotificationService iNotificationService;
 
     private final JsonMapper jsonMapper;
-    private final BookingRollbackCommandFactory factory;
+    private final BookingRollbackCommandFactory rollbackFactory;
     private final BookingApproveCommandFactory approveFactory;
 
     private static final String BOOKING_ID = "bookingId";
 
     @Transactional
     @Override
-    public BookingResponse createBooking(CreateBookingRequest request, String username) {
+    public BookingResponse createBooking(CreateBookingRequest request, Long userId) {
         if (request.receivers() != null &&
                 !request.receivers().isEmpty() &&
                 !request.attendee().equals(request.receivers().size())
@@ -84,12 +85,9 @@ public class BookingServiceImpl implements IBookingService {
             throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
         }
         //kiểm tra người dùng có thật sự tồn tại ko
-        User user = iUserService.getDetail(request.userId()).orElseThrow(() ->
+        User user = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        //kiểm tra xem có phải là chính xác người gửi request đặt phòng không (dựa vào username trong jwt và username lấy được từ userId)
-        if (!username.equals(user.getUsername())) {
-            throw new BusinessException(ErrorResponse.FAKE_AUTH_ERROR);
-        }
+
         //kiểm tra phòng họp có thật sự tồn tại ko
         Room room = iRoomService.getRoomDetail(request.roomId()).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
@@ -139,7 +137,7 @@ public class BookingServiceImpl implements IBookingService {
     public Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request, Long userId) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        if(booking.getStatus() == BookingStatus.REJECTED || booking.getStatus() == BookingStatus.CANCELLED){
+        if (booking.getStatus() == BookingStatus.REJECTED || booking.getStatus() == BookingStatus.CANCELLED) {
             throw new BusinessException(ErrorResponse.BOOKING_STATUS_ERROR);
         }
         //còn dưới 1 tiếng thì ko cho sửa nữa
@@ -357,10 +355,21 @@ public class BookingServiceImpl implements IBookingService {
     public StatusBookingResponse cancelBooking(Long bookingId, CancelBookingRequest request, Long userId) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+//        if (ChronoUnit.MINUTES.between(TimeUtils.now(), booking.getStartTime()) <= 30) {
+//            throw new BusinessException(ErrorResponse.UPDATE_BOOKING_ERROR);
+//        }
+        if (booking.getStatus() != BookingStatus.PENDING &&
+                booking.getStatus() != BookingStatus.APPROVED
+        ) {
+            throw new BusinessException(ErrorResponse.BOOKING_CANCEL_ERROR);
+        }
+        List<User> users = bookingAttendeeRepository.getAttendeeOfBooking(bookingId);
+        List<String> emails = bookingAttendeeRepository.getEmailAttendee(bookingId);
+        Room room = booking.getRoom();
         UpdateBookingChangePayload oldPayload = CreatePayloadHelper.create(
                 booking,
                 booking.getBookedBy().getUserId(),
-                booking.getRoom().getRoomId()
+                room.getRoomId()
         );
         booking.setStatus(BookingStatus.CANCELLED);
         booking.setCancellationReason(request.reason());
@@ -370,7 +379,7 @@ public class BookingServiceImpl implements IBookingService {
         UpdateBookingChangePayload newPayload = CreatePayloadHelper.create(
                 booking,
                 booking.getBookedBy().getUserId(),
-                booking.getRoom().getRoomId()
+                room.getRoomId()
         );
         BookingHistory bookingHistory = BookingHistory.builder()
                 .booking(booking)
@@ -380,7 +389,39 @@ public class BookingServiceImpl implements IBookingService {
                 .newData(jsonMapper.valueToTree(newPayload))
                 .build();
         bookingHistoryRepository.save(bookingHistory);
+        createEventCancel(booking, room, request.reason(), users, emails);
         return BookingMapper.mapToStatusBookingResponse(booking);
+    }
+
+    private void createEventCancel(Booking booking, Room room, String reason, List<User> users, List<String> emails) {
+        Building building = room.getBuilding();
+        List<Notification> notifications = new ArrayList<>();
+        users.forEach(user -> {
+            Notification notification = Notification.builder()
+                    .title(StringCommon.TITLE_NOTIFICATION)
+                    .booking(booking)
+                    .message(reason)
+                    .user(user)
+                    .build();
+            notifications.add(notification);
+        });
+        iNotificationService.save(notifications);
+        CancelBookingPayload payload = new CancelBookingPayload(
+                booking.getBookingId(),
+                booking.getTitle(),
+                "Tòa nhà " + building.getBuildingName() + ", " + building.getAddress(),
+                "Tầng " + room.getFloorNumber() + ", phòng " + room.getRoomName(),
+                booking.getStartTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ)),
+                booking.getEndTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ)),
+                emails,
+                reason
+        );
+        OutboxEvent outboxEvent = OutboxEvent.builder()
+                .eventType(EventType.CANCEL_BOOKING_BY_REGISTER.name())
+                .status(OutboxStatus.PENDING)
+                .payload(jsonMapper.valueToTree(payload))
+                .build();
+        outboxEventRepository.save(outboxEvent);
     }
 
     @Transactional
@@ -726,15 +767,20 @@ public class BookingServiceImpl implements IBookingService {
     private void addEquipmentToRoom(CreateBookingRequest request, Booking saved) {
         List<CreateBookingEquipmentRequest> bookingEquipmentRequests = request.equipments();
         if (bookingEquipmentRequests != null && !bookingEquipmentRequests.isEmpty()) {
+
+            List<Long> eqIds = bookingEquipmentRequests
+                    .stream()
+                    .map(CreateBookingEquipmentRequest::equipmentId)
+                    .toList();
+
+            // đặt lock ở đây
+            iEquipmentService.lockEquipment(eqIds);
+
             // lấy thông tin cơ bản của thiết bị và số lượng còn lại để check xem còn đủ để cho mượn ko
             // tránh n+1 query và sử dụng Map để truy cập phần tử với O(1)
+            // xem xét đặt lock ở đây
             Map<Long, EquipmentAndQuantityResponse> equipmentAndQuantityResponses = iEquipmentService
-                    .findEquipmentAndRemainingQuantity(
-                            bookingEquipmentRequests
-                                    .stream()
-                                    .map(CreateBookingEquipmentRequest::equipmentId)
-                                    .toList()
-                    )
+                    .findEquipmentAndRemainingQuantity(eqIds)
                     .stream()
                     .collect(Collectors.toMap(EquipmentAndQuantityResponse::equipmentId, Function.identity()));
             // lấy danh sách equipment vượt quá số lượng để báo cho người dùng
@@ -779,15 +825,18 @@ public class BookingServiceImpl implements IBookingService {
     }
 
     private void addEquipmentToRoom(List<UpdateEquipmentBookingRequest> request, Booking saved) {
+        List<Long> eqIds = request
+                .stream()
+                .map(UpdateEquipmentBookingRequest::equipmentId)
+                .toList();
+
+        // đặt lock ở đây
+        iEquipmentService.lockEquipment(eqIds);
+
         // lấy thông tin cơ bản của thiết bị và số lượng còn lại để check xem còn đủ để cho mượn ko
         // tránh n+1 query và sử dụng Map để truy cập phần tử với O(1)
         Map<Long, EquipmentAndQuantityResponse> equipmentAndQuantityResponses = iEquipmentService
-                .findEquipmentAndRemainingQuantity(
-                        request
-                                .stream()
-                                .map(UpdateEquipmentBookingRequest::equipmentId)
-                                .toList()
-                )
+                .findEquipmentAndRemainingQuantity(eqIds)
                 .stream()
                 .collect(Collectors.toMap(EquipmentAndQuantityResponse::equipmentId, Function.identity()));
         // lấy danh sách equipment vượt quá số lượng để báo cho người dùng
@@ -860,7 +909,7 @@ public class BookingServiceImpl implements IBookingService {
     }
 
     private void checkBookingHistoryActionType(Booking booking, RollBackRequest request, User approver) {
-        factory.get(request.actionType())
+        rollbackFactory.get(request.actionType())
                 .execute(booking, request, approver);
     }
 

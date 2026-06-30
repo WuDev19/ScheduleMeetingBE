@@ -112,36 +112,67 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
     );
 
     @Query(value = """
-            SELECT 
-                b.booking_id AS bookingId,
-                bh.history_id AS historyId,
-                b.title AS title,
-                u.full_name AS userBooked,
-                u.phone AS phone,
-                r.room_name AS roomName,
-                b.status AS status,
-                bh.action_type AS actionType,
-                b.start_time AS startTime,
-                b.end_time AS endTime
-            FROM bookings b
-            JOIN rooms r ON r.room_id = b.room_id 
-            JOIN users u ON u.user_id = b.booked_by 
-            JOIN booking_history bh ON bh.booking_id = b.booking_id
-            AND bh.is_revoked = false
-            AND bh.action_type IN ('UPDATED', 'ADD_EQUIPMENT', 'UPDATE_EQUIP_QUANTITY', 'CREATED')   
-            AND b.title IS NOT NULL
-            ORDER BY bh.created_at DESC 
-            """,
+        WITH latest_booking AS (
+            SELECT
+                booking_id,
+                MAX(created_at) AS latest_update
+            FROM booking_history
+            WHERE is_revoked = false
+              AND action_type IN (
+                    'UPDATED',
+                    'ADD_EQUIPMENT',
+                    'UPDATE_EQUIP_QUANTITY',
+                    'CREATED'
+              )
+            GROUP BY booking_id
+        )
+        SELECT
+            b.booking_id AS bookingId,
+            bh.history_id AS historyId,
+            b.title AS title,
+            u.full_name AS userBooked,
+            u.phone AS phone,
+            r.room_name AS roomName,
+            b.status AS status,
+            bh.action_type AS actionType,
+            b.start_time AS startTime,
+            b.end_time AS endTime
+        FROM bookings b
+        JOIN latest_booking lb
+            ON lb.booking_id = b.booking_id
+        JOIN booking_history bh
+            ON bh.booking_id = b.booking_id
+           AND bh.is_revoked = false
+           AND bh.action_type IN (
+                'UPDATED',
+                'ADD_EQUIPMENT',
+                'UPDATE_EQUIP_QUANTITY',
+                'CREATED'
+           )
+        JOIN rooms r
+            ON r.room_id = b.room_id
+        JOIN users u
+            ON u.user_id = b.booked_by
+        WHERE b.title IS NOT NULL
+        ORDER BY
+            lb.latest_update DESC,
+            b.booking_id,
+            bh.created_at DESC
+        """,
             countQuery = """
-                    SELECT COUNT(*)
-                    FROM bookings b
-                    JOIN rooms r ON r.room_id = b.room_id 
-                    JOIN users u ON u.user_id = b.booked_by 
-                    JOIN booking_history bh ON bh.booking_id = b.booking_id
-                    AND bh.is_revoked = false
-                    AND bh.action_type IN ('UPDATED', 'ADD_EQUIPMENT', 'UPDATE_EQUIP_QUANTITY', 'CREATED') 
-                    AND b.title IS NOT NULL
-                    """,
+        SELECT COUNT(*)
+        FROM booking_history bh
+        JOIN bookings b
+            ON b.booking_id = bh.booking_id
+        WHERE bh.is_revoked = false
+          AND bh.action_type IN (
+                'UPDATED',
+                'ADD_EQUIPMENT',
+                'UPDATE_EQUIP_QUANTITY',
+                'CREATED'
+          )
+          AND b.title IS NOT NULL
+        """,
             nativeQuery = true)
     Page<BookingSummaryProjection> getBookingWaitingApprove(Pageable pageable);
 

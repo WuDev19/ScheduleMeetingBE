@@ -673,6 +673,130 @@ public class EmailServiceImpl implements IEmailService {
                         payload.endTime()
                 );
     }
+
+    @Override
+    public void sendEmailCancelBooking(CancelBookingPayload payload) {
+        String subject = "[THÔNG BÁO] Lịch họp đã bị hủy";
+        String html = cancelBookingContent(payload);
+        try {
+            MimeMessage message = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(
+                    message,
+                    true,
+                    UTF8
+            );
+            helper.setSubject(subject);
+            helper.setTo(APP_EMAIL);
+            helper.setBcc(payload.receivers().toArray(new String[0]));
+            helper.setText(html, true);
+            javaMailSender.send(message);
+        } catch (MessagingException e) {
+            throw new RuntimeException("Failed to send update meeting email", e);
+        }
+    }
+
+    private String cancelBookingContent(CancelBookingPayload payload) {
+        return """
+                <!DOCTYPE html>
+                <html lang="vi">
+                <head>
+                    <meta charset="UTF-8">
+                </head>
+                <body style="margin:0;padding:24px;background:#f5f6fa;font-family:Arial,sans-serif;color:#333333;">
+                
+                    <table width="100%%" cellpadding="0" cellspacing="0" style="max-width:700px;margin:auto;background:#ffffff;border-radius:8px;border:1px solid #e5e7eb;">
+                
+                        <tr>
+                            <td style="background:#dc3545;color:#ffffff;padding:20px 24px;font-size:22px;font-weight:bold;border-radius:8px 8px 0 0;">
+                                ❌ THÔNG BÁO HỦY LỊCH HỌP
+                            </td>
+                        </tr>
+                
+                        <tr>
+                            <td style="padding:24px;">
+                
+                                <p style="font-size:15px;">
+                                    Xin chào,
+                                </p>
+                
+                                <p style="font-size:15px;line-height:1.7;">
+                                    Lịch họp dưới đây đã được <strong>hủy</strong>.
+                                </p>
+                
+                                <table width="100%%" cellpadding="8" cellspacing="0"
+                                       style="border-collapse:collapse;margin-top:20px;border:1px solid #dddddd;">
+                
+                                    <tr style="background:#f8f9fa;">
+                                        <td width="180"><strong>Mã đặt phòng</strong></td>
+                                        <td>%d</td>
+                                    </tr>
+                
+                                    <tr>
+                                        <td><strong>Tiêu đề cuộc họp</strong></td>
+                                        <td>%s</td>
+                                    </tr>
+                
+                                    <tr style="background:#f8f9fa;">
+                                        <td><strong>Phòng họp</strong></td>
+                                        <td>%s</td>
+                                    </tr>
+                
+                                    <tr>
+                                        <td><strong>Địa điểm</strong></td>
+                                        <td>%s</td>
+                                    </tr>
+                
+                                    <tr style="background:#f8f9fa;">
+                                        <td><strong>Thời gian bắt đầu</strong></td>
+                                        <td>%s</td>
+                                    </tr>
+                
+                                    <tr>
+                                        <td><strong>Thời gian kết thúc</strong></td>
+                                        <td>%s</td>
+                                    </tr>
+                
+                                    <tr style="background:#fff3cd;">
+                                        <td><strong>Lý do hủy</strong></td>
+                                        <td>%s</td>
+                                    </tr>
+                
+                                </table>
+                
+                                <p style="margin-top:24px;font-size:15px;">
+                                    Vui lòng bỏ qua lịch họp này trong kế hoạch làm việc của bạn.
+                                </p>
+                
+                                <p style="margin-top:32px;">
+                                    Trân trọng,<br>
+                                    <strong>Schedule Meeting System</strong>
+                                </p>
+                
+                            </td>
+                        </tr>
+                
+                        <tr>
+                            <td style="padding:16px;background:#f8f9fa;color:#888888;font-size:12px;text-align:center;border-radius:0 0 8px 8px;">
+                                Đây là email tự động, vui lòng không trả lời email này.
+                            </td>
+                        </tr>
+                
+                    </table>
+                
+                </body>
+                </html>
+                """.formatted(
+                payload.bookingId(),
+                payload.title(),
+                payload.room(),
+                payload.address(),
+                payload.startTime(),
+                payload.endTime(),
+                payload.reason() == null || payload.reason().isBlank()
+                        ? "Không có"
+                        : payload.reason()
+        );
+    }
 }
 
 /*

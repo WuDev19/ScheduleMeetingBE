@@ -25,7 +25,7 @@ import java.util.Optional;
  * )
  * */
 public interface IBookingService {
-    BookingResponse createBooking(CreateBookingRequest request, String username);
+    BookingResponse createBooking(CreateBookingRequest request, Long userId);
 
     Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request, Long userId);
 

@@ -17,4 +17,12 @@ public interface BookingAttendeeRepository extends JpaRepository<BookingAttendee
                 WHERE ba.booking.bookingId = :bookingId
             """)
     List<User> getAttendeeOfBooking(@Param("bookingId") Long bookingId);
+
+    @Query("""
+        SELECT ba.user.email
+        FROM BookingAttendee ba
+        WHERE ba.booking.bookingId = :bookingId
+        """)
+    List<String> getEmailAttendee(@Param("bookingId") Long bookingId);
+
 }

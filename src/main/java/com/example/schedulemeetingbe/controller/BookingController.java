@@ -42,7 +42,7 @@ public class BookingController {
             @Valid @RequestBody CreateBookingRequest request,
             @AuthenticationPrincipal Jwt jwt) {
         return ApiResponse.success(
-                iBookingService.createBooking(request, jwt.getSubject()),
+                iBookingService.createBooking(request, jwt.getClaim(StringCommon.USER_ID)),
                 "Đặt lịch thành công",
                 Constants.SUCCESS_CODE
         );
