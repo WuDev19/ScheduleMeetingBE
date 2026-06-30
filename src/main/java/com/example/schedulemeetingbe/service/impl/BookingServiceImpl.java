@@ -922,6 +922,7 @@ public class BookingServiceImpl implements IBookingService {
         if (Objects.equals(currentQuantity, newQuantity)) {
             return;
         }
+        iEquipmentService.getEquipmentWithLock(equipmentId);
         // tăng số lượng
         if (newQuantity > currentQuantity) {
             EquipmentAndQuantityResponse bookingEquipmentResponse =

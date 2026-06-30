@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
 
@@ -96,5 +97,12 @@ public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
             """,
             nativeQuery = true)
     EquipmentAndQuantityResponse findEquipmentAndRemainingQuantity(@Param("equipmentId") Long equipmentId);
+
+    @Query("""
+            SELECT e
+            FROM Equipment e
+            WHERE e.equipmentId = :equipmentId
+            """)
+    Optional<Equipment> findEquipmentWithLock(@Param("equipmentId") Long equipmentId);
 
 }

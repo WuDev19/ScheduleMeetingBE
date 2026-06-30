@@ -34,5 +34,7 @@ public interface IEquipmentService {
 
     Optional<Equipment> getEquipmentDetail(Long id);
 
+    Optional<Equipment> getEquipmentWithLock(Long id);
+
     void lockEquipment(List<Long> eqIds);
 }
