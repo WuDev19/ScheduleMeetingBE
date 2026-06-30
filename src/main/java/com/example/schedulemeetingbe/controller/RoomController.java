@@ -189,7 +189,7 @@ public class RoomController {
     @GetMapping("/not-overlap")
     @PreAuthorize("hasAuthority('ROOM:VIEW')")
     public ResponseEntity<ApiResult<PageResponse<RoomResponse>>> getRoomNotOverlap(
-            @RequestBody StartEndTimeRequest request,
+            @ModelAttribute StartEndTimeRequest request,
             @PageableDefault Pageable pageable
     ) {
         return ApiResponse.success(

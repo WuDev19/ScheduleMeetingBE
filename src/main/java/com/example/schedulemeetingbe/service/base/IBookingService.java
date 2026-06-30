@@ -19,10 +19,10 @@ import java.util.Optional;
  * 6. APPROVER duyệt phòng sau khi người dùng có sự thay đổi (sẽ phải có so sánh trực quan giữa cũ và thay đổi mới) - done
  * 7. Gửi email cho người tham gia khi đặt lịch họp thành công - done
  * 8. Lọc, tìm kiếm (
- * - REGISTER: tìm kiếm các lịch đặt của chính mình
+ * - REGISTER: tìm kiếm các lịch đặt của mọi người nhưng ko xem được chi tiêt nếu mình ko tham gia hoặc ko phải lịch của mình
  * - APPROVER: tìm kiếm lọc lịch của tất cả mọi người
  * - ADMIN: toàn quyền
- * )
+ * ) - done
  * */
 public interface IBookingService {
     BookingResponse createBooking(CreateBookingRequest request, Long userId);

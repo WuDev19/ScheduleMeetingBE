@@ -310,6 +310,7 @@ public class BookingServiceImpl implements IBookingService {
     @Transactional
     @Override
     public StatusBookingResponse approveBooking(Long bookingId, ApproveRequest request, Long userId) {
+        long start = System.currentTimeMillis();
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         UpdateBookingChangePayload oldPayload = CreatePayloadHelper.create(
@@ -333,6 +334,7 @@ public class BookingServiceImpl implements IBookingService {
                 .newData(jsonMapper.valueToTree(newPayload))
                 .build();
         bookingHistoryRepository.save(bookingHistory);
+        System.out.println("Tốc độ hàm approveBooking: " + (System.currentTimeMillis() - start) + "ms");
         return BookingMapper.mapToStatusBookingResponse(booking);
     }
 
