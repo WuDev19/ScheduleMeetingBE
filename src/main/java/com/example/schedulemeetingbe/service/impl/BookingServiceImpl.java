@@ -42,6 +42,7 @@ import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.function.Function;
@@ -134,9 +135,17 @@ public class BookingServiceImpl implements IBookingService {
 
     @Transactional
     @Override
-    public Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request, Long userId) {
+    public Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request, Long userId, List<String> roles) {
+        User userChange = iUserService.getDetail(userId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+
+        if (!booking.getBookedBy().equals(userChange) && !roles.contains(StringCommon.ADMIN)) {
+            throw new BusinessException(ErrorResponse.UPDATE_BOOKING_AUTH_ERROR);
+        }
+
         if (booking.getStatus() == BookingStatus.REJECTED || booking.getStatus() == BookingStatus.CANCELLED) {
             throw new BusinessException(ErrorResponse.BOOKING_STATUS_ERROR);
         }
@@ -154,7 +163,12 @@ public class BookingServiceImpl implements IBookingService {
                 booking.getRoom().getRoomId(),
                 emailParticipants
         );
-        if (request.isCompleted() != null) booking.setStatus(BookingStatus.COMPLETED);
+        if (request.isCompleted() != null) {
+            if(TimeUtils.now().isBefore(booking.getStartTime())){
+                throw new BusinessException(ErrorResponse.COMPLETED_UPDATE_BOOKING_ERROR);
+            }
+            booking.setStatus(BookingStatus.COMPLETED);
+        }
         if (request.title() != null) booking.setTitle(request.title());
         if (request.description() != null) booking.setDescription(request.description());
         if (request.attendeeCount() != null) {
@@ -229,7 +243,6 @@ public class BookingServiceImpl implements IBookingService {
             oldPayload.setEmails(List.of());
             newPayload.setEmails(List.of());
         }
-        User userChange = iUserService.getDetail(userId).orElse(null);
 
         BookingHistory bookingHistory = BookingHistory.builder()
                 .booking(booking)
@@ -355,9 +368,9 @@ public class BookingServiceImpl implements IBookingService {
     public StatusBookingResponse cancelBooking(Long bookingId, CancelBookingRequest request, Long userId) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-//        if (ChronoUnit.MINUTES.between(TimeUtils.now(), booking.getStartTime()) <= 30) {
-//            throw new BusinessException(ErrorResponse.UPDATE_BOOKING_ERROR);
-//        }
+        if (ChronoUnit.MINUTES.between(TimeUtils.now(), booking.getStartTime()) <= 30) {
+            throw new BusinessException(ErrorResponse.UPDATE_BOOKING_ERROR);
+        }
         if (booking.getStatus() != BookingStatus.PENDING &&
                 booking.getStatus() != BookingStatus.APPROVED
         ) {
@@ -575,6 +588,7 @@ public class BookingServiceImpl implements IBookingService {
     @Transactional(readOnly = true)
     @Override
     public PageResponse<BookingResponse> filterBooking(BookingFilterRequest request, Pageable pageable) {
+        long start = System.currentTimeMillis();
         OffsetDateTime fromDate = parseOffsetDateTime(request.fromDate());
         OffsetDateTime toDate = parseOffsetDateTime(request.toDate());
         Page<Booking> page = bookingRepository.findAll(
@@ -595,6 +609,7 @@ public class BookingServiceImpl implements IBookingService {
                         booking.getRoom()
                 ))
                 .toList();
+        System.out.println("Tốc độ filter: " + (System.currentTimeMillis() - start));
         return new PageResponse<>(
                 page.getNumber(),
                 page.getNumberOfElements(),

@@ -35,7 +35,9 @@ public enum ErrorResponse {
     NOT_MATCH_DATE_ERROR("Thời gian gửi lên khi tạo lịch lặp không trùng khớp", 1028),
     EXCEED_PERIODIC("Đăng ký lịch định kỳ tối đa được 30 lịch trong 1 lần", 1029),
     BOOKING_STATUS_ERROR("Bạn không thể sửa lịch đã bị từ chối hoặc đã bị hủy", 1030),
-    BOOKING_CANCEL_ERROR("Bạn chỉ có thể hủy lịch đang chờ hoặc đã được duyệt khi chưa bắt đầu", 1031);
+    BOOKING_CANCEL_ERROR("Bạn chỉ có thể hủy lịch đang chờ hoặc đã được duyệt khi chưa bắt đầu", 1031),
+    UPDATE_BOOKING_AUTH_ERROR("Bạn không có quyền chỉnh sửa lịch họp này", 1032),
+    COMPLETED_UPDATE_BOOKING_ERROR("Bạn không thể kết thúc cuộc họp khi nó chưa diễn ra", 1033);
 
     private final String message;
     private final int code;

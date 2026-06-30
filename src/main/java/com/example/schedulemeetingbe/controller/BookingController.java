@@ -57,7 +57,11 @@ public class BookingController {
             @RequestBody UpdateBookingRequest request,
             @AuthenticationPrincipal Jwt jwt) {
         return ApiResponse.success(
-                iBookingService.updateBooking(bookingId, request, jwt.getClaim(StringCommon.USER_ID)),
+                iBookingService.updateBooking(
+                        bookingId,
+                        request,
+                        jwt.getClaim(StringCommon.USER_ID),
+                        jwt.getClaim(StringCommon.ROLES)),
                 "Cập nhật lịch thành công",
                 Constants.SUCCESS_CODE
         );
@@ -253,6 +257,7 @@ public class BookingController {
 
     //chưa
     @GetMapping("/attendee/confirm")
+    @Operation(summary = "Api cho người dùng xác nhận tham gia lịch họp qua email")
     public String confirmParticipateEmail(
             @RequestParam String token,
             @RequestParam Long bookingId
@@ -263,10 +268,10 @@ public class BookingController {
 
     //chưa
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
-    @Operation(summary = "Api cho người dùng xác nhận tham gia lịch họp")
+    @Operation(summary = "Api cho người dùng xác nhận tham gia lịch họp qua chỗ thông báo trên web")
     @PostMapping("/{bookingId}/attendee/confirm")
     @PreAuthorize("hasAuthority('BOOKING:CONFIRM')")
-    public ResponseEntity<ApiResult<Void>> confirmParticipateEmail(
+    public ResponseEntity<ApiResult<Void>> confirmParticipate(
             @PathVariable Long bookingId,
             @AuthenticationPrincipal Jwt jwt
     ) {

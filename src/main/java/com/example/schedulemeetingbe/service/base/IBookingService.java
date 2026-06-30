@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 /* về đặt phòng thì còn
  * 1. Thêm thiết bị sau khi đặt phòng - done
@@ -27,7 +28,7 @@ import java.util.Optional;
 public interface IBookingService {
     BookingResponse createBooking(CreateBookingRequest request, Long userId);
 
-    Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request, Long userId);
+    Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request, Long userId, List<String> roles);
 
     Map<String, Long> addEquipmentBooking(Long bookingId, List<UpdateEquipmentBookingRequest> request, Long userId);
 

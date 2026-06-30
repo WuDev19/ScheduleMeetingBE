@@ -12,6 +12,7 @@ public class StringCommon {
     public static final String TOKEN_IN_BLACKLIST = "Token đang trong danh sách đen";
     public static final String USER_ID = "userId";
     public static final String PERMISSIONS = "permissions";
+    public static final String ROLES = "roles";
     public static final String TIME_ZONE_VN = "Asia/Ho_Chi_Minh";
     public static final String SUCCESS = "Success";
     public static final String ERROR = "Error";

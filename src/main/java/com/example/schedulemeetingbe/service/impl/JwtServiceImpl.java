@@ -42,7 +42,7 @@ public class JwtServiceImpl implements IJwtService {
         });
         return Jwts.builder()
                 .subject(username)
-                .claim("roles", rolesUser)
+                .claim(StringCommon.ROLES, rolesUser)
                 .claim(StringCommon.PERMISSIONS, permissions)
                 .claim(StringCommon.USER_ID, userId)
                 .id(UUID.randomUUID().toString())
