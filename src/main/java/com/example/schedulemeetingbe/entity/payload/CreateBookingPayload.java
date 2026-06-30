@@ -1,6 +1,7 @@
 package com.example.schedulemeetingbe.entity.payload;
 
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
+import com.example.schedulemeetingbe.dto.request.booking.CreateBookingEquipmentRequest;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -18,6 +19,7 @@ public record CreateBookingPayload (
         Long roomId,
         Long bookedBy,
         OffsetDateTime createdAt,
-        List<String> emails
+        List<String> emails,
+        List<CreateBookingEquipmentRequest> equipments
 ) {
 }

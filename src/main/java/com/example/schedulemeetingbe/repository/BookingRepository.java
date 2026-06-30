@@ -154,25 +154,27 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
         JOIN users u
             ON u.user_id = b.booked_by
         WHERE b.title IS NOT NULL
+                and b.status NOT IN ('COMPLETED')
         ORDER BY
             lb.latest_update DESC,
             b.booking_id,
             bh.created_at DESC
         """,
             countQuery = """
-        SELECT COUNT(*)
-        FROM booking_history bh
-        JOIN bookings b
-            ON b.booking_id = bh.booking_id
-        WHERE bh.is_revoked = false
-          AND bh.action_type IN (
-                'UPDATED',
-                'ADD_EQUIPMENT',
-                'UPDATE_EQUIP_QUANTITY',
-                'CREATED'
-          )
-          AND b.title IS NOT NULL
-        """,
+                    SELECT COUNT(*)
+                    FROM booking_history bh
+                    JOIN bookings b
+                        ON b.booking_id = bh.booking_id
+                    WHERE bh.is_revoked = false
+                      AND bh.action_type IN (
+                            'UPDATED',
+                            'ADD_EQUIPMENT',
+                            'UPDATE_EQUIP_QUANTITY',
+                            'CREATED'
+                      )
+                      AND b.title IS NOT NULL
+                             and b.status NOT IN ('COMPLETED')
+                    """,
             nativeQuery = true)
     Page<BookingSummaryProjection> getBookingWaitingApprove(Pageable pageable);
 

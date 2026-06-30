@@ -118,7 +118,8 @@ public class BookingServiceImpl implements IBookingService {
                 booking,
                 user.getUserId(),
                 room.getRoomId(),
-                request.receivers() != null ? request.receivers() : List.of()
+                request.receivers() != null ? request.receivers() : List.of(),
+                request.equipments() != null ? request.equipments() : List.of()
         );
 
         //lưu vết lịch sử đặt phòng, thay đổi phòng phục vụ cho APPROVER so sánh trực quan để dễ phê duyệt
@@ -141,6 +142,7 @@ public class BookingServiceImpl implements IBookingService {
 
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        Room oldRoom = booking.getRoom();
 
         if (!booking.getBookedBy().equals(userChange) && !roles.contains(StringCommon.ADMIN)) {
             throw new BusinessException(ErrorResponse.UPDATE_BOOKING_AUTH_ERROR);
@@ -160,24 +162,23 @@ public class BookingServiceImpl implements IBookingService {
         UpdateFocusRoomOrTimePayload oldPayload = CreatePayloadHelper.createUpdateRoomOrTime(
                 booking,
                 booking.getBookedBy().getUserId(),
-                booking.getRoom().getRoomId(),
+                oldRoom.getRoomId(),
                 emailParticipants
         );
         if (request.isCompleted() != null) {
-            if(TimeUtils.now().isBefore(booking.getStartTime())){
+            if (TimeUtils.now().isBefore(booking.getStartTime())) {
                 throw new BusinessException(ErrorResponse.COMPLETED_UPDATE_BOOKING_ERROR);
             }
             booking.setStatus(BookingStatus.COMPLETED);
         }
         if (request.title() != null) booking.setTitle(request.title());
         if (request.description() != null) booking.setDescription(request.description());
-        if (request.attendeeCount() != null) {
-            if (request.attendeeCount() > booking.getRoom().getCapacity()) {
+        if (request.attendeeCount() != null && request.newRoomId() == null) {
+            if (request.attendeeCount() > oldRoom.getCapacity()) {
                 throw new BusinessException(ErrorResponse.EXCEED_ATTENDEE);
             }
             booking.setAttendeeCount(request.attendeeCount());
         }
-
         /* bao trọn được trường hợp chỉ đổi room hoặc chỉ đổi start-end hoặc đổi cả hai
             (room sẽ được lọc ra những room nào thỏa mãn trước dựa vào start-end)
          */
@@ -192,16 +193,19 @@ public class BookingServiceImpl implements IBookingService {
                         return newReservation;
                     });
             bookingReservation.setStatus(ReservationStatus.AWAIT_APPROVE);
-            bookingReservation.setOldRoom(booking.getRoom());
+            bookingReservation.setOldRoom(oldRoom);
             bookingReservation.setOldStartTime(booking.getStartTime());
             bookingReservation.setOldEndTime(booking.getEndTime());
 
             if (request.newRoomId() != null) {
                 isChangeRoom = true;
                 //lưu lại để có thể rollback từ cập nhật nếu approver reject
-                Room room = iRoomService.getRoomDetail(request.newRoomId()).orElseThrow(() ->
+                Room newRoom = iRoomService.getRoomDetail(request.newRoomId()).orElseThrow(() ->
                         new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-                booking.setRoom(room);
+                if (request.attendeeCount() != null && request.attendeeCount() > newRoom.getCapacity()) {
+                    throw new BusinessException(ErrorResponse.EXCEED_ATTENDEE);
+                }
+                booking.setRoom(newRoom);
                 booking.setStatus(BookingStatus.PENDING);
             }
             if (request.start() != null && request.end() != null) {
@@ -236,7 +240,7 @@ public class BookingServiceImpl implements IBookingService {
         UpdateFocusRoomOrTimePayload newPayload = CreatePayloadHelper.createUpdateRoomOrTime(
                 booking,
                 booking.getBookedBy().getUserId(),
-                booking.getRoom().getRoomId(),
+                booking.getRoom().getRoomId(), // lấy room mới vừa set()
                 emailParticipants //empty là thay đổi bình thường
         );
         if (!isChangeRoom && !isChangeTime) {

@@ -1,5 +1,6 @@
 package com.example.schedulemeetingbe.helper;
 
+import com.example.schedulemeetingbe.dto.request.booking.CreateBookingEquipmentRequest;
 import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.payload.CreateBookingPayload;
 import com.example.schedulemeetingbe.entity.payload.UpdateBookingChangePayload;
@@ -28,7 +29,12 @@ public class CreatePayloadHelper {
         );
     }
 
-    public static CreateBookingPayload create(Booking booking, Long userId, Long roomId, List<String> emails) {
+    public static CreateBookingPayload create(
+            Booking booking,
+            Long userId,
+            Long roomId,
+            List<String> emails,
+            List<CreateBookingEquipmentRequest> equipments) {
         return new CreateBookingPayload(
                 booking.getBookingId(),
                 booking.getTitle(),
@@ -41,7 +47,8 @@ public class CreatePayloadHelper {
                 roomId,
                 userId,
                 booking.getCreatedAt(),
-                emails
+                emails,
+                equipments
         );
     }
 
