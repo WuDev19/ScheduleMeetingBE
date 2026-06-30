@@ -44,6 +44,8 @@ public interface IUserService {
 
     Optional<Role> getRoleUser(String roleName);
 
+    Set<String> getMyRole(Long userId);
+
     List<User> getUserEmailIn(List<String> emails);
 
     Set<User> getUserUserIdIn(List<Long> ids);

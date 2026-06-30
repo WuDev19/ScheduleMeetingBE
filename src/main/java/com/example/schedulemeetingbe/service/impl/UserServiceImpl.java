@@ -265,4 +265,8 @@ public class UserServiceImpl implements IUserService {
         return userRepository.findByDepartment_DepartmentId(departmentId);
     }
 
+    @Override
+    public Set<String> getMyRole(Long userId) {
+        return roleRepository.findMyRole(userId);
+    }
 }

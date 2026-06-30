@@ -457,11 +457,11 @@ public class BookingServiceImpl implements IBookingService {
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        Role adminRole = iUserService.getRoleUser(StringCommon.ADMIN).orElseThrow(() ->
-                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        Role approverRole = iUserService.getRoleUser(StringCommon.APPROVER).orElseThrow(() ->
-                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        boolean isPrivileged = user.getRoles().contains(adminRole) || user.getRoles().contains(approverRole);
+        List<User> users = bookingAttendeeRepository.getAttendeeOfBooking(bookingId);
+        Set<String> myRole = iUserService.getMyRole(userId);
+        boolean isPrivileged = myRole.contains(StringCommon.ADMIN) ||
+                myRole.contains(StringCommon.APPROVER) ||
+                users.contains(user);
         if (!user.equals(booking.getBookedBy()) && !isPrivileged) {
             throw new BusinessException(ErrorResponse.BOOKING_DETAIL_ERROR);
         }
