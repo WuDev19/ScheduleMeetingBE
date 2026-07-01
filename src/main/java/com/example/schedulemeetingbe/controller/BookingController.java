@@ -5,8 +5,11 @@ import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
 import com.example.schedulemeetingbe.dto.common.ApiResult;
 import com.example.schedulemeetingbe.dto.request.booking.*;
+import com.example.schedulemeetingbe.dto.request.room.StartEndTimeRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.booking.*;
+import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapResponse;
+import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryResponse;
 import com.example.schedulemeetingbe.service.base.IBookingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -299,4 +302,20 @@ public class BookingController {
                 .headers(headers)
                 .body(excel);
     }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api lấy danh sách booking bị trùng khi tạo phòng không khả dụng")
+    @GetMapping("/overlap-room-unavailability/{roomId}")
+    @PreAuthorize("hasAuthority('ROOM_UNAVAILABLE:MANAGE')")
+    public ResponseEntity<ApiResult<List<BookingOverlapResponse>>> getBookingOverlapRoomUnavailability(
+            @PathVariable Long roomId,
+            @ModelAttribute StartEndTimeRequest request
+    ) {
+        return ApiResponse.success(
+                iBookingService.getBookingOverlapRoomUnavailability(roomId, request),
+                "Lấy danh sách booking bị trùng khi tạo phòng không khả dụng thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
 }

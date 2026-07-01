@@ -6,8 +6,13 @@ import com.example.schedulemeetingbe.design_pattern.command.booking.approve.Book
 import com.example.schedulemeetingbe.design_pattern.command.booking.rollback.BookingRollbackCommandFactory;
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
 import com.example.schedulemeetingbe.dto.request.booking.*;
+import com.example.schedulemeetingbe.dto.request.room.StartEndTimeRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.booking.*;
+import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapProjection;
+import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapResponse;
+import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryProjection;
+import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryResponse;
 import com.example.schedulemeetingbe.dto.response.equipment.EquipmentAndQuantityResponse;
 import com.example.schedulemeetingbe.entity.*;
 import com.example.schedulemeetingbe.entity.composite_key.BookingAttendeeId;
@@ -771,6 +776,18 @@ public class BookingServiceImpl implements IBookingService {
     }
 
     @Override
+    public List<BookingOverlapResponse> getBookingOverlapRoomUnavailability(Long roomId, StartEndTimeRequest request) {
+        List<BookingOverlapProjection> result = bookingRepository.getBookingOverlapRoomUnavailability(
+                roomId,
+                request.start(),
+                request.end()
+        );
+        return result.stream()
+                .map(BookingMapper::mapToBookingOverlapResponse)
+                .toList();
+    }
+
+    @Override
     public Optional<Booking> getBooking(Long bookingId) {
         return bookingRepository.findById(bookingId);
     }
@@ -781,8 +798,8 @@ public class BookingServiceImpl implements IBookingService {
     }
 
     @Override
-    public Optional<BookingRemainingResponse> getBookingRemaining(Long bookingId) {
-        return bookingRepository.getBookingRemain(bookingId);
+    public Optional<BookingRemindingResponse> getBookingReminding(Long bookingId) {
+        return bookingRepository.getBookingReminding(bookingId);
     }
 
     private void addEquipmentToRoom(CreateBookingRequest request, Booking saved) {

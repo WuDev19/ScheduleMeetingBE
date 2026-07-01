@@ -1,8 +1,11 @@
 package com.example.schedulemeetingbe.service.base;
 
 import com.example.schedulemeetingbe.dto.request.booking.*;
+import com.example.schedulemeetingbe.dto.request.room.StartEndTimeRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.booking.*;
+import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapResponse;
+import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryResponse;
 import com.example.schedulemeetingbe.entity.Booking;
 import org.springframework.data.domain.Pageable;
 
@@ -59,9 +62,14 @@ public interface IBookingService {
 
     void confirmParticipateIn(Long bookingId, Long userId);
 
+    List<BookingOverlapResponse> getBookingOverlapRoomUnavailability(Long roomId, StartEndTimeRequest request);
+
+    //------------------------------------------------------//
+
     Optional<Booking> getBooking(Long bookingId);
 
     List<Booking> getApprovedBooking();
 
-    Optional<BookingRemainingResponse> getBookingRemaining(Long bookingId);
+    Optional<BookingRemindingResponse> getBookingReminding(Long bookingId);
+
 }

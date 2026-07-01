@@ -27,9 +27,9 @@ public class OutboxEventRemindProcess {
 
     @Async("outboxExecutor")
     public void process(Long bookingId, long minutes) {
-        iBookingService.getBookingRemaining(bookingId).ifPresent(bookingRemain -> {
+        iBookingService.getBookingReminding(bookingId).ifPresent(bookingRemain -> {
 
-            //gửi thông báo cho những người đã xác nhân tham gia
+            //gửi thông báo cho những người đã xác nhận tham gia
             Booking booking = iBookingService.getBooking(bookingId).orElse(null);
             List<User> users = iBookingAttendeeService.getAttendOfBooking(bookingId);
             List<Notification> notifications = new ArrayList<>();

@@ -1,6 +1,11 @@
 package com.example.schedulemeetingbe.mapper;
 
+import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.dto.response.booking.*;
+import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapProjection;
+import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapResponse;
+import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryProjection;
+import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryResponse;
 import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.Notification;
 import com.example.schedulemeetingbe.entity.Room;
@@ -109,6 +114,21 @@ public class BookingMapper {
                 booking.getCreatedAt(),
                 notification.getTitle(),
                 notification.getMessage()
+        );
+    }
+
+    public static BookingOverlapResponse mapToBookingOverlapResponse(BookingOverlapProjection projection){
+        OffsetDateTime startTime = projection.getStartTime().atOffset(TimeUtils.ZONE_OFFSET);
+        OffsetDateTime endTime = projection.getEndTime().atOffset(TimeUtils.ZONE_OFFSET);
+        return new BookingOverlapResponse(
+                projection.getBookingId(),
+                projection.getTitle(),
+                projection.getUserBooked(),
+                projection.getPhone(),
+                projection.getRoomName(),
+                projection.getStatus(),
+                startTime,
+                endTime
         );
     }
 

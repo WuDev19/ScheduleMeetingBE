@@ -2,10 +2,10 @@ package com.example.schedulemeetingbe.repository;
 
 import com.example.schedulemeetingbe.constant.enums.BookingActionType;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
-import com.example.schedulemeetingbe.dto.response.booking.BookingHistoryResponse;
-import com.example.schedulemeetingbe.dto.response.booking.BookingRecurrenceResponse;
-import com.example.schedulemeetingbe.dto.response.booking.BookingRemainingResponse;
-import com.example.schedulemeetingbe.dto.response.booking.BookingSummaryProjection;
+import com.example.schedulemeetingbe.dto.response.booking.*;
+import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapProjection;
+import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapResponse;
+import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryProjection;
 import com.example.schedulemeetingbe.entity.Booking;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -26,13 +26,14 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
     List<Booking> findAll(Specification<Booking> spec);
 
     @EntityGraph(attributePaths = {"room", "room.building", "bookedBy"})
-    @Query(""
-            + "select distinct b from Booking b "
-            + "left join b.attendees a "
-            + "where (b.bookedBy.userId = :userId or a.userId = :userId) "
-            + "and b.status in :statuses "
-            + "and b.deletedAt is null"
-            + ""
+    @Query("""
+            SELECT DISTINCT b
+            FROM Booking b
+            LEFT JOIN b.attendees a 
+            WHERE (b.bookedBy.userId = :userId OR a.userId = :userId) 
+            AND b.status IN :statuses 
+            AND b.deletedAt IS NULL
+            """
     )
     List<Booking> findAllBookingsForRegisterExport(@Param("userId") Long userId, @Param("statuses") List<BookingStatus> statuses);
 
@@ -112,54 +113,54 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
     );
 
     @Query(value = """
-        WITH latest_booking AS (
+            WITH latest_booking AS (
+                SELECT
+                    booking_id,
+                    MAX(created_at) AS latest_update
+                FROM booking_history
+                WHERE is_revoked = false
+                  AND action_type IN (
+                        'UPDATED',
+                        'ADD_EQUIPMENT',
+                        'UPDATE_EQUIP_QUANTITY',
+                        'CREATED'
+                  )
+                GROUP BY booking_id
+            )
             SELECT
-                booking_id,
-                MAX(created_at) AS latest_update
-            FROM booking_history
-            WHERE is_revoked = false
-              AND action_type IN (
+                b.booking_id AS bookingId,
+                bh.history_id AS historyId,
+                b.title AS title,
+                u.full_name AS userBooked,
+                u.phone AS phone,
+                r.room_name AS roomName,
+                b.status AS status,
+                bh.action_type AS actionType,
+                b.start_time AS startTime,
+                b.end_time AS endTime
+            FROM bookings b
+            JOIN latest_booking lb
+                ON lb.booking_id = b.booking_id
+            JOIN booking_history bh
+                ON bh.booking_id = b.booking_id
+               AND bh.is_revoked = false
+               AND bh.action_type IN (
                     'UPDATED',
                     'ADD_EQUIPMENT',
                     'UPDATE_EQUIP_QUANTITY',
                     'CREATED'
-              )
-            GROUP BY booking_id
-        )
-        SELECT
-            b.booking_id AS bookingId,
-            bh.history_id AS historyId,
-            b.title AS title,
-            u.full_name AS userBooked,
-            u.phone AS phone,
-            r.room_name AS roomName,
-            b.status AS status,
-            bh.action_type AS actionType,
-            b.start_time AS startTime,
-            b.end_time AS endTime
-        FROM bookings b
-        JOIN latest_booking lb
-            ON lb.booking_id = b.booking_id
-        JOIN booking_history bh
-            ON bh.booking_id = b.booking_id
-           AND bh.is_revoked = false
-           AND bh.action_type IN (
-                'UPDATED',
-                'ADD_EQUIPMENT',
-                'UPDATE_EQUIP_QUANTITY',
-                'CREATED'
-           )
-        JOIN rooms r
-            ON r.room_id = b.room_id
-        JOIN users u
-            ON u.user_id = b.booked_by
-        WHERE b.title IS NOT NULL
-                and b.status NOT IN ('COMPLETED')
-        ORDER BY
-            lb.latest_update DESC,
-            b.booking_id,
-            bh.created_at DESC
-        """,
+               )
+            JOIN rooms r
+                ON r.room_id = b.room_id
+            JOIN users u
+                ON u.user_id = b.booked_by
+            WHERE b.title IS NOT NULL
+                    and b.status NOT IN ('COMPLETED')
+            ORDER BY
+                lb.latest_update DESC,
+                b.booking_id,
+                bh.created_at DESC
+            """,
             countQuery = """
                     SELECT COUNT(*)
                     FROM booking_history bh
@@ -240,9 +241,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
 
     @Modifying
     @Query(value = """
-            UPDATE Booking 
+            UPDATE Booking
             SET status = :status,
-                approvedBy.userId = :approvedBy, 
+                approvedBy.userId = :approvedBy,
                 approvedAt = :approvedAt
             WHERE recurringPattern.recurringId = :recurringId
             """)
@@ -274,12 +275,37 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
     List<Booking> findByStatusApproved();
 
     @Query("""
-            SELECT new com.example.schedulemeetingbe.dto.response.booking.BookingRemainingResponse(
+            SELECT new com.example.schedulemeetingbe.dto.response.booking.BookingRemindingResponse(
                 b.title,
                 b.room.roomName
             )
             FROM Booking b
             WHERE b.bookingId = :bookingId
             """)
-    Optional<BookingRemainingResponse> getBookingRemain(@Param("bookingId") Long bookingId);
+    Optional<BookingRemindingResponse> getBookingReminding(@Param("bookingId") Long bookingId);
+
+    @Query(value = """
+            SELECT b.booking_id AS bookingId,
+                   b.title AS title,
+                   u.full_name AS userBooked,
+                   u.phone AS phone,
+                   r.room_name AS roomName,
+                   b.status AS status,
+                   b.start_time AS startTime,
+                   b.end_time AS endTime
+            FROM bookings b
+            JOIN users u ON b.booked_by = u.user_id
+            JOIN rooms r ON r.room_id = b.room_id
+            WHERE b.room_id = :roomId
+            AND b.status IN ('PENDING', 'APPROVED')
+            AND b.deleted_at IS NULL
+            AND tstzrange(b.start_time, b.end_time)
+                    && tstzrange(:startTime, :endTime)
+            """,
+            nativeQuery = true)
+    List<BookingOverlapProjection> getBookingOverlapRoomUnavailability(
+            @Param("roomId") Long roomId,
+            @Param("startTime") OffsetDateTime startTime,
+            @Param("endTime") OffsetDateTime endTime
+    );
 }
