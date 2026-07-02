@@ -8,7 +8,8 @@ import com.example.schedulemeetingbe.dto.request.user.UpdateAvatarRequest;
 import com.example.schedulemeetingbe.dto.request.user.UpdateUserRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.UploadSignatureResponse;
-import com.example.schedulemeetingbe.dto.response.UserDetailResponse;
+import com.example.schedulemeetingbe.dto.response.user.FullNameAndEmailResponse;
+import com.example.schedulemeetingbe.dto.response.user.UserDetailResponse;
 import com.example.schedulemeetingbe.entity.OutboxEvent;
 import com.example.schedulemeetingbe.entity.Role;
 import com.example.schedulemeetingbe.entity.User;
@@ -241,13 +242,20 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public Optional<User> getDetail(Long id) {
-        return userRepository.findById(id);
+    public PageResponse<FullNameAndEmailResponse> getFullNameAndEmail(Pageable pageable) {
+        Page<FullNameAndEmailResponse> page = userRepository.getFullNameAndEmail(pageable);
+        return new PageResponse<>(
+                page.getNumber(),
+                page.getNumberOfElements(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.getContent()
+        );
     }
 
     @Override
-    public Optional<Role> getRoleUser(String roleName) {
-        return roleRepository.findByRoleName(roleName);
+    public Optional<User> getDetail(Long id) {
+        return userRepository.findById(id);
     }
 
     @Override

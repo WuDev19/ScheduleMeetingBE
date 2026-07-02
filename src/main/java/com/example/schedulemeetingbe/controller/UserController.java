@@ -9,7 +9,8 @@ import com.example.schedulemeetingbe.dto.request.user.UpdateAvatarRequest;
 import com.example.schedulemeetingbe.dto.request.user.UpdateUserRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.UploadSignatureResponse;
-import com.example.schedulemeetingbe.dto.response.UserDetailResponse;
+import com.example.schedulemeetingbe.dto.response.user.FullNameAndEmailResponse;
+import com.example.schedulemeetingbe.dto.response.user.UserDetailResponse;
 import com.example.schedulemeetingbe.service.base.IUserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -166,6 +167,20 @@ public class UserController {
         return ApiResponse.success(
                 iUserService.deleteAvatar(id),
                 "Xóa avatar thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api lấy danh sách email khi tạo lịch họp để có thẻ thêm người tham gia")
+    @GetMapping("/name-and-email")
+    @PreAuthorize("hasAuthority('USER:VIEW')")
+    public ResponseEntity<ApiResult<PageResponse<FullNameAndEmailResponse>>> getFullNameAndEmail(
+            @PageableDefault Pageable pageable
+    ) {
+        return ApiResponse.success(
+                iUserService.getFullNameAndEmail(pageable),
+                "Lấy danh sách email thành công",
                 Constants.SUCCESS_CODE
         );
     }
