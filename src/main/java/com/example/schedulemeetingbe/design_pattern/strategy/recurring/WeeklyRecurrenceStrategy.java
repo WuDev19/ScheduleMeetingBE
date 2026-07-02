@@ -55,6 +55,7 @@ public class WeeklyRecurrenceStrategy implements RecurrencePatternStrategy {
             for (DayOfWeek day : days) {
                 LocalDate bookingDate =
                         weekStart.with(day);
+                //fix ở đây
                 if (bookingDate.isBefore(startDate)) {
                     continue;
                 }
