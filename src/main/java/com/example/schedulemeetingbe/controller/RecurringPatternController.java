@@ -124,7 +124,7 @@ public class RecurringPatternController {
         return ApiResponse.success(
                 iRecurringPatternService.filter(
                         jwt.getClaim(StringCommon.USER_ID),
-                        jwt.getClaim(StringCommon.PERMISSIONS),
+                        jwt.getClaim(StringCommon.ROLES),
                         request,
                         pageable),
                 "Danh sách lịch định kỳ đã lọc",

@@ -23,5 +23,5 @@ public interface IRecurringPatternService {
 
     PageResponse<RecurringPatternResponse> getMyRecurringPattern(Long userId, Pageable pageable);
 
-    PageResponse<RecurringPatternResponse> filter(Long userId, List<String> permissions, RecurringPatternFilterRequest request, Pageable pageable);
+    PageResponse<RecurringPatternResponse> filter(Long userId, List<String> roles, RecurringPatternFilterRequest request, Pageable pageable);
 }

@@ -230,7 +230,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
     @Modifying
     @Query(value = """
             UPDATE bookings 
-            SET status = 'CANCEL',
+            SET status = 'CANCELLED',
                 cancellation_reason = :reason, 
                 cancelled_at = :cancelledAt
             WHERE recurring_id = :recurringId

@@ -26,11 +26,15 @@ public class UnavailabilityRoomSpecification {
             } else if (!roles.contains(StringCommon.ADMIN)) {
                 predicates.add(criteriaBuilder.equal(root.get("isDeleted"), false));
             }
-            if (start != null) {
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("startTime"), start));
-            }
-            if (end != null) {
-                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("endTime"), end));
+            if (start != null && end != null) {
+                predicates.add(criteriaBuilder.and(
+                        criteriaBuilder.lessThanOrEqualTo(root.get("startTime"), end),
+                        criteriaBuilder.greaterThanOrEqualTo(root.get("endTime"), start)
+                ));
+            } else if (start != null) {
+                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("endTime"), start));
+            } else if (end != null) {
+                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("startTime"), end));
             }
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };

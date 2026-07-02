@@ -162,10 +162,10 @@ public class RecurringPatternServiceImpl implements IRecurringPatternService {
 
     @Transactional(readOnly = true)
     @Override
-    public PageResponse<RecurringPatternResponse> filter(Long userId, List<String> permissions, RecurringPatternFilterRequest request, Pageable pageable) {
-        Set<String> stringSet = new HashSet<>(permissions);
+    public PageResponse<RecurringPatternResponse> filter(Long userId, List<String> roles, RecurringPatternFilterRequest request, Pageable pageable) {
+        Set<String> roleSet = new HashSet<>(roles);
         Page<RecurringPattern> page = recurringPatternRepository.findAll(
-                RecurringPatternSpecification.filter(userId, stringSet, request),
+                RecurringPatternSpecification.filter(userId, roleSet, request),
                 pageable
         );
         List<Long> recurringIds = page.getContent()

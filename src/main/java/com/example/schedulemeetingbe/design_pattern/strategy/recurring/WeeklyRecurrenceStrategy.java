@@ -35,13 +35,18 @@ public class WeeklyRecurrenceStrategy implements RecurrencePatternStrategy {
     }
 
     @Override
-    public void create(RecurringPattern recurringPattern, RecurringPatternCreateRequest request, User register, Room room) {
+    public void create(
+            RecurringPattern recurringPattern,
+            RecurringPatternCreateRequest request,
+            User register, Room room
+    ) {
         if (RecurrenceHelper.checkLimitRecurrence(request.startDate(), request.endDate())) {
             throw new BusinessException(ErrorResponse.EXCEED_PERIODIC);
         }
         int interval = request.interval() != null ? request.interval() : 1;
         List<Booking> bookings = new ArrayList<>();
         List<String> rangesTime = new ArrayList<>();
+
         LocalDate startDate = request.startDate();
         LocalDate endDate = request.endDate();
         long gapInMinutes = ChronoUnit.MINUTES.between(request.meetingStartTime(), request.meetingEndTime());
@@ -49,25 +54,23 @@ public class WeeklyRecurrenceStrategy implements RecurrencePatternStrategy {
                 .map(String::trim)
                 .map(DayOfWeek::valueOf)
                 .collect(Collectors.toSet());
-        while (!startDate.isAfter(endDate)) {
-            LocalDate weekStart =
-                    startDate.with(DayOfWeek.MONDAY);
+
+        LocalDate weekCursor = startDate.with(DayOfWeek.MONDAY);
+
+        while (!weekCursor.isAfter(endDate)) {
             for (DayOfWeek day : days) {
-                LocalDate bookingDate =
-                        weekStart.with(day);
-                //fix ở đây
-                if (bookingDate.isBefore(startDate)) {
-                    continue;
-                }
-                if (bookingDate.isAfter(endDate)) {
-                    continue;
-                }
+                LocalDate bookingDate = weekCursor.with(day);
+
+                if (bookingDate.isBefore(startDate)) continue;
+                if (bookingDate.isAfter(endDate)) continue;
+
                 OffsetDateTime startTime = OffsetDateTime.of(
                         bookingDate,
                         request.meetingStartTime(),
                         TimeUtils.ZONE_OFFSET
                 );
                 OffsetDateTime endTime = startTime.plusMinutes(gapInMinutes);
+
                 bookings.add(Booking.builder()
                         .room(room)
                         .bookedBy(register)
@@ -76,10 +79,11 @@ public class WeeklyRecurrenceStrategy implements RecurrencePatternStrategy {
                         .recurringPattern(recurringPattern)
                         .build()
                 );
+
                 String rangeStr = String.format("[%s, %s)", startTime, endTime);
                 rangesTime.add(rangeStr);
             }
-            startDate = startDate.plusWeeks(interval);
+            weekCursor = weekCursor.plusWeeks(interval);
         }
         RecurrenceHelper.validateAndSaveBooking(room, bookings, rangesTime, bookingRepository);
     }
