@@ -238,6 +238,7 @@ public class EmailServiceImpl implements IEmailService {
      * -> khi đó thông báo link email ko còn hợp lệ, vui lòng chờ hệ thống gửi lại
      * giả sử có 100 mail gửi mỗi cái 3s thì hết 5p, sau 5p thì mới save verification
      * */
+    //gửi email cho người tham gia xác nhận
     @Override
     public void sendBulkEmailBookingContent(ReceiverEmailPayload payload) {
         Booking booking = iBookingService.getBooking(payload.bookingId())
@@ -478,7 +479,7 @@ public class EmailServiceImpl implements IEmailService {
         );
     }
 
-    //gui mail cho nguoi dang ky
+    //gửi email cho người đăng ký
     @Override
     public void sendEmailApproveReject(ApproveRejectRecurrencePayload payload) {
         try {
@@ -525,6 +526,7 @@ public class EmailServiceImpl implements IEmailService {
         }
     }
 
+    //gửi email nhắc nhớ trước lịch họp cho người tham gia
     @Override
     public void sendEmailRemindingBooking(RemindingBookingPayload payload) {
         try {
@@ -587,6 +589,7 @@ public class EmailServiceImpl implements IEmailService {
                 );
     }
 
+    //gửi email thông báo cập nhật cho người tham gia
     @Override
     public void sendEmailApproveUpdate(UpdateApprovePayload payload) {
 
@@ -674,6 +677,7 @@ public class EmailServiceImpl implements IEmailService {
                 );
     }
 
+    //gửi email lịch họp bị hủy cho người tham gia (trường hợp người đặt lịch tự hủy)
     @Override
     public void sendEmailCancelBooking(CancelBookingPayload payload) {
         String subject = "[THÔNG BÁO] Lịch họp đã bị hủy";
@@ -799,6 +803,7 @@ public class EmailServiceImpl implements IEmailService {
         );
     }
 
+    //gửi email lịch họp bị hủy cho người tham gia (trường hợp phòng bảo trì)
     @Override
     public void sendEmailCancelBookingToAttendee(SimpleCancelBookingPayload payload) {
         String subject = "[THÔNG BÁO] Lịch họp đã bị hủy";
@@ -912,19 +917,3 @@ public class EmailServiceImpl implements IEmailService {
         );
     }
 }
-
-/*
-payload.emails().forEach(email -> {
-            MimeMessage message = javaMailSender.createMimeMessage();
-            try {
-                MimeMessageHelper helper =
-                        new MimeMessageHelper(message, true, UTF8);
-                helper.setSubject(StringCommon.APP_NAME_UPPER_CASE);
-                helper.setTo(email);
-                helper.setText(contentReminding(payload), true);
-                javaMailSender.send(message);
-            } catch (Exception e) {
-                EmailErrorParser.parseException(e);
-            }
-        });
-*/

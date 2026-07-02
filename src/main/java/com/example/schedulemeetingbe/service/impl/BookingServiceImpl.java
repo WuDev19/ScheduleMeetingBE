@@ -78,6 +78,7 @@ public class BookingServiceImpl implements IBookingService {
 
     private static final String BOOKING_ID = "bookingId";
 
+    //đã có gửi notification/email cho người tham gia
     @Transactional
     @Override
     public BookingResponse createBooking(CreateBookingRequest request, Long userId) {
@@ -375,6 +376,7 @@ public class BookingServiceImpl implements IBookingService {
         return BookingMapper.mapToStatusBookingResponse(booking);
     }
 
+    //đã có gửi notification/email cho người tham gia
     @Transactional
     @Override
     public StatusBookingResponse cancelBooking(Long bookingId, CancelBookingRequest request, Long userId) {

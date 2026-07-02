@@ -25,6 +25,7 @@ public class OutboxEventRemindProcess {
     private final INotificationService iNotificationService;
     private final IEmailService iEmailService;
 
+    //đã có gửi notification/email cho người tham gia
     @Async("outboxExecutor")
     public void process(Long bookingId, long minutes) {
         iBookingService.getBookingReminding(bookingId).ifPresent(bookingRemind -> {

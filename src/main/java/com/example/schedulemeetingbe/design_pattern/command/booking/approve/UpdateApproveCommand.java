@@ -6,6 +6,7 @@ import com.example.schedulemeetingbe.dto.request.booking.ApproveRequest;
 import com.example.schedulemeetingbe.entity.*;
 import com.example.schedulemeetingbe.entity.payload.UpdateApprovePayload;
 import com.example.schedulemeetingbe.entity.payload.UpdateFocusRoomOrTimePayload;
+import com.example.schedulemeetingbe.repository.BookingAttendeeRepository;
 import com.example.schedulemeetingbe.repository.BookingHistoryRepository;
 import com.example.schedulemeetingbe.repository.BookingReservationRepository;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
@@ -15,20 +16,24 @@ import org.springframework.stereotype.Component;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
 public class UpdateApproveCommand extends BookingApproveCommand {
     private final BookingReservationRepository bookingReservationRepository;
+    private final BookingAttendeeRepository bookingAttendeeRepository;
 
     public UpdateApproveCommand(INotificationService iNotificationService,
                                 OutboxEventRepository outboxEventRepository,
                                 BookingHistoryRepository bookingHistoryRepository,
                                 JsonMapper jsonMapper,
-                                BookingReservationRepository bookingReservationRepository
+                                BookingReservationRepository bookingReservationRepository,
+                                BookingAttendeeRepository bookingAttendeeRepository
     ) {
         super(iNotificationService, outboxEventRepository, bookingHistoryRepository, jsonMapper);
         this.bookingReservationRepository = bookingReservationRepository;
+        this.bookingAttendeeRepository = bookingAttendeeRepository;
     }
 
     @Override
@@ -40,7 +45,7 @@ public class UpdateApproveCommand extends BookingApproveCommand {
     public void execute(Booking booking, ApproveRequest request, User approver) {
         super.execute(booking, request, approver);
         UpdateFocusRoomOrTimePayload payload = jsonMapper.treeToValue(request.newData(), UpdateFocusRoomOrTimePayload.class);
-        createOutboxEvent(payload.getEmails(), booking, booking.getRoom());
+        createNotificationAndOutboxEvent(payload.getEmails(), booking, booking.getRoom());
         bookingReservationRepository.findBookingReservationsByBooking_BookingId(booking.getBookingId())
                 .ifPresent(bookingReservation ->
                         bookingReservation.setStatus(ReservationStatus.DONE)
@@ -50,7 +55,8 @@ public class UpdateApproveCommand extends BookingApproveCommand {
         booking.setApprovedAt(TimeUtils.now());
     }
 
-    private void createOutboxEvent(List<String> receivers, Booking booking, Room room) {
+    //gửi thông báo web và email
+    private void createNotificationAndOutboxEvent(List<String> receivers, Booking booking, Room room) {
         Building building = room.getBuilding();
         UpdateApprovePayload payload = new UpdateApprovePayload(
                 booking.getBookingId(),
@@ -68,5 +74,18 @@ public class UpdateApproveCommand extends BookingApproveCommand {
                 .payload(jsonMapper.valueToTree(payload))
                 .build();
         outboxEventRepository.save(event);
+
+        List<User> users = bookingAttendeeRepository.getAttendeeOfBooking(booking.getBookingId());
+        List<Notification> notifications = new ArrayList<>();
+        users.forEach(user -> {
+            Notification notification = Notification.builder()
+                    .title(StringCommon.TITLE_NOTIFICATION)
+                    .booking(booking)
+                    .message("Lịch họp có sự thay đổi về phòng hoặc thời gian họp, bấm để xem thêm chi tiết")
+                    .user(user)
+                    .build();
+            notifications.add(notification);
+        });
+        iNotificationService.save(notifications);
     }
 }
