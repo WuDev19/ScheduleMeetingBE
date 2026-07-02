@@ -1,7 +1,7 @@
 package com.example.schedulemeetingbe.mapper;
 
-import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.dto.response.booking.*;
+import com.example.schedulemeetingbe.dto.response.booking.booking_notification.BookingNotificationResponse;
 import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapProjection;
 import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapResponse;
 import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryProjection;
@@ -101,6 +101,7 @@ public class BookingMapper {
                 booking.getBookingId(),
                 booking.getTitle(),
                 booking.getDescription(),
+                booking.getStatus(),
                 room.getRoomId(),
                 room.getRoomName(),
                 room.getBuilding().getAddress(),

@@ -118,6 +118,13 @@ public class OutboxEventProcessor {
                     );
                     iEmailService.sendEmailCancelBooking(payload);
                 }
+                case "CANCEL_BOOKING_BY_MAINTENANCE_TO_ATTENDEE" -> {
+                    SimpleCancelBookingPayload payload = jsonMapper.treeToValue(
+                            event.getPayload(),
+                            SimpleCancelBookingPayload.class
+                    );
+                    iEmailService.sendEmailCancelBookingToAttendee(payload);
+                }
             }
             iOutboxEventService.updateStatusSuccess(event.getId());
         } catch (Exception ex) {

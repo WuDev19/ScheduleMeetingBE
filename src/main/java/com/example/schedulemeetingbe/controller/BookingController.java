@@ -8,6 +8,7 @@ import com.example.schedulemeetingbe.dto.request.booking.*;
 import com.example.schedulemeetingbe.dto.request.room.StartEndTimeRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.booking.*;
+import com.example.schedulemeetingbe.dto.response.booking.booking_notification.BookingNotificationResponse;
 import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapResponse;
 import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryResponse;
 import com.example.schedulemeetingbe.service.base.IBookingService;

@@ -30,6 +30,7 @@ public class StringCommon {
     public static final String APPROVER = "APPROVER";
     public static final String TITLE_NOTIFICATION_EMAIL = "Thông báo về lịch họp đã đăng ký";
     public static final String TITLE_NOTIFICATION = "Thông báo lịch họp";
+    public static final String TITLE_NOTIFICATION_CANCEL_BOOKING = "THÔNG BÁO HỦY LỊCH HỌP";
     public static final String CONFIRM_PARTICIPATE_HTML = """
             <!DOCTYPE html>
             <html lang="vi">

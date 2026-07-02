@@ -9,6 +9,7 @@ import com.example.schedulemeetingbe.dto.request.booking.*;
 import com.example.schedulemeetingbe.dto.request.room.StartEndTimeRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.booking.*;
+import com.example.schedulemeetingbe.dto.response.booking.booking_notification.BookingNotificationResponse;
 import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapProjection;
 import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapResponse;
 import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryProjection;
@@ -823,6 +824,7 @@ public class BookingServiceImpl implements IBookingService {
                     .collect(Collectors.toMap(EquipmentAndQuantityResponse::equipmentId, Function.identity()));
             // lấy danh sách equipment vượt quá số lượng để báo cho người dùng
             List<String> exceedQuantity = new ArrayList<>();
+            //chỗ này n+1 query nhưng thường thì số lượng equipment gửi lên cũng ko quá nhiều nên tạm thơì vẫn để như này
             bookingEquipmentRequests.forEach(createBookingEquipmentRequest -> {
                 EquipmentAndQuantityResponse equipmentAndQuantity = equipmentAndQuantityResponses.get(createBookingEquipmentRequest.equipmentId());
                 //tránh trường hợp gửi equipmentId ko hợp lệ
@@ -993,4 +995,8 @@ public class BookingServiceImpl implements IBookingService {
         bookingEquipmentReservationRepository.save(reservation);
     }
 
+    @Override
+    public List<Booking> getBookingInBookingIds(List<Long> bookingIds) {
+        return bookingRepository.findBookingByBookingIdIn(bookingIds);
+    }
 }

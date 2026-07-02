@@ -24,6 +24,10 @@ public class TimeUtils {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ));
     }
 
+    public static String dateTimeFormat(OffsetDateTime time){
+        return time.format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ));
+    }
+
     public static OffsetDateTime parseOffsetDateTime(String dateTime) {
         if (dateTime == null || dateTime.isBlank()) {
             return null;

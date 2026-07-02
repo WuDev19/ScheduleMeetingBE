@@ -1,5 +1,7 @@
 package com.example.schedulemeetingbe.service.impl;
 
+import com.example.schedulemeetingbe.dto.response.booking.booking_notification.BookingAndEmailAttendeeResponse;
+import com.example.schedulemeetingbe.dto.response.booking.booking_notification.BookingAndUserResponse;
 import com.example.schedulemeetingbe.entity.User;
 import com.example.schedulemeetingbe.repository.BookingAttendeeRepository;
 import com.example.schedulemeetingbe.service.base.IBookingAttendeeService;
@@ -16,5 +18,15 @@ public class BookingAttendeeServiceImpl implements IBookingAttendeeService {
     @Override
     public List<User> getAttendOfBooking(Long bookingId) {
         return bookingAttendeeRepository.getAttendeeOfBooking(bookingId);
+    }
+
+    @Override
+    public List<BookingAndUserResponse> getAttendOfBooking(List<Long> bookingIds) {
+        return bookingAttendeeRepository.getAttendeeOfBooking(bookingIds);
+    }
+
+    @Override
+    public List<BookingAndEmailAttendeeResponse> getEmailAttendOfBooking(List<Long> bookingIds) {
+        return bookingAttendeeRepository.getEmailAttendOfBooking(bookingIds);
     }
 }

@@ -22,4 +22,6 @@ public interface IEmailService {
     void sendEmailApproveUpdate(UpdateApprovePayload payload);
 
     void sendEmailCancelBooking(CancelBookingPayload payload);
+
+    void sendEmailCancelBookingToAttendee(SimpleCancelBookingPayload payload);
 }
