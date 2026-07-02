@@ -3,7 +3,7 @@ package com.example.schedulemeetingbe.mapper;
 import com.example.schedulemeetingbe.dto.response.notification.NotificationResponse;
 import com.example.schedulemeetingbe.entity.Notification;
 
-public class NotificationMapper {
+public final class NotificationMapper {
     private NotificationMapper() {
     }
 

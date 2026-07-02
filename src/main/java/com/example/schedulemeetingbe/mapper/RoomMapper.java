@@ -8,7 +8,7 @@ import com.example.schedulemeetingbe.entity.RoomUnavailability;
 
 import java.util.List;
 
-public class RoomMapper {
+public final class RoomMapper {
 
     private RoomMapper() {
     }

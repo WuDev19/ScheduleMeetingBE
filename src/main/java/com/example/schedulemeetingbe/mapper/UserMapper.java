@@ -5,7 +5,7 @@ import com.example.schedulemeetingbe.dto.response.UserDetailResponse;
 import com.example.schedulemeetingbe.entity.Department;
 import com.example.schedulemeetingbe.entity.User;
 
-public class UserMapper {
+public final class UserMapper {
     private UserMapper() {
     }
 

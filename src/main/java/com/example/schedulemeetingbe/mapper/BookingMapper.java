@@ -15,7 +15,7 @@ import com.example.schedulemeetingbe.utils.TimeUtils;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public class BookingMapper {
+public final class BookingMapper {
     private BookingMapper() {
     }
 

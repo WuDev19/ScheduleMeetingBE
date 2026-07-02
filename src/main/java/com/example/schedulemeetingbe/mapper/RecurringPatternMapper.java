@@ -10,7 +10,7 @@ import com.example.schedulemeetingbe.utils.TimeUtils;
 
 import java.util.List;
 
-public class RecurringPatternMapper {
+public final class RecurringPatternMapper {
     private RecurringPatternMapper() {
     }
 
