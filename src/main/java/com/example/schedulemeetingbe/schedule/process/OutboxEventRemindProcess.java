@@ -4,7 +4,7 @@ import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.Notification;
 import com.example.schedulemeetingbe.entity.User;
-import com.example.schedulemeetingbe.entity.payload.RemainingBookingPayload;
+import com.example.schedulemeetingbe.entity.payload.RemindingBookingPayload;
 import com.example.schedulemeetingbe.service.base.IBookingAttendeeService;
 import com.example.schedulemeetingbe.service.base.IBookingService;
 import com.example.schedulemeetingbe.service.base.IEmailService;
@@ -27,7 +27,7 @@ public class OutboxEventRemindProcess {
 
     @Async("outboxExecutor")
     public void process(Long bookingId, long minutes) {
-        iBookingService.getBookingReminding(bookingId).ifPresent(bookingRemain -> {
+        iBookingService.getBookingReminding(bookingId).ifPresent(bookingRemind -> {
 
             //gửi thông báo cho những người đã xác nhận tham gia
             Booking booking = iBookingService.getBooking(bookingId).orElse(null);
@@ -35,9 +35,9 @@ public class OutboxEventRemindProcess {
             List<Notification> notifications = new ArrayList<>();
             List<String> emails = new ArrayList<>();
             String message = "Cuộc họp " +
-                    bookingRemain.title() +
+                    bookingRemind.title() +
                     " tại phòng " +
-                    bookingRemain.roomName() +
+                    bookingRemind.roomName() +
                     " còn " +
                     minutes +
                     " sẽ diễn ra";
@@ -52,13 +52,13 @@ public class OutboxEventRemindProcess {
                 notifications.add(notification);
             });
             iNotificationService.save(notifications);
-            RemainingBookingPayload payload = new RemainingBookingPayload(
+            RemindingBookingPayload payload = new RemindingBookingPayload(
                     emails,
-                    bookingRemain.title(),
-                    bookingRemain.roomName(),
+                    bookingRemind.title(),
+                    bookingRemind.roomName(),
                     minutes
             );
-            iEmailService.sendEmailRemainingBooking(payload);
+            iEmailService.sendEmailRemindingBooking(payload);
         });
     }
 }

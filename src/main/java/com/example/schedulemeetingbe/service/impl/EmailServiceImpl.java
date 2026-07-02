@@ -478,6 +478,7 @@ public class EmailServiceImpl implements IEmailService {
         );
     }
 
+    //gui mail cho nguoi dang ky
     @Override
     public void sendEmailApproveReject(ApproveRejectRecurrencePayload payload) {
         try {
@@ -524,9 +525,8 @@ public class EmailServiceImpl implements IEmailService {
         }
     }
 
-    //thêm cái xác nhận tham gia ở trong web nữa
     @Override
-    public void sendEmailRemainingBooking(RemainingBookingPayload payload) {
+    public void sendEmailRemindingBooking(RemindingBookingPayload payload) {
         try {
             MimeMessage message = javaMailSender.createMimeMessage();
             MimeMessageHelper helper =
@@ -538,7 +538,7 @@ public class EmailServiceImpl implements IEmailService {
 
             helper.setBcc(payload.emails().toArray(new String[0]));
 
-            helper.setText(contentRemaining(payload), true);
+            helper.setText(contentReminding(payload), true);
 
             javaMailSender.send(message);
 
@@ -547,7 +547,7 @@ public class EmailServiceImpl implements IEmailService {
         }
     }
 
-    private String contentRemaining(RemainingBookingPayload payload) {
+    private String contentReminding(RemindingBookingPayload payload) {
         return """
                 <!DOCTYPE html>
                 <html>
@@ -921,7 +921,7 @@ payload.emails().forEach(email -> {
                         new MimeMessageHelper(message, true, UTF8);
                 helper.setSubject(StringCommon.APP_NAME_UPPER_CASE);
                 helper.setTo(email);
-                helper.setText(contentRemaining(payload), true);
+                helper.setText(contentReminding(payload), true);
                 javaMailSender.send(message);
             } catch (Exception e) {
                 EmailErrorParser.parseException(e);

@@ -17,7 +17,7 @@ public interface IEmailService {
 
     void sendEmailApproveReject(ApproveRejectRecurrencePayload payload);
 
-    void sendEmailRemainingBooking(RemainingBookingPayload payload);
+    void sendEmailRemindingBooking(RemindingBookingPayload payload);
 
     void sendEmailApproveUpdate(UpdateApprovePayload payload);
 

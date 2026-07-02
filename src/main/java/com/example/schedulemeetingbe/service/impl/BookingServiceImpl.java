@@ -769,6 +769,7 @@ public class BookingServiceImpl implements IBookingService {
         User participant = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         BookingAttendee bookingAttendee = BookingAttendee.builder()
+                .id(new BookingAttendeeId(bookingId, userId))
                 .user(participant)
                 .booking(booking)
                 .joinedAt(TimeUtils.now())
