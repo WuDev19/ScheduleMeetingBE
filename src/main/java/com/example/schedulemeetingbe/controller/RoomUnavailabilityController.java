@@ -19,6 +19,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -99,10 +101,12 @@ public class RoomUnavailabilityController {
     @GetMapping("/all")
     @PreAuthorize("hasAuthority('ROOM_UNAVAILABLE:VIEW')")
     public ResponseEntity<ApiResult<PageResponse<UnavailabilityRoomResponse>>> getAll(
-            @PageableDefault Pageable pageable
+            @RequestParam(required = false) Boolean isDeleted,
+            @PageableDefault Pageable pageable,
+            @AuthenticationPrincipal Jwt jwt
     ) {
         return ApiResponse.success(
-                iUnavailabilityRoomService.getAll(pageable),
+                iUnavailabilityRoomService.getAll(isDeleted, pageable, jwt.getClaim(StringCommon.ROLES)),
                 "Lấy danh sách phòng họp không khả dụng thành công",
                 Constants.SUCCESS_CODE
         );
@@ -113,11 +117,13 @@ public class RoomUnavailabilityController {
     @GetMapping("/search")
     @PreAuthorize("hasAuthority('ROOM_UNAVAILABLE:VIEW')")
     public ResponseEntity<ApiResult<PageResponse<UnavailabilityRoomResponse>>> search(
+            @RequestParam(required = false) Boolean isDeleted,
             @RequestParam String keyword,
-            @PageableDefault Pageable pageable
+            @PageableDefault Pageable pageable,
+            @AuthenticationPrincipal Jwt jwt
     ) {
         return ApiResponse.success(
-                iUnavailabilityRoomService.search(keyword, pageable),
+                iUnavailabilityRoomService.search(isDeleted, keyword, pageable, jwt.getClaim(StringCommon.ROLES)),
                 "Tìm kiếm danh sách phòng họp không khả dụng thành công",
                 Constants.SUCCESS_CODE
         );
@@ -128,11 +134,13 @@ public class RoomUnavailabilityController {
     @GetMapping("/filter")
     @PreAuthorize("hasAuthority('ROOM_UNAVAILABLE:VIEW')")
     public ResponseEntity<ApiResult<PageResponse<UnavailabilityRoomResponse>>> filter(
+            @RequestParam(required = false) Boolean isDeleted,
             @ModelAttribute UnavailabilityRoomFilterRequest request,
-            @PageableDefault Pageable pageable
+            @PageableDefault Pageable pageable,
+            @AuthenticationPrincipal Jwt jwt
     ) {
         return ApiResponse.success(
-                iUnavailabilityRoomService.filter(request, pageable),
+                iUnavailabilityRoomService.filter(isDeleted, request, pageable, jwt.getClaim(StringCommon.ROLES)),
                 "Lọc danh sách phòng họp không khả dụng theo thời gian thành công",
                 Constants.SUCCESS_CODE
         );

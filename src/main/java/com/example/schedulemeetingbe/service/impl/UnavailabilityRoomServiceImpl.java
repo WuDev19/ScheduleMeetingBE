@@ -55,6 +55,7 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
     @Transactional
     @Override
     public UnavailabilityRoomResponse create(CreateUnavailabilityRoomRequest request) {
+        long start = System.currentTimeMillis();
         Room room = roomRepository.findById(request.roomId()).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
 
@@ -69,6 +70,7 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
                 .endTime(request.endTime())
                 .build();
         RoomUnavailability saved = unavailabilityRoomRepository.save(roomUnavailability);
+        System.out.println("Tốc độ: " + (System.currentTimeMillis() - start) + " ms");
         return RoomMapper.mapToUnavailabilityRoomResponse(saved);
     }
 
@@ -100,8 +102,12 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
                                 )
                         )
                 );
-        createNotification(bookingIds, bookingLookUp, usersLookUp, request);
-        sendEmailToAttendee(bookingIds, bookingLookUp, userEmailsLookUp, request);
+        if (!usersLookUp.isEmpty()) {
+            createNotification(bookingIds, bookingLookUp, usersLookUp, request);
+        }
+        if (!userEmailsLookUp.isEmpty()) {
+            sendEmailToAttendee(bookingIds, bookingLookUp, userEmailsLookUp, request);
+        }
     }
 
     private void createNotification(
@@ -144,15 +150,16 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
     ) {
         List<OutboxEvent> outboxEvents = new ArrayList<>();
         bookingIds.forEach(bookingId -> {
-            String startTime = TimeUtils.dateTimeFormat(bookingLookUp.get(bookingId).getStartTime());
-            String endTime = TimeUtils.dateTimeFormat(bookingLookUp.get(bookingId).getEndTime());
+            Booking booking = bookingLookUp.get(bookingId);
+            String startTime = TimeUtils.dateTimeFormat(booking.getStartTime());
+            String endTime = TimeUtils.dateTimeFormat(booking.getEndTime());
             SimpleCancelBookingPayload payload = SimpleCancelBookingPayload.builder()
                     .reason(request.reason())
                     .receivers(userEmailsLookUp.get(bookingId))
                     .bookingId(bookingId)
                     .startTime(startTime)
                     .endTime(endTime)
-                    .title(StringCommon.TITLE_NOTIFICATION_CANCEL_BOOKING)
+                    .title(booking.getTitle())
                     .build();
             OutboxEvent outboxEvent = OutboxEvent.builder()
                     .eventType(EventType.CANCEL_BOOKING_BY_MAINTENANCE_TO_ATTENDEE.name())
@@ -209,8 +216,21 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
     }
 
     @Override
-    public PageResponse<UnavailabilityRoomResponse> getAll(Pageable pageable) {
-        Page<RoomUnavailability> page = unavailabilityRoomRepository.findAll(pageable);
+    public PageResponse<UnavailabilityRoomResponse> getAll(Boolean isDeleted, Pageable pageable, List<String> roles) {
+        Page<RoomUnavailability> page;
+        if (isDeleted != null) {
+            if (isDeleted) {
+                page = unavailabilityRoomRepository.findByIsDeletedIsTrueOrderByCreatedAtDesc(pageable);
+            } else {
+                page = unavailabilityRoomRepository.findByIsDeletedIsFalseOrderByCreatedAtDesc(pageable);
+            }
+        } else {
+            if (roles.contains(StringCommon.ADMIN)) {
+                page = unavailabilityRoomRepository.findAll(pageable);
+            } else {
+                page = unavailabilityRoomRepository.findByIsDeletedIsFalseOrderByCreatedAtDesc(pageable);
+            }
+        }
         return new PageResponse<>(
                 page.getNumber(),
                 page.getNumberOfElements(),
@@ -223,11 +243,38 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
     }
 
     @Override
-    public PageResponse<UnavailabilityRoomResponse> search(String keyword, Pageable pageable) {
-        Page<RoomUnavailability> roomPage = unavailabilityRoomRepository.findByReasonContainingIgnoreCase(
-                keyword,
-                pageable
-        );
+    public PageResponse<UnavailabilityRoomResponse> search(
+            Boolean isDeleted,
+            String keyword,
+            Pageable pageable,
+            List<String> roles
+    ) {
+        Page<RoomUnavailability> roomPage;
+        if (isDeleted != null) {
+            if (isDeleted) {
+                roomPage = unavailabilityRoomRepository.findByReasonContainingIgnoreCaseAndIsDeletedIsTrueOrderByCreatedAtDesc(
+                        keyword,
+                        pageable
+                );
+            } else {
+                roomPage = unavailabilityRoomRepository.findByReasonContainingIgnoreCaseAndIsDeletedIsFalseOrderByCreatedAtDesc(
+                        keyword,
+                        pageable
+                );
+            }
+        } else {
+            if (roles.contains(StringCommon.ADMIN)) {
+                roomPage = unavailabilityRoomRepository.findByReasonContainingIgnoreCaseOrderByCreatedAtDesc(
+                        keyword,
+                        pageable
+                );
+            } else {
+                roomPage = unavailabilityRoomRepository.findByReasonContainingIgnoreCaseAndIsDeletedIsFalseOrderByCreatedAtDesc(
+                        keyword,
+                        pageable
+                );
+            }
+        }
         return new PageResponse<>(
                 roomPage.getNumber(),
                 roomPage.getNumberOfElements(),
@@ -240,11 +287,18 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
     }
 
     @Override
-    public PageResponse<UnavailabilityRoomResponse> filter(UnavailabilityRoomFilterRequest request, Pageable pageable) {
+    public PageResponse<UnavailabilityRoomResponse> filter(
+            Boolean isDeleted,
+            UnavailabilityRoomFilterRequest request,
+            Pageable pageable,
+            List<String> roles) {
         Page<RoomUnavailability> roomPage = unavailabilityRoomRepository.findAll(
                 UnavailabilityRoomSpecification.filter(
+                        isDeleted,
                         request.start(),
-                        request.end()),
+                        request.end(),
+                        roles
+                ),
                 pageable
         );
         return new PageResponse<>(
