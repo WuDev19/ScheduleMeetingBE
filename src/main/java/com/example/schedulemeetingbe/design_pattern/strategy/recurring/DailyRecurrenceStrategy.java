@@ -47,6 +47,9 @@ public class DailyRecurrenceStrategy implements RecurrencePatternStrategy {
         // sau tùy theo logic thì có thể chỉ cho họp trong ngày giờ hành chính
         while (!startDate.isAfter(endDate)) {
             Booking booking = Booking.builder()
+                    .title(request.title())
+                    .description(request.description())
+                    .attendeeCount(request.attendeeCount() != null ? request.attendeeCount() : 1)
                     .bookedBy(register)
                     .room(room)
                     .startTime(startTime)

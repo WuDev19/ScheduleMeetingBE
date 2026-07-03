@@ -2,9 +2,10 @@ package com.example.schedulemeetingbe.repository;
 
 import com.example.schedulemeetingbe.constant.enums.BookingActionType;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
-import com.example.schedulemeetingbe.dto.response.booking.*;
+import com.example.schedulemeetingbe.dto.response.booking.BookingHistoryResponse;
+import com.example.schedulemeetingbe.dto.response.booking.BookingRecurrenceResponse;
+import com.example.schedulemeetingbe.dto.response.booking.BookingRemindingResponse;
 import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapProjection;
-import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapResponse;
 import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryProjection;
 import com.example.schedulemeetingbe.entity.Booking;
 import org.springframework.data.domain.Page;
@@ -14,7 +15,6 @@ import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -131,7 +131,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
             SELECT
                 b.booking_id AS bookingId,
                 bh.history_id AS historyId,
-                b.title AS title,
+                COALESCE(b.title, 'Lịch họp định kỳ chưa có tiêu đề cụ thể') AS title,
                 u.full_name AS userBooked,
                 u.phone AS phone,
                 r.room_name AS roomName,
@@ -155,8 +155,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
                 ON r.room_id = b.room_id
             JOIN users u
                 ON u.user_id = b.booked_by
-            WHERE b.title IS NOT NULL
-                    and b.status NOT IN ('COMPLETED')
+            WHERE (b.title IS NOT NULL OR b.recurring_id IS NOT NULL)
+                    AND b.status NOT IN ('COMPLETED')
             ORDER BY
                 lb.latest_update DESC,
                 b.booking_id,
@@ -174,8 +174,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
                             'UPDATE_EQUIP_QUANTITY',
                             'CREATED'
                       )
-                      AND b.title IS NOT NULL
-                             and b.status NOT IN ('COMPLETED')
+                      AND (b.title IS NOT NULL OR b.recurring_id IS NOT NULL)
+                             AND b.status NOT IN ('COMPLETED')
                     """,
             nativeQuery = true)
     Page<BookingSummaryProjection> getBookingWaitingApprove(Pageable pageable);
@@ -183,7 +183,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
     @Query(value = """
             SELECT 
                 b.booking_id AS bookingId,
-                b.title AS title,
+                COALESCE(b.title, 'Lịch họp định kỳ') AS title,
                 b.description AS discription,
                 r.room_name AS roomName,
                 bd.address AS roomAddress,

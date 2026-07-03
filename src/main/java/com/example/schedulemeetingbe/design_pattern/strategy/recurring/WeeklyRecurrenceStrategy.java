@@ -72,6 +72,9 @@ public class WeeklyRecurrenceStrategy implements RecurrencePatternStrategy {
                 OffsetDateTime endTime = startTime.plusMinutes(gapInMinutes);
 
                 bookings.add(Booking.builder()
+                        .title(request.title())
+                        .description(request.description())
+                        .attendeeCount(request.attendeeCount() != null ? request.attendeeCount() : 1)
                         .room(room)
                         .bookedBy(register)
                         .startTime(startTime)
