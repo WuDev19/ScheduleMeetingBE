@@ -1,4 +1,4 @@
-package com.example.schedulemeetingbe.dto.request.booking;
+package com.example.schedulemeetingbe.dto.request.recurrence;
 
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.constant.enums.RecurrenceType;

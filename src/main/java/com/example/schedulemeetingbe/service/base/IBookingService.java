@@ -43,6 +43,8 @@ public interface IBookingService {
 
     Map<String, Object> deleteBooking(Long bookingId, Long userId);
 
+    Map<String, Object> addParticipants(Long bookingId, List<String> emails);
+
     BookingDetailResponse getBookingDetail(Long bookingId, Long userId);
 
     BookingNotificationResponse getBookingAndNotification(Long bookingId, Long userId, Long notificationId);

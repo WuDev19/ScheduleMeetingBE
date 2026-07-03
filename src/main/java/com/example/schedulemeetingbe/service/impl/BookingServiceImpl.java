@@ -82,6 +82,9 @@ public class BookingServiceImpl implements IBookingService {
     @Transactional
     @Override
     public BookingResponse createBooking(CreateBookingRequest request, Long userId) {
+        if (request.start().isBefore(TimeUtils.now())) {
+            throw new BusinessException(ErrorResponse.START_END_DATE_BEFORE_NOW_ERROR);
+        }
         if (request.receivers() != null &&
                 !request.receivers().isEmpty() &&
                 !request.attendee().equals(request.receivers().size())
@@ -216,7 +219,9 @@ public class BookingServiceImpl implements IBookingService {
                 booking.setStatus(BookingStatus.PENDING);
             }
             if (request.start() != null && request.end() != null) {
-                if (request.start().isAfter(request.end())) {
+                if (request.start().isBefore(TimeUtils.now())) {
+                    throw new BusinessException(ErrorResponse.START_END_DATE_BEFORE_NOW_ERROR);
+                } else if (request.start().isAfter(request.end())) {
                     throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
                 } else {
                     checkOverlap(bookingId, request.roomId(), request.start(), request.end(), false);
@@ -237,13 +242,9 @@ public class BookingServiceImpl implements IBookingService {
              * nhưng khi đó B đã đăng kí thành công vào lịch đó => lỗi ko mong muốn nên phải bảo toàn cả hai lịch cho A
              */
             bookingReservationRepository.save(bookingReservation);
-
-            //revoke những cái lịch sử thay đổi cũ, chỉ để hiện cái thay đổi mới nhất để cho approver duyệt
-//            bookingRepository.revokeAllOldChangeHistory(bookingId, BookingActionType.UPDATED);
         }
 
         // nếu thay đổi room hoặc time thì thêm cái emails để có thể gửi thông báo cho những người tham gia
-
         UpdateFocusRoomOrTimePayload newPayload = CreatePayloadHelper.createUpdateRoomOrTime(
                 booking,
                 booking.getBookedBy().getUserId(),
@@ -474,6 +475,53 @@ public class BookingServiceImpl implements IBookingService {
         return CRUDResponseHelper.deleteSuccess();
     }
 
+    @Transactional
+    @Override
+    public Map<String, Object> addParticipants(Long bookingId, List<String> emails) {
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        List<User> users = iUserService.getUserEmailIn(emails);
+        List<Notification> notifications = new ArrayList<>();
+        Room room = booking.getRoom();
+        Building building = room.getBuilding();
+        String message = """
+                Bạn được mời tham gia cuộc họp %s
+                diễn ra vào lúc %s và kết thúc lúc %s
+                tại phòng họp %s.
+                Xem thêm chi tiết
+                """
+                .formatted(
+                        booking.getTitle(),
+                        TimeUtils.dateTimeFormat(booking.getStartTime()),
+                        TimeUtils.dateTimeFormat(booking.getEndTime()),
+                        room.getRoomName()
+                );
+        users.forEach(user -> {
+            Notification notification = Notification.builder()
+                    .title(StringCommon.TITLE_NOTIFICATION)
+                    .message(message)
+                    .booking(booking)
+                    .user(user)
+                    .build();
+            notifications.add(notification);
+        });
+        iNotificationService.save(notifications);
+        OutboxEvent event = OutboxEvent.builder()
+                .status(OutboxStatus.PENDING)
+                .eventType(EventType.SEND_EMAIL_CONFIRM_PARTICIPATE.name())
+                .payload(jsonMapper.valueToTree(
+                        CreatePayloadHelper.createReceiverEmailPayload(
+                                booking,
+                                building,
+                                room,
+                                emails
+                        ))
+                )
+                .build();
+        outboxEventRepository.save(event);
+        return CRUDResponseHelper.createSuccess();
+    }
+
     // ko cho xem lịch của người khác, chỉ hiện preview vài thông tin (nội bộ nên có thể triển khai như này)
     @Transactional(readOnly = true)
     @Override
@@ -524,7 +572,6 @@ public class BookingServiceImpl implements IBookingService {
         User user = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
 
-//        bookingRepository.revokeAllOldChangeHistory(bookingId, BookingActionType.UPDATE_EQUIP_QUANTITY);
         BookingHistory bookingHistory = BookingHistory.builder()
                 .booking(booking)
                 .actionType(BookingActionType.UPDATE_EQUIP_QUANTITY)

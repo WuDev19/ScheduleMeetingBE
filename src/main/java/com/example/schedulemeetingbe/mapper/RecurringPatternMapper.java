@@ -1,7 +1,7 @@
 package com.example.schedulemeetingbe.mapper;
 
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
-import com.example.schedulemeetingbe.dto.request.booking.RecurringPatternCreateRequest;
+import com.example.schedulemeetingbe.dto.request.recurrence.RecurringPatternCreateRequest;
 import com.example.schedulemeetingbe.dto.response.booking.BookingRecurrenceResponse;
 import com.example.schedulemeetingbe.dto.response.recurrence.*;
 import com.example.schedulemeetingbe.entity.RecurringPattern;
