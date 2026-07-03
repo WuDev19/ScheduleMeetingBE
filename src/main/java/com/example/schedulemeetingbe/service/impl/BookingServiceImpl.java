@@ -480,32 +480,13 @@ public class BookingServiceImpl implements IBookingService {
     public Map<String, Object> addParticipants(Long bookingId, List<String> emails) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        List<User> users = iUserService.getUserEmailIn(emails);
-        List<Notification> notifications = new ArrayList<>();
+        if (booking.getStatus() != BookingStatus.APPROVED &&
+                booking.getStatus() != BookingStatus.PENDING
+        ) {
+            throw new BusinessException(ErrorResponse.BOOKING_STATUS_ERROR);
+        }
         Room room = booking.getRoom();
         Building building = room.getBuilding();
-        String message = """
-                Bạn được mời tham gia cuộc họp %s
-                diễn ra vào lúc %s và kết thúc lúc %s
-                tại phòng họp %s.
-                Xem thêm chi tiết
-                """
-                .formatted(
-                        booking.getTitle(),
-                        TimeUtils.dateTimeFormat(booking.getStartTime()),
-                        TimeUtils.dateTimeFormat(booking.getEndTime()),
-                        room.getRoomName()
-                );
-        users.forEach(user -> {
-            Notification notification = Notification.builder()
-                    .title(StringCommon.TITLE_NOTIFICATION)
-                    .message(message)
-                    .booking(booking)
-                    .user(user)
-                    .build();
-            notifications.add(notification);
-        });
-        iNotificationService.save(notifications);
         OutboxEvent event = OutboxEvent.builder()
                 .status(OutboxStatus.PENDING)
                 .eventType(EventType.SEND_EMAIL_CONFIRM_PARTICIPATE.name())
