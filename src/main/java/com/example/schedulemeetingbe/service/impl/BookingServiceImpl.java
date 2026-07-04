@@ -808,7 +808,6 @@ public class BookingServiceImpl implements IBookingService {
         bookingAttendeeRepository.save(bookingAttendee);
     }
 
-    @Transactional(readOnly = true)
     @Override
     public List<BookingOverlapResponse> getBookingOverlapRoomUnavailability(Long roomId, StartEndTimeRequest request) {
         List<BookingOverlapProjection> result = bookingRepository.getBookingOverlapRoomUnavailability(
