@@ -82,6 +82,7 @@ public class BookingServiceImpl implements IBookingService {
     @Transactional
     @Override
     public BookingResponse createBooking(CreateBookingRequest request, Long userId) {
+        long start = System.currentTimeMillis();
         if (request.start().isBefore(TimeUtils.now())) {
             throw new BusinessException(ErrorResponse.START_END_DATE_BEFORE_NOW_ERROR);
         }
@@ -140,7 +141,7 @@ public class BookingServiceImpl implements IBookingService {
                 .newData(jsonMapper.valueToTree(payload))
                 .build();
         bookingHistoryRepository.save(bookingHistory);
-
+        System.out.println("Tốc độ tạo booking: " + (System.currentTimeMillis() - start));
         return BookingMapper.mapToBookingResponse(saved, user, room);
     }
 
@@ -691,9 +692,9 @@ public class BookingServiceImpl implements IBookingService {
         }
         List<Booking> result = bookingRepository.findAll(
                 BookingSpecification.filter(
-                        null,
+                        request.roomId(),
                         request.fullName(),
-                        null,
+                        request.status(),
                         startDateTime,
                         endDateTime
                 )
@@ -807,6 +808,7 @@ public class BookingServiceImpl implements IBookingService {
         bookingAttendeeRepository.save(bookingAttendee);
     }
 
+    @Transactional(readOnly = true)
     @Override
     public List<BookingOverlapResponse> getBookingOverlapRoomUnavailability(Long roomId, StartEndTimeRequest request) {
         List<BookingOverlapProjection> result = bookingRepository.getBookingOverlapRoomUnavailability(

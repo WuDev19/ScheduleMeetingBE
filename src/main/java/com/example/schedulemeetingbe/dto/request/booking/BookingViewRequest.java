@@ -1,5 +1,6 @@
 package com.example.schedulemeetingbe.dto.request.booking;
 
+import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import com.example.schedulemeetingbe.constant.enums.BookingViewType;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -9,6 +10,8 @@ public record BookingViewRequest(
         BookingViewType viewType,
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
         LocalDate targetDate,
-        String fullName
+        String fullName,
+        Long roomId,
+        BookingStatus status
 ) {
 }
