@@ -1,6 +1,11 @@
 package com.example.schedulemeetingbe.mapper;
 
 import com.example.schedulemeetingbe.dto.response.booking.*;
+import com.example.schedulemeetingbe.dto.response.booking.booking_notification.BookingNotificationResponse;
+import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapProjection;
+import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapResponse;
+import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryProjection;
+import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryResponse;
 import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.Notification;
 import com.example.schedulemeetingbe.entity.Room;
@@ -10,7 +15,7 @@ import com.example.schedulemeetingbe.utils.TimeUtils;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public class BookingMapper {
+public final class BookingMapper {
     private BookingMapper() {
     }
 
@@ -23,12 +28,14 @@ public class BookingMapper {
                 room.getBuilding().getAddress(),
                 room.getFloorNumber(),
                 user.getFullName(),
+                user.getUsername(),
                 user.getPhone(),
                 user.getEmail(),
                 booking.getStartTime(),
                 booking.getEndTime(),
                 booking.getAttendeeCount(),
-                booking.getCreatedAt()
+                booking.getCreatedAt(),
+                booking.getStatus()
         );
     }
 
@@ -55,13 +62,15 @@ public class BookingMapper {
                 room.getBuilding().getAddress(),
                 room.getFloorNumber(),
                 user.getFullName(),
+                user.getUsername(),
                 user.getPhone(),
                 user.getEmail(),
                 booking.getStartTime(),
                 booking.getEndTime(),
                 booking.getAttendeeCount(),
                 booking.getCreatedAt(),
-                equipments
+                equipments,
+                booking.getStatus()
         );
     }
 
@@ -92,6 +101,7 @@ public class BookingMapper {
                 booking.getBookingId(),
                 booking.getTitle(),
                 booking.getDescription(),
+                booking.getStatus(),
                 room.getRoomId(),
                 room.getRoomName(),
                 room.getBuilding().getAddress(),
@@ -105,6 +115,21 @@ public class BookingMapper {
                 booking.getCreatedAt(),
                 notification.getTitle(),
                 notification.getMessage()
+        );
+    }
+
+    public static BookingOverlapResponse mapToBookingOverlapResponse(BookingOverlapProjection projection){
+        OffsetDateTime startTime = projection.getStartTime().atOffset(TimeUtils.ZONE_OFFSET);
+        OffsetDateTime endTime = projection.getEndTime().atOffset(TimeUtils.ZONE_OFFSET);
+        return new BookingOverlapResponse(
+                projection.getBookingId(),
+                projection.getTitle(),
+                projection.getUserBooked(),
+                projection.getPhone(),
+                projection.getRoomName(),
+                projection.getStatus(),
+                startTime,
+                endTime
         );
     }
 

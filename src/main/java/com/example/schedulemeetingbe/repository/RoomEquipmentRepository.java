@@ -12,6 +12,7 @@ public interface RoomEquipmentRepository extends JpaRepository<RoomEquipment, Lo
 
     @Query("""
             SELECT new com.example.schedulemeetingbe.dto.response.equipment.RoomEquipmentResponse(
+                        re.roomEquipmentId,
                         re.room.roomId,
                         e.equipmentId,
                         e.equipmentName,
@@ -24,4 +25,5 @@ public interface RoomEquipmentRepository extends JpaRepository<RoomEquipment, Lo
             """)
     List<RoomEquipmentResponse> findEquipmentByRoomId(@Param("roomIds") List<Long> roomIds);
 
+    List<RoomEquipment> findRoomEquipmentByRoom_RoomId(Long roomId);
 }

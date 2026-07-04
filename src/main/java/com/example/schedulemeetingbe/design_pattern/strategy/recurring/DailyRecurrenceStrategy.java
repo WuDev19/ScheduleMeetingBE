@@ -1,7 +1,7 @@
 package com.example.schedulemeetingbe.design_pattern.strategy.recurring;
 
 import com.example.schedulemeetingbe.constant.enums.RecurrenceType;
-import com.example.schedulemeetingbe.dto.request.booking.RecurringPatternCreateRequest;
+import com.example.schedulemeetingbe.dto.request.recurrence.RecurringPatternCreateRequest;
 import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.RecurringPattern;
 import com.example.schedulemeetingbe.entity.Room;
@@ -47,6 +47,9 @@ public class DailyRecurrenceStrategy implements RecurrencePatternStrategy {
         // sau tùy theo logic thì có thể chỉ cho họp trong ngày giờ hành chính
         while (!startDate.isAfter(endDate)) {
             Booking booking = Booking.builder()
+                    .title(request.title())
+                    .description(request.description())
+                    .attendeeCount(request.attendeeCount() != null ? request.attendeeCount() : 1)
                     .bookedBy(register)
                     .room(room)
                     .startTime(startTime)

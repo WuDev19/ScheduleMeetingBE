@@ -4,7 +4,7 @@ import com.example.schedulemeetingbe.constant.Constants;
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
 import com.example.schedulemeetingbe.dto.common.ApiResult;
-import com.example.schedulemeetingbe.dto.request.booking.RecurringPatternCreateRequest;
+import com.example.schedulemeetingbe.dto.request.recurrence.RecurringPatternCreateRequest;
 import com.example.schedulemeetingbe.dto.request.recurrence.ApproveRejectRecurringRequest;
 import com.example.schedulemeetingbe.dto.request.recurrence.CancelRecurringPatternRequest;
 import com.example.schedulemeetingbe.dto.request.recurrence.RecurringPatternFilterRequest;
@@ -124,7 +124,7 @@ public class RecurringPatternController {
         return ApiResponse.success(
                 iRecurringPatternService.filter(
                         jwt.getClaim(StringCommon.USER_ID),
-                        jwt.getClaim(StringCommon.PERMISSIONS),
+                        jwt.getClaim(StringCommon.ROLES),
                         request,
                         pageable),
                 "Danh sách lịch định kỳ đã lọc",

@@ -5,6 +5,7 @@ import tools.jackson.databind.JsonNode;
 
 public record ApproveRequest(
         BookingActionType actionType,
+        Long historyId,
         JsonNode newData
 ) {
 }

@@ -33,7 +33,11 @@ public interface IRoomService {
 
     Map<String, Long> addEquipmentToRoom(Long roomId, List<RoomEquipmentQuantityRequest> requests);
 
-    PageResponse<RoomResponse> getRoomNotOverlapTime(Long roomId, StartEndTimeRequest request, Pageable pageable);
+    Map<String, Object> updateRoomEquipmentQuantity(Long roomId, Long roomEquipmentId, Integer quantity);
+
+    Map<String, Object> deleteRoomEquipment(Long roomId, Long roomEquipmentId);
+
+    PageResponse<RoomResponse> getRoomNotOverlapTime(StartEndTimeRequest request, Pageable pageable);
 
     Optional<Room> getRoomDetail(Long id);
 }

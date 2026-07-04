@@ -10,6 +10,7 @@ import com.example.schedulemeetingbe.entity.Notification;
 import com.example.schedulemeetingbe.entity.OutboxEvent;
 import com.example.schedulemeetingbe.entity.User;
 import com.example.schedulemeetingbe.entity.payload.ApproveRejectRecurrencePayload;
+import com.example.schedulemeetingbe.repository.BookingHistoryRepository;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.service.base.INotificationService;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +26,7 @@ public abstract class BookingRollbackCommand {
 
     protected final INotificationService iNotificationService;
     protected final OutboxEventRepository outboxEventRepository;
+    protected final BookingHistoryRepository bookingHistoryRepository;
     protected final JsonMapper jsonMapper;
 
     abstract BookingActionType getActionType();
@@ -80,5 +82,8 @@ public abstract class BookingRollbackCommand {
                 .status(OutboxStatus.PENDING)
                 .build();
         outboxEventRepository.save(outboxEvent);
+
+        bookingHistoryRepository.findById(request.historyId()).ifPresent(bookingHistory ->
+                bookingHistory.setIsRevoked(true));
     }
 }

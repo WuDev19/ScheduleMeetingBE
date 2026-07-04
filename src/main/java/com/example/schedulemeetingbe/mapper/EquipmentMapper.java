@@ -5,7 +5,7 @@ import com.example.schedulemeetingbe.dto.response.equipment.RoomEquipmentRespons
 import com.example.schedulemeetingbe.entity.Equipment;
 import com.example.schedulemeetingbe.entity.RoomEquipment;
 
-public class EquipmentMapper {
+public final class EquipmentMapper {
     private EquipmentMapper() {
     }
 

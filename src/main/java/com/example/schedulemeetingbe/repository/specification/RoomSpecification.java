@@ -19,7 +19,7 @@ public class RoomSpecification {
             predicates.add(criteriaBuilder.equal(root.get("isActive"), true));
             if (capacity != null) {
                 predicates.add(
-                        criteriaBuilder.equal(
+                        criteriaBuilder.greaterThanOrEqualTo(
                                 root.get("capacity"),
                                 capacity
                         )

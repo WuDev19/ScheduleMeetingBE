@@ -5,8 +5,8 @@ import com.example.schedulemeetingbe.dto.request.user.UpdateAvatarRequest;
 import com.example.schedulemeetingbe.dto.request.user.UpdateUserRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.UploadSignatureResponse;
-import com.example.schedulemeetingbe.dto.response.UserDetailResponse;
-import com.example.schedulemeetingbe.entity.Role;
+import com.example.schedulemeetingbe.dto.response.user.FullNameAndEmailResponse;
+import com.example.schedulemeetingbe.dto.response.user.UserDetailResponse;
 import com.example.schedulemeetingbe.entity.User;
 import org.springframework.data.domain.Pageable;
 
@@ -42,7 +42,9 @@ public interface IUserService {
 
     Optional<User> getDetail(Long id);
 
-    Optional<Role> getRoleUser(String roleName);
+    PageResponse<FullNameAndEmailResponse> getFullNameAndEmail(Pageable pageable);
+
+    Set<String> getMyRole(Long userId);
 
     List<User> getUserEmailIn(List<String> emails);
 

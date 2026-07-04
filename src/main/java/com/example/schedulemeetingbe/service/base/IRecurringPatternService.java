@@ -1,6 +1,6 @@
 package com.example.schedulemeetingbe.service.base;
 
-import com.example.schedulemeetingbe.dto.request.booking.RecurringPatternCreateRequest;
+import com.example.schedulemeetingbe.dto.request.recurrence.RecurringPatternCreateRequest;
 import com.example.schedulemeetingbe.dto.request.recurrence.ApproveRejectRecurringRequest;
 import com.example.schedulemeetingbe.dto.request.recurrence.CancelRecurringPatternRequest;
 import com.example.schedulemeetingbe.dto.request.recurrence.RecurringPatternFilterRequest;
@@ -23,5 +23,5 @@ public interface IRecurringPatternService {
 
     PageResponse<RecurringPatternResponse> getMyRecurringPattern(Long userId, Pageable pageable);
 
-    PageResponse<RecurringPatternResponse> filter(Long userId, List<String> permissions, RecurringPatternFilterRequest request, Pageable pageable);
+    PageResponse<RecurringPatternResponse> filter(Long userId, List<String> roles, RecurringPatternFilterRequest request, Pageable pageable);
 }

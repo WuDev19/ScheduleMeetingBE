@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.OffsetDateTime;
+import java.util.List;
 
 public record CreateUnavailabilityRoomRequest(
         @NotNull(message = StringCommon.NOT_NULL + "roomId")
@@ -20,6 +21,8 @@ public record CreateUnavailabilityRoomRequest(
 
         @NotNull(message = StringCommon.NOT_NULL + "endTime")
         @JsonFormat(pattern = StringCommon.OFFSET_FORMAT)
-        OffsetDateTime endTime
+        OffsetDateTime endTime,
+
+        List<Long> bookingIdOverLap
 ) {
 }

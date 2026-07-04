@@ -1,27 +1,42 @@
 package com.example.schedulemeetingbe.service.impl;
 
+import com.example.schedulemeetingbe.constant.StringCommon;
+import com.example.schedulemeetingbe.constant.enums.EventType;
+import com.example.schedulemeetingbe.constant.enums.OutboxStatus;
 import com.example.schedulemeetingbe.dto.common.CRUDResponseHelper;
 import com.example.schedulemeetingbe.dto.request.unavailability_room.CreateUnavailabilityRoomRequest;
 import com.example.schedulemeetingbe.dto.request.unavailability_room.UnavailabilityRoomFilterRequest;
 import com.example.schedulemeetingbe.dto.request.unavailability_room.UpdateUnavailabilityRoomRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.UnavailabilityRoomResponse;
-import com.example.schedulemeetingbe.entity.Room;
-import com.example.schedulemeetingbe.entity.RoomUnavailability;
+import com.example.schedulemeetingbe.dto.response.booking.booking_notification.BookingAndEmailAttendeeResponse;
+import com.example.schedulemeetingbe.dto.response.booking.booking_notification.BookingAndUserResponse;
+import com.example.schedulemeetingbe.entity.*;
+import com.example.schedulemeetingbe.entity.payload.SimpleCancelBookingPayload;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.mapper.RoomMapper;
+import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.repository.RoomRepository;
 import com.example.schedulemeetingbe.repository.UnavailabilityRoomRepository;
 import com.example.schedulemeetingbe.repository.specification.UnavailabilityRoomSpecification;
+import com.example.schedulemeetingbe.service.base.IBookingAttendeeService;
+import com.example.schedulemeetingbe.service.base.IBookingService;
+import com.example.schedulemeetingbe.service.base.INotificationService;
 import com.example.schedulemeetingbe.service.base.IUnavailabilityRoomService;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.json.JsonMapper;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -29,12 +44,25 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
 
     private final UnavailabilityRoomRepository unavailabilityRoomRepository;
     private final RoomRepository roomRepository;
+    private final OutboxEventRepository outboxEventRepository;
+
+    private final IBookingAttendeeService iBookingAttendeeService;
+    private final INotificationService iNotificationService;
+    private final IBookingService iBookingService;
+
+    private final JsonMapper jsonMapper;
 
     @Transactional
     @Override
     public UnavailabilityRoomResponse create(CreateUnavailabilityRoomRequest request) {
+        long start = System.currentTimeMillis();
         Room room = roomRepository.findById(request.roomId()).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+
+        List<Long> bookingIds = request.bookingIdOverLap();
+        if (bookingIds != null && !bookingIds.isEmpty()) {
+            createNotificationAndSendEmail(bookingIds, request);
+        }
         RoomUnavailability roomUnavailability = RoomUnavailability.builder()
                 .room(room)
                 .reason(request.reason())
@@ -42,7 +70,105 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
                 .endTime(request.endTime())
                 .build();
         RoomUnavailability saved = unavailabilityRoomRepository.save(roomUnavailability);
+        System.out.println("Tốc độ: " + (System.currentTimeMillis() - start) + " ms");
         return RoomMapper.mapToUnavailabilityRoomResponse(saved);
+    }
+
+    private void createNotificationAndSendEmail(List<Long> bookingIds, CreateUnavailabilityRoomRequest request) {
+        Map<Long, Booking> bookingLookUp = iBookingService.getBookingInBookingIds(bookingIds)
+                .stream()
+                .collect(Collectors.toMap(Booking::getBookingId, Function.identity()));
+        //lấy danh sách users của booking để gửi notification
+        Map<Long, List<User>> usersLookUp = iBookingAttendeeService.getAttendOfBooking(bookingIds)
+                .stream()
+                .collect(
+                        Collectors.groupingBy(
+                                BookingAndUserResponse::bookingId,
+                                Collectors.mapping(
+                                        BookingAndUserResponse::user,
+                                        Collectors.toList()
+                                )
+                        )
+                );
+        //lấy danh sách email của user tham gia booking để gửi email
+        Map<Long, List<String>> userEmailsLookUp = iBookingAttendeeService.getEmailAttendOfBooking(bookingIds)
+                .stream()
+                .collect(
+                        Collectors.groupingBy(
+                                BookingAndEmailAttendeeResponse::bookingId,
+                                Collectors.mapping(
+                                        BookingAndEmailAttendeeResponse::email,
+                                        Collectors.toList()
+                                )
+                        )
+                );
+        if (!usersLookUp.isEmpty()) {
+            createNotification(bookingIds, bookingLookUp, usersLookUp, request);
+        }
+        if (!userEmailsLookUp.isEmpty()) {
+            sendEmailToAttendee(bookingIds, bookingLookUp, userEmailsLookUp, request);
+        }
+    }
+
+    private void createNotification(
+            List<Long> bookingIds,
+            Map<Long, Booking> bookingLookUp,
+            Map<Long, List<User>> usersLookUp,
+            CreateUnavailabilityRoomRequest request
+    ) {
+        List<Notification> notifications = new ArrayList<>();
+        bookingIds.forEach(bookingId -> {
+            List<User> userAttendee = usersLookUp.get(bookingId);
+            Booking booking = bookingLookUp.get(bookingId);
+            String message = """
+                    Lịch họp "%s" diễn ra vào lúc %s và kết thúc lúc %s đã bị hủy.
+                    Lý do: %s
+                    """.formatted(
+                    booking.getTitle(),
+                    TimeUtils.dateTimeFormat(booking.getStartTime()),
+                    TimeUtils.dateTimeFormat(booking.getEndTime()),
+                    request.reason()
+            );
+            userAttendee.forEach(user -> {
+                Notification notification = Notification.builder()
+                        .user(user)
+                        .booking(booking)
+                        .title(StringCommon.TITLE_NOTIFICATION_CANCEL_BOOKING)
+                        .message(message)
+                        .build();
+                notifications.add(notification);
+            });
+        });
+        iNotificationService.save(notifications);
+    }
+
+    private void sendEmailToAttendee(
+            List<Long> bookingIds,
+            Map<Long, Booking> bookingLookUp,
+            Map<Long, List<String>> userEmailsLookUp,
+            CreateUnavailabilityRoomRequest request
+    ) {
+        List<OutboxEvent> outboxEvents = new ArrayList<>();
+        bookingIds.forEach(bookingId -> {
+            Booking booking = bookingLookUp.get(bookingId);
+            String startTime = TimeUtils.dateTimeFormat(booking.getStartTime());
+            String endTime = TimeUtils.dateTimeFormat(booking.getEndTime());
+            SimpleCancelBookingPayload payload = SimpleCancelBookingPayload.builder()
+                    .reason(request.reason())
+                    .receivers(userEmailsLookUp.get(bookingId))
+                    .bookingId(bookingId)
+                    .startTime(startTime)
+                    .endTime(endTime)
+                    .title(booking.getTitle())
+                    .build();
+            OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .eventType(EventType.CANCEL_BOOKING_BY_MAINTENANCE_TO_ATTENDEE.name())
+                    .status(OutboxStatus.PENDING)
+                    .payload(jsonMapper.valueToTree(payload))
+                    .build();
+            outboxEvents.add(outboxEvent);
+        });
+        outboxEventRepository.saveAll(outboxEvents);
     }
 
     @Transactional
@@ -90,8 +216,21 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
     }
 
     @Override
-    public PageResponse<UnavailabilityRoomResponse> getAll(Pageable pageable) {
-        Page<RoomUnavailability> page = unavailabilityRoomRepository.findAll(pageable);
+    public PageResponse<UnavailabilityRoomResponse> getAll(Boolean isDeleted, Pageable pageable, List<String> roles) {
+        Page<RoomUnavailability> page;
+        if (isDeleted != null) {
+            if (isDeleted) {
+                page = unavailabilityRoomRepository.findByIsDeletedIsTrueOrderByCreatedAtDesc(pageable);
+            } else {
+                page = unavailabilityRoomRepository.findByIsDeletedIsFalseOrderByCreatedAtDesc(pageable);
+            }
+        } else {
+            if (roles.contains(StringCommon.ADMIN)) {
+                page = unavailabilityRoomRepository.findAll(pageable);
+            } else {
+                page = unavailabilityRoomRepository.findByIsDeletedIsFalseOrderByCreatedAtDesc(pageable);
+            }
+        }
         return new PageResponse<>(
                 page.getNumber(),
                 page.getNumberOfElements(),
@@ -104,11 +243,38 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
     }
 
     @Override
-    public PageResponse<UnavailabilityRoomResponse> search(String keyword, Pageable pageable) {
-        Page<RoomUnavailability> roomPage = unavailabilityRoomRepository.findByReasonContainingIgnoreCase(
-                keyword,
-                pageable
-        );
+    public PageResponse<UnavailabilityRoomResponse> search(
+            Boolean isDeleted,
+            String keyword,
+            Pageable pageable,
+            List<String> roles
+    ) {
+        Page<RoomUnavailability> roomPage;
+        if (isDeleted != null) {
+            if (isDeleted) {
+                roomPage = unavailabilityRoomRepository.findByReasonContainingIgnoreCaseAndIsDeletedIsTrueOrderByCreatedAtDesc(
+                        keyword,
+                        pageable
+                );
+            } else {
+                roomPage = unavailabilityRoomRepository.findByReasonContainingIgnoreCaseAndIsDeletedIsFalseOrderByCreatedAtDesc(
+                        keyword,
+                        pageable
+                );
+            }
+        } else {
+            if (roles.contains(StringCommon.ADMIN)) {
+                roomPage = unavailabilityRoomRepository.findByReasonContainingIgnoreCaseOrderByCreatedAtDesc(
+                        keyword,
+                        pageable
+                );
+            } else {
+                roomPage = unavailabilityRoomRepository.findByReasonContainingIgnoreCaseAndIsDeletedIsFalseOrderByCreatedAtDesc(
+                        keyword,
+                        pageable
+                );
+            }
+        }
         return new PageResponse<>(
                 roomPage.getNumber(),
                 roomPage.getNumberOfElements(),
@@ -121,11 +287,18 @@ public class UnavailabilityRoomServiceImpl implements IUnavailabilityRoomService
     }
 
     @Override
-    public PageResponse<UnavailabilityRoomResponse> filter(UnavailabilityRoomFilterRequest request, Pageable pageable) {
+    public PageResponse<UnavailabilityRoomResponse> filter(
+            Boolean isDeleted,
+            UnavailabilityRoomFilterRequest request,
+            Pageable pageable,
+            List<String> roles) {
         Page<RoomUnavailability> roomPage = unavailabilityRoomRepository.findAll(
                 UnavailabilityRoomSpecification.filter(
+                        isDeleted,
                         request.start(),
-                        request.end()),
+                        request.end(),
+                        roles
+                ),
                 pageable
         );
         return new PageResponse<>(

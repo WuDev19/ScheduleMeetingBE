@@ -8,7 +8,8 @@ import com.example.schedulemeetingbe.dto.request.user.UpdateAvatarRequest;
 import com.example.schedulemeetingbe.dto.request.user.UpdateUserRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.UploadSignatureResponse;
-import com.example.schedulemeetingbe.dto.response.UserDetailResponse;
+import com.example.schedulemeetingbe.dto.response.user.FullNameAndEmailResponse;
+import com.example.schedulemeetingbe.dto.response.user.UserDetailResponse;
 import com.example.schedulemeetingbe.entity.OutboxEvent;
 import com.example.schedulemeetingbe.entity.Role;
 import com.example.schedulemeetingbe.entity.User;
@@ -20,11 +21,9 @@ import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.exception.custom_exception.CooldownResendException;
 import com.example.schedulemeetingbe.mapper.UserMapper;
-import com.example.schedulemeetingbe.repository.OutboxEventRepository;
-import com.example.schedulemeetingbe.repository.RoleRepository;
-import com.example.schedulemeetingbe.repository.UserRepository;
-import com.example.schedulemeetingbe.repository.VerificationTokenRepository;
+import com.example.schedulemeetingbe.repository.*;
 import com.example.schedulemeetingbe.service.base.ICloudinaryService;
+import com.example.schedulemeetingbe.service.base.IRedisService;
 import com.example.schedulemeetingbe.service.base.IUserService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
@@ -32,12 +31,12 @@ import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
@@ -50,28 +49,33 @@ import static com.example.schedulemeetingbe.constant.Constants.COOLDOWN_UPDATE_E
 public class UserServiceImpl implements IUserService {
 
     private final UserRepository userRepository;
+    private final DepartmentRepository departmentRepository;
     private final OutboxEventRepository outboxEventRepository;
     private final VerificationTokenRepository verificationTokenRepository;
     private final RoleRepository roleRepository;
     private final ICloudinaryService iCloudinaryService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final JsonMapper jsonMapper;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final IRedisService iRedisService;
 
     @Transactional
     @Override
     public Map<String, Object> createUser(CreateUserRequest request) {
         Role role = roleRepository.findByRoleName(request.role()).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        User user = User.builder()
+        User.UserBuilder builder = User.builder()
                 .username(request.username())
                 .phone(request.phone() != null ? request.phone() : null)
                 .email(request.email())
                 .passwordHash(bCryptPasswordEncoder.encode(request.password()))
                 .fullName(request.fullName())
                 .roles(Set.of(role))
-                .isActive(true)
-                .build();
+                .isActive(true);
+        if (request.departmentId() != null) {
+            builder.department(departmentRepository.findById(request.departmentId())
+                    .orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND)));
+        }
+        User user = builder.build();
         User saved = userRepository.save(user);
         UserCreatePayload payload = new UserCreatePayload(
                 saved.getUserId(),
@@ -114,6 +118,10 @@ public class UserServiceImpl implements IUserService {
             user.setPasswordHash(bCryptPasswordEncoder.encode(request.newPassword()));
             user.setPasswordChangedAt(TimeUtils.now());
         }
+        if (request.departmentId() != null) {
+            user.setDepartment(departmentRepository.findById(request.departmentId())
+                    .orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND)));
+        }
         return UserMapper.mapToUserDetailResponse(user);
     }
 
@@ -122,10 +130,10 @@ public class UserServiceImpl implements IUserService {
     @Override
     public Map<String, Object> updateEmail(Long id, String newEmail) {
         String redisKey = "update_email:cooldown:" + id;
-        Boolean isFirstRequest = redisTemplate.opsForValue()
-                .setIfAbsent(redisKey, "locked", COOLDOWN_UPDATE_EMAIL, TimeUnit.SECONDS);
+        Boolean isFirstRequest = iRedisService
+                .setIfAbsent(redisKey, "locked", Duration.ofSeconds(COOLDOWN_UPDATE_EMAIL));
         if (Boolean.FALSE.equals(isFirstRequest)) {
-            Long expireTime = redisTemplate.getExpire(redisKey, TimeUnit.SECONDS);
+            Long expireTime = iRedisService.getExpire(redisKey, TimeUnit.SECONDS);
             throw new CooldownResendException("Bạn vừa gửi mail, vui lòng đợi " + expireTime + " giây nữa để tiếp tục gửi lại mail.");
         }
         User user = userRepository.findById(id).orElseThrow(() ->
@@ -234,13 +242,20 @@ public class UserServiceImpl implements IUserService {
     }
 
     @Override
-    public Optional<User> getDetail(Long id) {
-        return userRepository.findById(id);
+    public PageResponse<FullNameAndEmailResponse> getFullNameAndEmail(Pageable pageable) {
+        Page<FullNameAndEmailResponse> page = userRepository.getFullNameAndEmail(pageable);
+        return new PageResponse<>(
+                page.getNumber(),
+                page.getNumberOfElements(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.getContent()
+        );
     }
 
     @Override
-    public Optional<Role> getRoleUser(String roleName) {
-        return roleRepository.findByRoleName(roleName);
+    public Optional<User> getDetail(Long id) {
+        return userRepository.findById(id);
     }
 
     @Override
@@ -258,4 +273,8 @@ public class UserServiceImpl implements IUserService {
         return userRepository.findByDepartment_DepartmentId(departmentId);
     }
 
+    @Override
+    public Set<String> getMyRole(Long userId) {
+        return roleRepository.findMyRole(userId);
+    }
 }

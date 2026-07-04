@@ -1,4 +1,4 @@
-package com.example.schedulemeetingbe.dto.response.booking;
+package com.example.schedulemeetingbe.dto.response.booking.booking_summary;
 
 import com.example.schedulemeetingbe.constant.enums.BookingActionType;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;

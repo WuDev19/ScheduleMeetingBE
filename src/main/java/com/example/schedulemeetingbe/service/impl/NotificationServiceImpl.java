@@ -34,6 +34,7 @@ public class NotificationServiceImpl implements INotificationService {
     private final IUserService iUserService;
     private final IRedisService iRedisService;
 
+    @Transactional
     @Override
     public Map<String, Object> createNotification(CreateNotificationRequest request) {
         Set<User> users = iUserService.getUserUserIdIn(request.userIds());
@@ -53,6 +54,7 @@ public class NotificationServiceImpl implements INotificationService {
         return CRUDResponseHelper.createSuccess();
     }
 
+    @Transactional(readOnly = true)
     @Override
     public PageResponse<NotificationResponse> getNotifications(Long userId, Pageable pageable) {
         Page<Notification> page = notificationRepository.findByUser_UserIdOrderByCreatedAtDesc(userId, pageable);
@@ -62,6 +64,7 @@ public class NotificationServiceImpl implements INotificationService {
                 .toList();
         Map<Long, Long> notificationBooking = notificationRepository.getNotificationAndBooking(notificationIds)
                 .stream()
+                .filter(nabr -> nabr.bookingId() != null)
                 .collect(Collectors.toMap(NotificationAndBookingResponse::notificationId, NotificationAndBookingResponse::bookingId));
         List<NotificationResponse> result = page.getContent()
                 .stream()
@@ -110,6 +113,7 @@ public class NotificationServiceImpl implements INotificationService {
         return new UnreadCountResponse(count);
     }
 
+    @Transactional
     @Override
     public void deleteNotification(Long notificationId, Long userId) {
         int deleted = notificationRepository.deleteByIdAndUserId(notificationId, userId);
@@ -118,6 +122,7 @@ public class NotificationServiceImpl implements INotificationService {
         }
     }
 
+    @Transactional
     @Override
     public void deleteAllNotificationSelected(List<Long> notificationId, Long userId) {
         notificationRepository.deleteByNotificationIdInAndUser_UserId(notificationId, userId);

@@ -1,10 +1,16 @@
 package com.example.schedulemeetingbe.helper;
 
+import com.example.schedulemeetingbe.constant.StringCommon;
+import com.example.schedulemeetingbe.dto.request.booking.CreateBookingEquipmentRequest;
 import com.example.schedulemeetingbe.entity.Booking;
+import com.example.schedulemeetingbe.entity.Building;
+import com.example.schedulemeetingbe.entity.Room;
 import com.example.schedulemeetingbe.entity.payload.CreateBookingPayload;
+import com.example.schedulemeetingbe.entity.payload.ReceiverEmailPayload;
 import com.example.schedulemeetingbe.entity.payload.UpdateBookingChangePayload;
 import com.example.schedulemeetingbe.entity.payload.UpdateFocusRoomOrTimePayload;
 
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class CreatePayloadHelper {
@@ -28,7 +34,12 @@ public class CreatePayloadHelper {
         );
     }
 
-    public static CreateBookingPayload create(Booking booking, Long userId, Long roomId, List<String> emails) {
+    public static CreateBookingPayload create(
+            Booking booking,
+            Long userId,
+            Long roomId,
+            List<String> emails,
+            List<CreateBookingEquipmentRequest> equipments) {
         return new CreateBookingPayload(
                 booking.getBookingId(),
                 booking.getTitle(),
@@ -41,7 +52,8 @@ public class CreatePayloadHelper {
                 roomId,
                 userId,
                 booking.getCreatedAt(),
-                emails
+                emails,
+                equipments
         );
     }
 
@@ -58,6 +70,24 @@ public class CreatePayloadHelper {
                 roomId,
                 userId,
                 booking.getCreatedAt(),
+                emails
+        );
+    }
+
+    public static ReceiverEmailPayload createReceiverEmailPayload(
+            Booking booking,
+            Building building,
+            Room room,
+            List<String> emails
+    ){
+        return new ReceiverEmailPayload(
+                booking.getBookingId(),
+                booking.getTitle(),
+                booking.getDescription(),
+                "Tòa nhà " + building.getBuildingName() + ", " + building.getAddress(),
+                "Tầng " + room.getFloorNumber() + ", phòng " + room.getRoomName(),
+                booking.getStartTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ)),
+                booking.getEndTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ)),
                 emails
         );
     }

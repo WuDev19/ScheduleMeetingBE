@@ -3,7 +3,7 @@ package com.example.schedulemeetingbe.mapper;
 import com.example.schedulemeetingbe.dto.response.BuildingResponse;
 import com.example.schedulemeetingbe.entity.Building;
 
-public class BuildingMapper {
+public final class BuildingMapper {
 
     private BuildingMapper() {
     }

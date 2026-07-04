@@ -9,6 +9,7 @@ import org.hibernate.type.SqlTypes;
 
 import java.time.OffsetDateTime;
 
+//bảng này thiết kế để lưu lại các slot thiết bị khi mình cập nhật SL thiết bị từ SL lớn -> SL nhỏ mà Approver chưa duyệt để giữ chỗ
 @Entity
 @Table(name = "booking_equipment_reservation")
 @Getter

@@ -9,19 +9,19 @@ public record UpdateBookingRequest(
         String title,
         String description,
         Integer attendeeCount,
+
         @JsonFormat(
                 pattern = StringCommon.OFFSET_FORMAT
         )
         OffsetDateTime start,
+
         @JsonFormat(
                 pattern = StringCommon.OFFSET_FORMAT
         )
         OffsetDateTime end,
 
         Boolean isCompleted,
-
         Long roomId,
-
         Long newRoomId
 ) {
 }

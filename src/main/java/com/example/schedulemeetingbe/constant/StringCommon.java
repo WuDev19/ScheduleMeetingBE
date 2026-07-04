@@ -12,6 +12,7 @@ public class StringCommon {
     public static final String TOKEN_IN_BLACKLIST = "Token đang trong danh sách đen";
     public static final String USER_ID = "userId";
     public static final String PERMISSIONS = "permissions";
+    public static final String ROLES = "roles";
     public static final String TIME_ZONE_VN = "Asia/Ho_Chi_Minh";
     public static final String SUCCESS = "Success";
     public static final String ERROR = "Error";
@@ -21,13 +22,16 @@ public class StringCommon {
     public static final String UPDATED_AT = "updatedAt";
     public static final String DATE_TIME_FORMAT = "dd-MM-yyyy HH:mm:ss Z";
     public static final String DATE_TIME_FORMAT_NO_TZ = "dd-MM-yyyy HH:mm:ss";
-    public static final String OFFSET_FORMAT = "yyyy-MM-dd HH:mm:ssXXX";
+    public static final String OFFSET_FORMAT = "yyyy-MM-dd HH:mm:ss[XXX][X]";
     public static final String DATE_FORMAT = "dd-MM-yyyy";
     public static final String NOT_BLANK = "không được để trống";
     public static final String NOT_NULL = "Thiếu dữ liệu trường ";
     public static final String ADMIN = "ADMIN";
+    public static final String APPROVER = "APPROVER";
+    public static final String REGISTER = "REGISTER";
     public static final String TITLE_NOTIFICATION_EMAIL = "Thông báo về lịch họp đã đăng ký";
     public static final String TITLE_NOTIFICATION = "Thông báo lịch họp";
+    public static final String TITLE_NOTIFICATION_CANCEL_BOOKING = "THÔNG BÁO HỦY LỊCH HỌP";
     public static final String CONFIRM_PARTICIPATE_HTML = """
             <!DOCTYPE html>
             <html lang="vi">

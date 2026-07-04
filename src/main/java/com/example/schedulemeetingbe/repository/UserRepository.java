@@ -1,5 +1,6 @@
 package com.example.schedulemeetingbe.repository;
 
+import com.example.schedulemeetingbe.dto.response.user.FullNameAndEmailResponse;
 import com.example.schedulemeetingbe.entity.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,7 +14,9 @@ import java.util.Set;
 
 public interface UserRepository extends JpaRepository<User, Long> {
 
-    Optional<User> findByUsername(String username);
+    boolean existsByUsername(String username);
+
+    Optional<User> findByUsernameAndIsActiveIsTrue(String username);
 
     Optional<User> findByEmail(String email);
 
@@ -33,4 +36,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
             """)
     Page<User> findByEmailOrFullName(@Param("keyword") String keyword, Pageable pageable);
 
+    @Query("""
+            SELECT new com.example.schedulemeetingbe.dto.response.user.FullNameAndEmailResponse(
+                 u.fullName,
+                 u.email
+            )
+            FROM User u
+            WHERE u.isActive = true
+            ORDER BY u.userId ASC
+            """
+    )
+    Page<FullNameAndEmailResponse> getFullNameAndEmail(Pageable pageable);
 }

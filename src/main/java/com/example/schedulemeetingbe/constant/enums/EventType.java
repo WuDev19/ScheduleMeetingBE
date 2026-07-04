@@ -11,4 +11,6 @@ public enum EventType {
     SEND_EMAIL_CONFIRM_PARTICIPATE,
     SEND_EMAIL_APPROVE_REJECT, //gửi thông báo cho người tạo lịch họp
     SEND_EMAIL_APPROVE_UPDATE, //khi cập nhật được chấp thuận thì gửi cho tất cả người tham gia biết
+    CANCEL_BOOKING_BY_REGISTER,
+    CANCEL_BOOKING_BY_MAINTENANCE_TO_ATTENDEE
 }

@@ -48,6 +48,60 @@ public class RoomServiceImpl implements IRoomService {
     private final RoomEquipmentRepository roomEquipmentRepository;
     private static final String ROOM_ID = "roomId";
 
+    @Override
+    public PageResponse<RoomResponse> getRooms(Pageable pageable) {
+        Page<Room> roomPage = roomRepository.findByIsActiveIsTrue(pageable);
+        return getRoomResponsePageResponse(roomPage);
+    }
+
+    @Override
+    public PageResponse<RoomResponse> filter(RoomFilterRequest request, Pageable pageable) {
+        Page<Room> roomPage = roomRepository.findAll(
+                RoomSpecification.filter(request.capacity(), request.floorNumber()),
+                pageable
+        );
+        return getRoomResponsePageResponse(roomPage);
+    }
+
+    @Override
+    public PageResponse<RoomResponse> search(String keyword, Pageable pageable) {
+        Page<Room> roomPage = roomRepository.findByRoomNameContainingIgnoreCase(keyword, pageable);
+        return getRoomResponsePageResponse(roomPage);
+    }
+
+    @NonNull
+    private PageResponse<RoomResponse> getRoomResponsePageResponse(Page<Room> roomPage) {
+        Map<Long, List<RoomEquipmentResponse>> roomEquipment = roomEquipmentRepository.findEquipmentByRoomId(
+                        roomPage.getContent()
+                                .stream()
+                                .map(Room::getRoomId)
+                                .toList()
+                )
+                .stream()
+                .collect(Collectors.groupingBy(RoomEquipmentResponse::roomId));
+        return new PageResponse<>(
+                roomPage.getNumber(),
+                roomPage.getNumberOfElements(),
+                roomPage.getTotalElements(),
+                roomPage.getTotalPages(),
+                roomPage.getContent().stream()
+                        .map(room ->
+                                RoomMapper.mapToRoomResponse(room, roomEquipment.getOrDefault(room.getRoomId(), List.of())))
+                        .toList()
+        );
+    }
+
+    @Cacheable(value = "room-detail", key = "#id")
+    @Override
+    public RoomResponse getDetail(Long id) {
+        Room room = roomRepository.findById(id).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        List<RoomEquipmentResponse> roomEquipment = roomEquipmentRepository.findEquipmentByRoomId(
+                List.of(room.getRoomId())
+        );
+        return RoomMapper.mapToRoomResponse(room, roomEquipment);
+    }
+
     @Transactional
     @Override
     public Map<String, Long> createRoom(CreateRoomRequest request) {
@@ -124,60 +178,6 @@ public class RoomServiceImpl implements IRoomService {
         return CRUDResponseHelper.deleteSuccess();
     }
 
-    @Override
-    public PageResponse<RoomResponse> getRooms(Pageable pageable) {
-        Page<Room> roomPage = roomRepository.findByIsActiveIsTrue(pageable);
-        return getRoomResponsePageResponse(roomPage);
-    }
-
-    @Override
-    public PageResponse<RoomResponse> filter(RoomFilterRequest request, Pageable pageable) {
-        Page<Room> roomPage = roomRepository.findAll(
-                RoomSpecification.filter(request.capacity(), request.floorNumber()),
-                pageable
-        );
-        return getRoomResponsePageResponse(roomPage);
-    }
-
-    @Override
-    public PageResponse<RoomResponse> search(String keyword, Pageable pageable) {
-        Page<Room> roomPage = roomRepository.findByRoomNameContainingIgnoreCase(keyword, pageable);
-        return getRoomResponsePageResponse(roomPage);
-    }
-
-    @NonNull
-    private PageResponse<RoomResponse> getRoomResponsePageResponse(Page<Room> roomPage) {
-        Map<Long, List<RoomEquipmentResponse>> roomEquipment = roomEquipmentRepository.findEquipmentByRoomId(
-                        roomPage.getContent()
-                                .stream()
-                                .map(Room::getRoomId)
-                                .toList()
-                )
-                .stream()
-                .collect(Collectors.groupingBy(RoomEquipmentResponse::roomId));
-        return new PageResponse<>(
-                roomPage.getNumber(),
-                roomPage.getNumberOfElements(),
-                roomPage.getTotalElements(),
-                roomPage.getTotalPages(),
-                roomPage.getContent().stream()
-                        .map(room ->
-                                RoomMapper.mapToRoomResponse(room, roomEquipment.getOrDefault(room.getRoomId(), List.of())))
-                        .toList()
-        );
-    }
-
-    @Cacheable(value = "room-detail", key = "#id")
-    @Override
-    public RoomResponse getDetail(Long id) {
-        Room room = roomRepository.findById(id).orElseThrow(() ->
-                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        List<RoomEquipmentResponse> roomEquipment = roomEquipmentRepository.findEquipmentByRoomId(
-                List.of(room.getRoomId())
-        );
-        return RoomMapper.mapToRoomResponse(room, roomEquipment);
-    }
-
     @Transactional
     @Override
     public Map<String, Long> addEquipmentToRoom(Long roomId, List<RoomEquipmentQuantityRequest> requests) {
@@ -201,13 +201,33 @@ public class RoomServiceImpl implements IRoomService {
         return Map.of(ROOM_ID, roomId);
     }
 
+    @Transactional
     @Override
-    public PageResponse<RoomResponse> getRoomNotOverlapTime(Long roomId, StartEndTimeRequest request, Pageable pageable) {
+    public Map<String, Object> updateRoomEquipmentQuantity(Long roomId, Long roomEquipmentId, Integer quantity) {
+        roomRepository.findById(roomId).orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        RoomEquipment re = roomEquipmentRepository.findById(roomEquipmentId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        re.setQuantity(quantity);
+        roomEquipmentRepository.save(re);
+        return Map.of("roomEquipmentId", roomEquipmentId, "quantity", quantity);
+    }
+
+    @Transactional
+    @Override
+    public Map<String, Object> deleteRoomEquipment(Long roomId, Long roomEquipmentId) {
+        roomRepository.findById(roomId).orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        RoomEquipment re = roomEquipmentRepository.findById(roomEquipmentId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        roomEquipmentRepository.delete(re);
+        return CRUDResponseHelper.deleteSuccess();
+    }
+
+    @Override
+    public PageResponse<RoomResponse> getRoomNotOverlapTime(StartEndTimeRequest request, Pageable pageable) {
         if (request.start().isAfter(request.end())) {
             throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
         }
         Page<Room> rooms = roomRepository.findRoomNotOverlap(
-                roomId,
                 request.start(),
                 request.end(),
                 pageable

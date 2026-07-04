@@ -17,15 +17,16 @@ import com.example.schedulemeetingbe.exception.custom_exception.CooldownResendEx
 import com.example.schedulemeetingbe.repository.*;
 import com.example.schedulemeetingbe.service.base.IAuthenticationService;
 import com.example.schedulemeetingbe.service.base.IJwtService;
+import com.example.schedulemeetingbe.service.base.IRedisService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.AllArgsConstructor;
 import org.jspecify.annotations.NonNull;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.Set;
@@ -47,7 +48,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     private final IJwtService iJwtService;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
     private final JsonMapper jsonMapper;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final IRedisService iRedisService;
 
     @Override
     public boolean checkAccessTokenInBlacklist(String tokenId) {
@@ -64,7 +65,7 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     public LoginResponse login(LoginByUsernameRequest loginRequest) {
         String username = loginRequest.username();
         String password = loginRequest.password();
-        User user = userRepository.findByUsername(username).orElseThrow(() ->
+        User user = userRepository.findByUsernameAndIsActiveIsTrue(username).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         boolean isMatch = bCryptPasswordEncoder.matches(password, user.getPasswordHash());
         if (!isMatch) {
@@ -178,11 +179,11 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
     @Override
     public Map<String, Object> resendEmailVerifyAccount(SendEmailRequest request) {
         String redisKey = "email:resend_cooldown:" + request.email();
-        Boolean isFirstRequest = redisTemplate.opsForValue()
-                .setIfAbsent(redisKey, "locked", COOLDOWN_RESEND_EMAIL_TIME, TimeUnit.SECONDS);
+        Boolean isFirstRequest =iRedisService
+                .setIfAbsent(redisKey, "locked", Duration.ofSeconds(COOLDOWN_RESEND_EMAIL_TIME));
         // tránh null pointer exception
         if (Boolean.FALSE.equals(isFirstRequest)) {
-            Long expireTime = redisTemplate.getExpire(redisKey, TimeUnit.SECONDS);
+            Long expireTime = iRedisService.getExpire(redisKey, TimeUnit.SECONDS);
             throw new CooldownResendException("Vui lòng đợi " + expireTime + " giây nữa để tiếp tục gửi lại mail.");
         }
         User user = userRepository.findByEmail(request.email()).orElseThrow(() ->
@@ -205,11 +206,11 @@ public class AuthenticationServiceImpl implements IAuthenticationService {
         User user = userRepository.findByEmailAndIsActiveIsTrue(request.email()).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         String redisKey = "email-reset-password:send_cooldown:" + request.email();
-        Boolean isFirstRequest = redisTemplate.opsForValue()
-                .setIfAbsent(redisKey, "locked", COOLDOWN_EMAIL_RESET_PASSWORD_TIME, TimeUnit.SECONDS);
+        Boolean isFirstRequest = iRedisService
+                .setIfAbsent(redisKey, "locked", Duration.ofSeconds(COOLDOWN_EMAIL_RESET_PASSWORD_TIME));
         // tránh null pointer exception
         if (Boolean.FALSE.equals(isFirstRequest)) {
-            Long expireTime = redisTemplate.getExpire(redisKey, TimeUnit.SECONDS);
+            Long expireTime = iRedisService.getExpire(redisKey, TimeUnit.SECONDS);
             throw new CooldownResendException("Vui lòng đợi " + expireTime + " giây nữa để tiếp tục gửi lại mail.");
         }
         UserResetPasswordPayload payload = new UserResetPasswordPayload(user.getUserId(), request.email());

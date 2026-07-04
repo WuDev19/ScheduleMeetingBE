@@ -22,7 +22,7 @@ public class RecurrenceHelper {
     }
 
     public static boolean checkLimitRecurrence(LocalDate start, LocalDate end) {
-        return ChronoUnit.DAYS.between(start, end) >= 30;
+        return ChronoUnit.DAYS.between(start, end) >= 31;
     }
 
     public static void validateAndSaveBooking(Room room, List<Booking> bookings, List<String> rangesTime, BookingRepository bookingRepository) {

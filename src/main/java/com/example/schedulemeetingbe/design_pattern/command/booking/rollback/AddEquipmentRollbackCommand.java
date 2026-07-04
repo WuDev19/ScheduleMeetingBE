@@ -8,6 +8,7 @@ import com.example.schedulemeetingbe.entity.Booking;
 import com.example.schedulemeetingbe.entity.User;
 import com.example.schedulemeetingbe.entity.payload.AddBookingEquipmentPayload;
 import com.example.schedulemeetingbe.repository.BookingEquipmentRepository;
+import com.example.schedulemeetingbe.repository.BookingHistoryRepository;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.service.base.INotificationService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
@@ -24,10 +25,11 @@ public class AddEquipmentRollbackCommand extends BookingRollbackCommand {
     public AddEquipmentRollbackCommand(
             INotificationService iNotificationService,
             OutboxEventRepository outboxEventRepository,
+            BookingHistoryRepository bookingHistoryRepository,
             JsonMapper jsonMapper,
             BookingEquipmentRepository bookingEquipmentRepository
     ) {
-        super(iNotificationService, outboxEventRepository, jsonMapper);
+        super(iNotificationService, outboxEventRepository, bookingHistoryRepository, jsonMapper);
         this.bookingEquipmentRepository = bookingEquipmentRepository;
     }
 

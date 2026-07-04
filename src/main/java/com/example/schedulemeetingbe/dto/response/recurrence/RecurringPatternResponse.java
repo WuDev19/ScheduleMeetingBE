@@ -2,8 +2,6 @@ package com.example.schedulemeetingbe.dto.response.recurrence;
 
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import com.example.schedulemeetingbe.dto.response.booking.BookingRecurrenceResponse;
-import com.example.schedulemeetingbe.dto.response.booking.BookingResponse;
-import com.example.schedulemeetingbe.dto.response.booking.BookingSummaryResponse;
 import lombok.*;
 
 import java.time.LocalDate;

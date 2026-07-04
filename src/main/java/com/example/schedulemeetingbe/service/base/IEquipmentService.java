@@ -33,4 +33,8 @@ public interface IEquipmentService {
     EquipmentAndQuantityResponse findEquipmentAndRemainingQuantity(Long beId);
 
     Optional<Equipment> getEquipmentDetail(Long id);
+
+    Optional<Equipment> getEquipmentWithLock(Long id);
+
+    void lockEquipment(List<Long> eqIds);
 }

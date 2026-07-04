@@ -1,11 +1,11 @@
 package com.example.schedulemeetingbe.mapper;
 
 import com.example.schedulemeetingbe.dto.response.DepartmentResponse;
-import com.example.schedulemeetingbe.dto.response.UserDetailResponse;
+import com.example.schedulemeetingbe.dto.response.user.UserDetailResponse;
 import com.example.schedulemeetingbe.entity.Department;
 import com.example.schedulemeetingbe.entity.User;
 
-public class UserMapper {
+public final class UserMapper {
     private UserMapper() {
     }
 
@@ -16,6 +16,8 @@ public class UserMapper {
                 user.getEmail(),
                 user.getFullName(),
                 user.getPhone(),
+                user.getAvatarUrl(),
+                user.getIsActive(),
                 user.getDepartment() != null ? mapToDepartmentResponse(user.getDepartment()) : null
         );
     }

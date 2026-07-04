@@ -203,7 +203,7 @@ CREATE TABLE bookings
 
     recurring_id        BIGINT         REFERENCES recurring_patterns (recurring_id) ON DELETE SET NULL,
 
-    title               VARCHAR(255)   NOT NULL,
+    title               VARCHAR(255),
     description         TEXT,
 
     start_time          TIMESTAMPTZ    NOT NULL,

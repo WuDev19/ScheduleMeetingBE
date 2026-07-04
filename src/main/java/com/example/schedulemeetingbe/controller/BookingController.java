@@ -5,8 +5,12 @@ import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.dto.common.ApiResponse;
 import com.example.schedulemeetingbe.dto.common.ApiResult;
 import com.example.schedulemeetingbe.dto.request.booking.*;
+import com.example.schedulemeetingbe.dto.request.room.StartEndTimeRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.booking.*;
+import com.example.schedulemeetingbe.dto.response.booking.booking_notification.BookingNotificationResponse;
+import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapResponse;
+import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryResponse;
 import com.example.schedulemeetingbe.service.base.IBookingService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -15,6 +19,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -40,7 +46,7 @@ public class BookingController {
             @Valid @RequestBody CreateBookingRequest request,
             @AuthenticationPrincipal Jwt jwt) {
         return ApiResponse.success(
-                iBookingService.createBooking(request, jwt.getSubject()),
+                iBookingService.createBooking(request, jwt.getClaim(StringCommon.USER_ID)),
                 "Đặt lịch thành công",
                 Constants.SUCCESS_CODE
         );
@@ -55,7 +61,11 @@ public class BookingController {
             @RequestBody UpdateBookingRequest request,
             @AuthenticationPrincipal Jwt jwt) {
         return ApiResponse.success(
-                iBookingService.updateBooking(bookingId, request, jwt.getClaim(StringCommon.USER_ID)),
+                iBookingService.updateBooking(
+                        bookingId,
+                        request,
+                        jwt.getClaim(StringCommon.USER_ID),
+                        jwt.getClaim(StringCommon.ROLES)),
                 "Cập nhật lịch thành công",
                 Constants.SUCCESS_CODE
         );
@@ -135,6 +145,21 @@ public class BookingController {
         return ApiResponse.success(
                 iBookingService.deleteBooking(bookingId, jwt.getClaim(StringCommon.USER_ID)),
                 "Xóa lịch thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api cho register bổ sung người tham gia")
+    @PatchMapping("/{bookingId}/participants")
+    @PreAuthorize("hasAuthority('BOOKING:UPDATE')")
+    public ResponseEntity<ApiResult<Map<String, Object>>> addParticipants(
+            @PathVariable Long bookingId,
+            @RequestBody List<String> emails
+    ) {
+        return ApiResponse.success(
+                iBookingService.addParticipants(bookingId, emails),
+                "Gửi yêu cầu thành công",
                 Constants.SUCCESS_CODE
         );
     }
@@ -220,7 +245,35 @@ public class BookingController {
         );
     }
 
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api lọc lịch đặt theo thông tin phòng, người đặt, trạng thái và thời gian")
+    @GetMapping("/filter")
+    @PreAuthorize("hasAuthority('BOOKING:VIEW')")
+    public ResponseEntity<ApiResult<PageResponse<BookingResponse>>> filterBookings(
+            @ModelAttribute BookingFilterRequest request,
+            @PageableDefault Pageable pageable
+    ) {
+        return ApiResponse.success(
+                iBookingService.filterBooking(request, pageable),
+                "Lọc lịch đặt thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api lấy lịch đặt theo ngày/tuần/tháng")
+    @GetMapping("/view")
+    @PreAuthorize("hasAuthority('BOOKING:VIEW')")
+    public ResponseEntity<ApiResult<List<BookingResponse>>> viewBookings(@ModelAttribute BookingViewRequest request) {
+        return ApiResponse.success(
+                iBookingService.viewBookings(request),
+                "Lấy lịch đặt theo view thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
     @GetMapping("/attendee/confirm")
+    @Operation(summary = "Api cho người dùng xác nhận tham gia lịch họp qua email")
     public String confirmParticipateEmail(
             @RequestParam String token,
             @RequestParam Long bookingId
@@ -230,10 +283,10 @@ public class BookingController {
     }
 
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
-    @Operation(summary = "Api cho người dung xác nhận tham giá lịch họp")
+    @Operation(summary = "Api cho người dùng xác nhận tham gia lịch họp qua chỗ thông báo trên web")
     @PostMapping("/{bookingId}/attendee/confirm")
     @PreAuthorize("hasAuthority('BOOKING:CONFIRM')")
-    public ResponseEntity<ApiResult<Void>> confirmParticipateEmail(
+    public ResponseEntity<ApiResult<Void>> confirmParticipate(
             @PathVariable Long bookingId,
             @AuthenticationPrincipal Jwt jwt
     ) {
@@ -241,6 +294,38 @@ public class BookingController {
         return ApiResponse.success(
                 null,
                 "Xác nhận tham gia thành công",
+                Constants.SUCCESS_CODE
+        );
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Export booking list to Excel")
+    @GetMapping("/export")
+    @PreAuthorize("hasAuthority('BOOKING:VIEW')")
+    public ResponseEntity<byte[]> exportBookings(
+            @ModelAttribute BookingExportRequest request,
+            @AuthenticationPrincipal Jwt jwt
+    ) {
+        byte[] excel = iBookingService.exportBookings(request, jwt.getClaim(StringCommon.USER_ID));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=bookings.xlsx");
+        return ResponseEntity.ok()
+                .headers(headers)
+                .body(excel);
+    }
+
+    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
+    @Operation(summary = "Api lấy danh sách booking bị trùng khi tạo phòng không khả dụng")
+    @GetMapping("/overlap-room-unavailability/{roomId}")
+    @PreAuthorize("hasAuthority('ROOM_UNAVAILABLE:MANAGE')")
+    public ResponseEntity<ApiResult<List<BookingOverlapResponse>>> getBookingOverlapRoomUnavailability(
+            @PathVariable Long roomId,
+            @ModelAttribute StartEndTimeRequest request
+    ) {
+        return ApiResponse.success(
+                iBookingService.getBookingOverlapRoomUnavailability(roomId, request),
+                "Lấy danh sách booking bị trùng khi tạo phòng không khả dụng thành công",
                 Constants.SUCCESS_CODE
         );
     }

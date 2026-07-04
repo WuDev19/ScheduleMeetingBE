@@ -130,4 +130,14 @@ public class EquipmentServiceImpl implements IEquipmentService {
     public Optional<Equipment> getEquipmentDetail(Long id) {
         return equipmentRepository.findById(id);
     }
+
+    @Override
+    public void lockEquipment(List<Long> eqIds) {
+        equipmentRepository.lockEquipments(eqIds);
+    }
+
+    @Override
+    public Optional<Equipment> getEquipmentWithLock(Long id) {
+        return equipmentRepository.findEquipmentWithLock(id);
+    }
 }

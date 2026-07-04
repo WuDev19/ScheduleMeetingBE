@@ -9,6 +9,7 @@ public record RecurringPatternFilterRequest(
         BookingStatus status,
         LocalDate startDate,
         LocalDate endDate,
-        RecurrenceType recurrenceType
+        RecurrenceType recurrenceType,
+        Long userCreatedId
 ) {
 }

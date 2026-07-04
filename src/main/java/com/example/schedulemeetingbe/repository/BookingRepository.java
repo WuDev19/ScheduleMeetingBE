@@ -4,21 +4,43 @@ import com.example.schedulemeetingbe.constant.enums.BookingActionType;
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
 import com.example.schedulemeetingbe.dto.response.booking.BookingHistoryResponse;
 import com.example.schedulemeetingbe.dto.response.booking.BookingRecurrenceResponse;
-import com.example.schedulemeetingbe.dto.response.booking.BookingRemainingResponse;
-import com.example.schedulemeetingbe.dto.response.booking.BookingSummaryProjection;
+import com.example.schedulemeetingbe.dto.response.booking.BookingRemindingResponse;
+import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapProjection;
+import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryProjection;
 import com.example.schedulemeetingbe.entity.Booking;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface BookingRepository extends JpaRepository<Booking, Long> {
+public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpecificationExecutor<Booking> {
+
+//    @EntityGraph(attributePaths = {"room", "room.building", "bookedBy"})
+//    Page<Booking> findAllWithRoomAndBookedBy(org.springframework.data.jpa.domain.Specification<Booking> spec, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"room", "room.building", "bookedBy"})
+    List<Booking> findAll(Specification<Booking> spec);
+
+    @EntityGraph(attributePaths = {"room", "room.building", "bookedBy"})
+    @Query("""
+            SELECT DISTINCT b
+            FROM Booking b
+            LEFT JOIN b.attendees a 
+            WHERE (b.bookedBy.userId = :userId OR a.userId = :userId) 
+            AND b.status IN :statuses 
+            AND b.deletedAt IS NULL
+            """
+    )
+    List<Booking> findAllBookingsForRegisterExport(@Param("userId") Long userId, @Param("statuses") List<BookingStatus> statuses);
+
+    @EntityGraph(attributePaths = {"room", "room.building", "bookedBy"})
+    @Query("select b from Booking b where b.deletedAt is null")
+    List<Booking> findAllBookingsForApproverExport();
 
     //check lúc cập nhật
     @Query(value = """
@@ -92,10 +114,24 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     );
 
     @Query(value = """
-            SELECT 
+            WITH latest_booking AS (
+                SELECT
+                    booking_id,
+                    MAX(created_at) AS latest_update
+                FROM booking_history
+                WHERE is_revoked = false
+                  AND action_type IN (
+                        'UPDATED',
+                        'ADD_EQUIPMENT',
+                        'UPDATE_EQUIP_QUANTITY',
+                        'CREATED'
+                  )
+                GROUP BY booking_id
+            )
+            SELECT
                 b.booking_id AS bookingId,
                 bh.history_id AS historyId,
-                b.title AS title,
+                COALESCE(b.title, 'Lịch họp định kỳ chưa có tiêu đề cụ thể') AS title,
                 u.full_name AS userBooked,
                 u.phone AS phone,
                 r.room_name AS roomName,
@@ -104,25 +140,42 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
                 b.start_time AS startTime,
                 b.end_time AS endTime
             FROM bookings b
-            JOIN rooms r ON r.room_id = b.room_id 
-            JOIN users u ON u.user_id = b.booked_by 
-            JOIN booking_history bh ON bh.booking_id = b.booking_id
-            WHERE b.status = 'PENDING'
-            AND bh.is_revoked = false
-            AND bh.action_type IN ('UPDATED', 'ADD_EQUIPMENT', 'UPDATE_EQUIP_QUANTITY', 'CREATED')   
-            AND b.title IS NOT NULL
-            ORDER BY bh.created_at DESC 
+            JOIN latest_booking lb
+                ON lb.booking_id = b.booking_id
+            JOIN booking_history bh
+                ON bh.booking_id = b.booking_id
+               AND bh.is_revoked = false
+               AND bh.action_type IN (
+                    'UPDATED',
+                    'ADD_EQUIPMENT',
+                    'UPDATE_EQUIP_QUANTITY',
+                    'CREATED'
+               )
+            JOIN rooms r
+                ON r.room_id = b.room_id
+            JOIN users u
+                ON u.user_id = b.booked_by
+            WHERE (b.title IS NOT NULL OR b.recurring_id IS NOT NULL)
+                    AND b.status NOT IN ('COMPLETED')
+            ORDER BY
+                lb.latest_update DESC,
+                b.booking_id,
+                bh.created_at DESC
             """,
             countQuery = """
                     SELECT COUNT(*)
-                    FROM bookings b
-                    JOIN rooms r ON r.room_id = b.room_id 
-                    JOIN users u ON u.user_id = b.booked_by 
-                    JOIN booking_history bh ON bh.booking_id = b.booking_id
-                    WHERE b.status = 'PENDING'
-                    AND bh.is_revoked = false
-                    AND bh.action_type IN ('UPDATED', 'ADD_EQUIPMENT', 'UPDATE_EQUIP_QUANTITY', 'CREATED') 
-                    AND b.title IS NOT NULL
+                    FROM booking_history bh
+                    JOIN bookings b
+                        ON b.booking_id = bh.booking_id
+                    WHERE bh.is_revoked = false
+                      AND bh.action_type IN (
+                            'UPDATED',
+                            'ADD_EQUIPMENT',
+                            'UPDATE_EQUIP_QUANTITY',
+                            'CREATED'
+                      )
+                      AND (b.title IS NOT NULL OR b.recurring_id IS NOT NULL)
+                             AND b.status NOT IN ('COMPLETED')
                     """,
             nativeQuery = true)
     Page<BookingSummaryProjection> getBookingWaitingApprove(Pageable pageable);
@@ -130,7 +183,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Query(value = """
             SELECT 
                 b.booking_id AS bookingId,
-                b.title AS title,
+                COALESCE(b.title, 'Lịch họp định kỳ') AS title,
                 b.description AS discription,
                 r.room_name AS roomName,
                 bd.address AS roomAddress,
@@ -177,7 +230,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     @Modifying
     @Query(value = """
             UPDATE bookings 
-            SET status = 'CANCEL',
+            SET status = 'CANCELLED',
                 cancellation_reason = :reason, 
                 cancelled_at = :cancelledAt
             WHERE recurring_id = :recurringId
@@ -189,9 +242,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     @Modifying
     @Query(value = """
-            UPDATE Booking 
+            UPDATE Booking
             SET status = :status,
-                approvedBy.userId = :approvedBy, 
+                approvedBy.userId = :approvedBy,
                 approvedAt = :approvedAt
             WHERE recurringPattern.recurringId = :recurringId
             """)
@@ -223,12 +276,40 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByStatusApproved();
 
     @Query("""
-            SELECT new com.example.schedulemeetingbe.dto.response.booking.BookingRemainingResponse(
+            SELECT new com.example.schedulemeetingbe.dto.response.booking.BookingRemindingResponse(
                 b.title,
                 b.room.roomName
             )
             FROM Booking b
             WHERE b.bookingId = :bookingId
             """)
-    Optional<BookingRemainingResponse> getBookingRemain(@Param("bookingId") Long bookingId);
+    Optional<BookingRemindingResponse> getBookingReminding(@Param("bookingId") Long bookingId);
+
+    @Query(value = """
+            SELECT b.booking_id AS bookingId,
+                   b.title AS title,
+                   u.full_name AS userBooked,
+                   u.phone AS phone,
+                   r.room_name AS roomName,
+                   b.status AS status,
+                   b.start_time AS startTime,
+                   b.end_time AS endTime
+            FROM bookings b
+            JOIN users u ON b.booked_by = u.user_id
+            JOIN rooms r ON r.room_id = b.room_id
+            WHERE b.room_id = :roomId
+            AND b.status IN ('PENDING', 'APPROVED')
+            AND b.deleted_at IS NULL
+            AND tstzrange(b.start_time, b.end_time)
+                    && tstzrange(:startTime, :endTime)
+            """,
+            nativeQuery = true)
+    List<BookingOverlapProjection> getBookingOverlapRoomUnavailability(
+            @Param("roomId") Long roomId,
+            @Param("startTime") OffsetDateTime startTime,
+            @Param("endTime") OffsetDateTime endTime
+    );
+
+    List<Booking> findBookingByBookingIdIn(List<Long> bookingIds);
+
 }

@@ -1,8 +1,12 @@
 package com.example.schedulemeetingbe.service.base;
 
 import com.example.schedulemeetingbe.dto.request.booking.*;
+import com.example.schedulemeetingbe.dto.request.room.StartEndTimeRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.booking.*;
+import com.example.schedulemeetingbe.dto.response.booking.booking_notification.BookingNotificationResponse;
+import com.example.schedulemeetingbe.dto.response.booking.booking_overlap.BookingOverlapResponse;
+import com.example.schedulemeetingbe.dto.response.booking.booking_summary.BookingSummaryResponse;
 import com.example.schedulemeetingbe.entity.Booking;
 import org.springframework.data.domain.Pageable;
 
@@ -19,15 +23,15 @@ import java.util.Optional;
  * 6. APPROVER duyệt phòng sau khi người dùng có sự thay đổi (sẽ phải có so sánh trực quan giữa cũ và thay đổi mới) - done
  * 7. Gửi email cho người tham gia khi đặt lịch họp thành công - done
  * 8. Lọc, tìm kiếm (
- * - REGISTER: tìm kiếm các lịch đặt của chính mình
+ * - REGISTER: tìm kiếm các lịch đặt của mọi người nhưng ko xem được chi tiêt nếu mình ko tham gia hoặc ko phải lịch của mình
  * - APPROVER: tìm kiếm lọc lịch của tất cả mọi người
  * - ADMIN: toàn quyền
- * )
+ * ) - done
  * */
 public interface IBookingService {
-    BookingResponse createBooking(CreateBookingRequest request, String username);
+    BookingResponse createBooking(CreateBookingRequest request, Long userId);
 
-    Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request, Long userId);
+    Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request, Long userId, List<String> roles);
 
     Map<String, Long> addEquipmentBooking(Long bookingId, List<UpdateEquipmentBookingRequest> request, Long userId);
 
@@ -39,23 +43,37 @@ public interface IBookingService {
 
     Map<String, Object> deleteBooking(Long bookingId, Long userId);
 
+    Map<String, Object> addParticipants(Long bookingId, List<String> emails);
+
     BookingDetailResponse getBookingDetail(Long bookingId, Long userId);
 
     BookingNotificationResponse getBookingAndNotification(Long bookingId, Long userId, Long notificationId);
 
     BookingEquipmentResponse updateBookingEquipmentQuantity(Long bookingId, Long userId, Long equipmentId, Long bookingEquipmentId, UpdateBookingEquipQuantityRequest request);
 
-    BookingHistoryResponse getBookingHistoryDetailToApprove(Long bookingHistoryId);
+    BookingHistoryResponse getBookingHistoryDetailToApprove(Long historyId);
 
     PageResponse<BookingSummaryResponse> getBookingWaitingApprove(Pageable pageable);
+
+    PageResponse<BookingResponse> filterBooking(BookingFilterRequest request, Pageable pageable);
+
+    List<BookingResponse> viewBookings(BookingViewRequest request);
+
+    byte[] exportBookings(BookingExportRequest request, Long userId);
 
     void verifyEmailAndUpsertBookingAttendee(String token, Long bookingId);
 
     void confirmParticipateIn(Long bookingId, Long userId);
 
+    List<BookingOverlapResponse> getBookingOverlapRoomUnavailability(Long roomId, StartEndTimeRequest request);
+
+    //------------------------------------------------------//
+
     Optional<Booking> getBooking(Long bookingId);
 
     List<Booking> getApprovedBooking();
 
-    Optional<BookingRemainingResponse> getBookingRemaining(Long bookingId);
+    Optional<BookingRemindingResponse> getBookingReminding(Long bookingId);
+
+    List<Booking> getBookingInBookingIds(List<Long> bookingIds);
 }

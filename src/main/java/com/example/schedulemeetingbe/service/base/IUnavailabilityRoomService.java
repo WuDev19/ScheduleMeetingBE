@@ -7,6 +7,7 @@ import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.UnavailabilityRoomResponse;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Map;
 
 public interface IUnavailabilityRoomService {
@@ -21,9 +22,10 @@ public interface IUnavailabilityRoomService {
 
     UnavailabilityRoomResponse getDetail(Long id);
 
-    PageResponse<UnavailabilityRoomResponse> getAll(Pageable pageable);
+    PageResponse<UnavailabilityRoomResponse> getAll(Boolean isDeleted, Pageable pageable, List<String> roles);
 
-    PageResponse<UnavailabilityRoomResponse> search(String keyword, Pageable pageable);
+    PageResponse<UnavailabilityRoomResponse> search(Boolean isDeleted, String keyword, Pageable pageable, List<String> roles);
 
-    PageResponse<UnavailabilityRoomResponse> filter(UnavailabilityRoomFilterRequest request, Pageable pageable);
+    PageResponse<UnavailabilityRoomResponse> filter(Boolean isDeleted, UnavailabilityRoomFilterRequest request, Pageable pageable, List<String> roles);
+
 }

@@ -1,4 +1,4 @@
-package com.example.schedulemeetingbe.dto.request.booking;
+package com.example.schedulemeetingbe.dto.request.recurrence;
 
 import com.example.schedulemeetingbe.constant.StringCommon;
 import com.example.schedulemeetingbe.constant.enums.RecurrenceType;
@@ -28,6 +28,12 @@ public record RecurringPatternCreateRequest(
         LocalTime meetingEndTime,
 
         @NotNull(message = StringCommon.NOT_NULL + "roomId")
-        Long roomId
+        Long roomId,
+
+        String title,
+
+        String description,
+
+        Integer attendeeCount
 ) {
 }

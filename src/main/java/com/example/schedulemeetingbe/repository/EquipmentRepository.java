@@ -2,13 +2,16 @@ package com.example.schedulemeetingbe.repository;
 
 import com.example.schedulemeetingbe.dto.response.equipment.EquipmentAndQuantityResponse;
 import com.example.schedulemeetingbe.entity.Equipment;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
 
@@ -16,10 +19,20 @@ public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
 
     List<Equipment> findByEquipmentIdIn(List<Long> equipmentIds);
 
+    //thêm query trả về entity để áp dụng được lock, trả về projection hay dto thì ko lock đc
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+                SELECT e
+                FROM Equipment e
+                WHERE e.equipmentId IN :ids
+                ORDER BY e.equipmentId
+            """)
+    List<Equipment> lockEquipments(@Param("ids") List<Long> ids);
+
     /*
-    * khi thêm mới thì sẽ check xem số lượng equipment còn khả dụng ko
-    * dựa vào công thức: available = total - using - remaining (for rollback)
-    */
+     * khi thêm mới thì sẽ check xem số lượng equipment còn khả dụng ko
+     * dựa vào công thức: available = total - using - remaining (for rollback)
+     */
     @Query(value = """
             SELECT e.equipment_id AS equipmentId,
                    e.equipment_name AS equipmentName,
@@ -84,5 +97,12 @@ public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
             """,
             nativeQuery = true)
     EquipmentAndQuantityResponse findEquipmentAndRemainingQuantity(@Param("equipmentId") Long equipmentId);
+
+    @Query("""
+            SELECT e
+            FROM Equipment e
+            WHERE e.equipmentId = :equipmentId
+            """)
+    Optional<Equipment> findEquipmentWithLock(@Param("equipmentId") Long equipmentId);
 
 }

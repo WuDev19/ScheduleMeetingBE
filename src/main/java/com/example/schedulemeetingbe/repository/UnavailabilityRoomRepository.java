@@ -8,5 +8,13 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
 public interface UnavailabilityRoomRepository extends JpaRepository<RoomUnavailability, Long>, JpaSpecificationExecutor<RoomUnavailability> {
 
-    Page<RoomUnavailability> findByReasonContainingIgnoreCase(String reason, Pageable pageable);
+    Page<RoomUnavailability> findByReasonContainingIgnoreCaseOrderByCreatedAtDesc(String reason, Pageable pageable);
+
+    Page<RoomUnavailability> findByReasonContainingIgnoreCaseAndIsDeletedIsFalseOrderByCreatedAtDesc(String reason, Pageable pageable);
+
+    Page<RoomUnavailability> findByReasonContainingIgnoreCaseAndIsDeletedIsTrueOrderByCreatedAtDesc(String reason, Pageable pageable);
+
+    Page<RoomUnavailability> findByIsDeletedIsFalseOrderByCreatedAtDesc(Pageable pageable);
+
+    Page<RoomUnavailability> findByIsDeletedIsTrueOrderByCreatedAtDesc(Pageable pageable);
 }

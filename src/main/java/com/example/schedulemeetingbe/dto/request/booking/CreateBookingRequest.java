@@ -12,9 +12,6 @@ public record CreateBookingRequest(
         @NotNull(message = StringCommon.NOT_NULL + "roomId")
         Long roomId,
 
-        @NotNull(message = StringCommon.NOT_NULL + "userId")
-        Long userId,
-
         @NotBlank(message = "Dữ liệu title " + StringCommon.NOT_BLANK)
         String title,
 
