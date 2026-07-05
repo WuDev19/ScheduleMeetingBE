@@ -29,19 +29,13 @@ import com.example.schedulemeetingbe.repository.specification.BookingSpecificati
 import com.example.schedulemeetingbe.service.base.*;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
-import org.apache.poi.ss.usermodel.Cell;
-import org.apache.poi.ss.usermodel.Row;
-import org.apache.poi.ss.usermodel.Sheet;
-import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -71,6 +65,7 @@ public class BookingServiceImpl implements IBookingService {
     private final IRoomService iRoomService;
     private final IEquipmentService iEquipmentService;
     private final INotificationService iNotificationService;
+    private final IExcelService iExcelService;
 
     private final JsonMapper jsonMapper;
     private final BookingRollbackCommandFactory rollbackFactory;
@@ -726,54 +721,7 @@ public class BookingServiceImpl implements IBookingService {
         } else {
             bookings = bookingRepository.findAllBookingsForApproverExport();
         }
-        try (Workbook workbook = new XSSFWorkbook(); ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-            Sheet sheet = workbook.createSheet("Bookings");
-            Row header = sheet.createRow(0);
-            String[] headings = {
-                    "Booking ID",
-                    "Title",
-                    "Description",
-                    "Room Name",
-                    "Building Address",
-                    "Floor Number",
-                    "Booked By",
-                    "Booked Email",
-                    "Booked Phone",
-                    "Status",
-                    "Start Time",
-                    "End Time",
-                    "Attendee Count"
-            };
-            for (int i = 0; i < headings.length; i++) {
-                Cell cell = header.createCell(i);
-                cell.setCellValue(headings[i]);
-            }
-            int rowIndex = 1;
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT);
-            for (Booking booking : bookings) {
-                Row row = sheet.createRow(rowIndex++);
-                row.createCell(0).setCellValue(booking.getBookingId());
-                row.createCell(1).setCellValue(booking.getTitle() != null ? booking.getTitle() : "");
-                row.createCell(2).setCellValue(booking.getDescription() != null ? booking.getDescription() : "");
-                row.createCell(3).setCellValue(booking.getRoom().getRoomName());
-                row.createCell(4).setCellValue(booking.getRoom().getBuilding().getAddress());
-                row.createCell(5).setCellValue(booking.getRoom().getFloorNumber());
-                row.createCell(6).setCellValue(booking.getBookedBy().getFullName());
-                row.createCell(7).setCellValue(booking.getBookedBy().getEmail());
-                row.createCell(8).setCellValue(booking.getBookedBy().getPhone() != null ? booking.getBookedBy().getPhone() : "");
-                row.createCell(9).setCellValue(booking.getStatus().name());
-                row.createCell(10).setCellValue(booking.getStartTime().format(formatter));
-                row.createCell(11).setCellValue(booking.getEndTime().format(formatter));
-                row.createCell(12).setCellValue(booking.getAttendeeCount());
-            }
-            for (int i = 0; i < headings.length; i++) {
-                sheet.autoSizeColumn(i);
-            }
-            workbook.write(outputStream);
-            return outputStream.toByteArray();
-        } catch (IOException ex) {
-            throw new BusinessException(ErrorResponse.FILE_ACCESS_ERROR);
-        }
+        return iExcelService.exportBookings(bookings);
     }
 
     private OffsetDateTime parseOffsetDateTime(String dateTime) {
