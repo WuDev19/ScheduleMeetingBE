@@ -301,7 +301,7 @@ public class BookingController {
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
     @Operation(summary = "Export booking list to Excel")
     @GetMapping("/export")
-    @PreAuthorize("hasAuthority('BOOKING:VIEW')")
+    @PreAuthorize("hasAuthority('BOOKING:EXPORT')")
     public ResponseEntity<byte[]> exportBookings(
             @ModelAttribute BookingExportRequest request,
             @AuthenticationPrincipal Jwt jwt
