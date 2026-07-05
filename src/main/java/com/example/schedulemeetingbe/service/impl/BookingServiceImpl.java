@@ -259,12 +259,17 @@ public class BookingServiceImpl implements IBookingService {
 
         BookingHistory bookingHistory = BookingHistory.builder()
                 .booking(booking)
-                .actionType(BookingActionType.UPDATED)
+                .actionType(
+                        (!isChangeRoom && !isChangeTime) ?
+                                BookingActionType.UPDATE_NORMAL :
+                                BookingActionType.UPDATED
+                )
                 .changedBy(userChange)
                 .oldData(jsonMapper.valueToTree(oldPayload))
                 .newData(jsonMapper.valueToTree(newPayload))
                 .build();
         bookingHistoryRepository.save(bookingHistory);
+
         return Map.of(BOOKING_ID, bookingId);
     }
 
