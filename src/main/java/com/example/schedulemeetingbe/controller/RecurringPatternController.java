@@ -63,20 +63,6 @@ public class RecurringPatternController {
         );
     }
 
-    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
-    @Operation(summary = "Api cho người dùng xem lịch họp định kì của chính mình")
-    @GetMapping("/mine")
-    @PreAuthorize("hasAuthority('RECURRING_BOOKING:MANAGE')")
-    public ResponseEntity<ApiResult<PageResponse<RecurringPatternResponse>>> getMyRecurringPattern(
-            @AuthenticationPrincipal Jwt jwt,
-            @PageableDefault Pageable pageable
-    ) {
-        return ApiResponse.success(
-                iRecurringPatternService.getMyRecurringPattern(jwt.getClaim(StringCommon.USER_ID), pageable),
-                "Lấy lịch định kỳ của mình thành công",
-                Constants.SUCCESS_CODE
-        );
-    }
 
     @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
     @Operation(summary = "Api cho approver duyệt lịch họp định kì")
@@ -94,20 +80,6 @@ public class RecurringPatternController {
                         request
                 ),
                 "Duyệt lịch định kỳ thành công",
-                Constants.SUCCESS_CODE
-        );
-    }
-
-    @SecurityRequirement(name = StringCommon.SECURITY_SCHEME)
-    @Operation(summary = "Api cho approver hiển thị lịch họp định kì chưa duyệt")
-    @GetMapping("/all")
-    @PreAuthorize("hasAuthority('RECURRING_BOOKING:VIEW_ALL')")
-    public ResponseEntity<ApiResult<PageResponse<RecurringPatternResponse>>> getRecurringPatternWaiting(
-            @PageableDefault Pageable pageable
-    ) {
-        return ApiResponse.success(
-                iRecurringPatternService.getRecurringPatternWaiting(pageable),
-                "Danh sách lịch định kỳ chưa duyệt",
                 Constants.SUCCESS_CODE
         );
     }

@@ -98,6 +98,7 @@ public interface EquipmentRepository extends JpaRepository<Equipment, Long> {
             nativeQuery = true)
     EquipmentAndQuantityResponse findEquipmentAndRemainingQuantity(@Param("equipmentId") Long equipmentId);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
             SELECT e
             FROM Equipment e

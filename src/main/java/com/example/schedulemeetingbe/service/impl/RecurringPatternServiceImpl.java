@@ -101,67 +101,6 @@ public class RecurringPatternServiceImpl implements IRecurringPatternService {
 
     @Transactional(readOnly = true)
     @Override
-    public PageResponse<RecurringPatternResponse> getRecurringPatternWaiting(Pageable pageable) {
-        Page<RecurringPatternProjection> page = recurringPatternRepository.getRecurringPatternWaiting(pageable);
-        List<Long> recurringIds = page.getContent()
-                .stream()
-                .map(RecurringPatternProjection::getRecurringId)
-                .toList();
-        Map<Long, List<BookingRecurrenceResponse>> result = bookingRepository
-                .getBookingByRecurrence(recurringIds)
-                .stream()
-                .collect(Collectors.groupingBy(BookingRecurrenceResponse::recurringId));
-        List<RecurringPatternResponse> responses = page.getContent()
-                .stream()
-                .map(projection ->
-                        RecurringPatternMapper.mapToRecurringPatternResponse(
-                                projection,
-                                result.get(projection.getRecurringId())
-                        )
-                )
-                .toList();
-        return new PageResponse<>(
-                page.getNumber(),
-                page.getNumberOfElements(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                responses
-
-        );
-    }
-
-    @Transactional(readOnly = true)
-    @Override
-    public PageResponse<RecurringPatternResponse> getMyRecurringPattern(Long userId, Pageable pageable) {
-        Page<RecurringPatternProjection> page = recurringPatternRepository.getMyRecurringPattern(userId, pageable);
-        List<Long> recurringIds = page.getContent()
-                .stream()
-                .map(RecurringPatternProjection::getRecurringId)
-                .toList();
-        Map<Long, List<BookingRecurrenceResponse>> result = bookingRepository
-                .getBookingByRecurrence(recurringIds)
-                .stream()
-                .collect(Collectors.groupingBy(BookingRecurrenceResponse::recurringId));
-        List<RecurringPatternResponse> responses = page.getContent()
-                .stream()
-                .map(projection ->
-                        RecurringPatternMapper.mapToRecurringPatternResponse(
-                                projection,
-                                result.get(projection.getRecurringId())
-                        )
-                )
-                .toList();
-        return new PageResponse<>(
-                page.getNumber(),
-                page.getNumberOfElements(),
-                page.getTotalElements(),
-                page.getTotalPages(),
-                responses
-        );
-    }
-
-    @Transactional(readOnly = true)
-    @Override
     public PageResponse<RecurringPatternResponse> filter(Long userId, List<String> roles, RecurringPatternFilterRequest request, Pageable pageable) {
         Set<String> roleSet = new HashSet<>(roles);
         Page<RecurringPattern> page = recurringPatternRepository.findAll(

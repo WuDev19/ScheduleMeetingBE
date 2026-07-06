@@ -30,9 +30,9 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
     @Query("""
             SELECT DISTINCT b
             FROM Booking b
-            LEFT JOIN b.attendees a 
-            WHERE (b.bookedBy.userId = :userId OR a.userId = :userId) 
-            AND b.status IN :statuses 
+            LEFT JOIN b.attendees a
+            WHERE (b.bookedBy.userId = :userId OR a.userId = :userId)
+            AND b.status IN :statuses
             AND b.deletedAt IS NULL
             """
     )
@@ -65,7 +65,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
             
                 SELECT concat('Phòng và thời gian không khả dụng vì chưa được duyệt') AS reason
                 FROM booking_reservation br
-                WHERE br.status = 'AWAIT_APPROVE'
+                WHERE br.old_room_id = :roomId
+                AND  br.status = 'AWAIT_APPROVE'
                 AND br.booking_id <> :currentBookingId
                 AND tstzrange(br.old_start_time, br.old_end_time)
                             && ANY((:ranges)::tstzrange[])
@@ -101,7 +102,8 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
             
                 SELECT concat('Phòng và thời gian không khả dụng vì chưa được duyệt') AS reason
                 FROM booking_reservation br
-                WHERE br.status = 'AWAIT_APPROVE'
+                WHERE br.old_room_id = :roomId 
+                AND br.status = 'AWAIT_APPROVE'
                 AND tstzrange(br.old_start_time, br.old_end_time)
                             && ANY((:ranges)::tstzrange[])
                 LIMIT 1
@@ -214,18 +216,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long>, JpaSpec
             """,
             nativeQuery = true)
     BookingHistoryResponse getDetailBookingWaitingToApprove(@Param("historyId") Long historyId);
-
-    @Modifying
-    @Query(value = """
-            UPDATE BookingHistory bh
-            SET bh.isRevoked = true
-            WHERE bh.booking.bookingId = :bookingId
-            AND bh.actionType = :actionType
-            """)
-    void revokeAllOldChangeHistory(
-            @Param("bookingId") Long bookingId,
-            @Param("actionType") BookingActionType actionType
-    );
 
     @Modifying
     @Query(value = """
