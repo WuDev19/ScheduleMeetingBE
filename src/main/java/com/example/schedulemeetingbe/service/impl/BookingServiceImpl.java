@@ -193,11 +193,12 @@ public class BookingServiceImpl implements IBookingService {
         boolean isChangeRoom = false;
         boolean isChangeTime = false;
         if (request.newRoomId() != null || (request.start() != null && request.end() != null)) {
-            if (request.newRoomId() != null && request.start() == null) {
-                iRoomService.acquireAdvisoryLockForRoomAndDate(request.roomId(), booking.getStartTime());
-            } else if (request.newRoomId() == null) {
-                iRoomService.acquireAdvisoryLockForRoomAndDate(oldRoom.getRoomId(), request.start());
-            } else {
+            //lock theo từng trường hợp
+            if (request.newRoomId() != null && request.start() == null) { //khóa phòng mới và thời gian cũ
+                iRoomService.acquireAdvisoryLockForRoomAndDate(request.newRoomId(), booking.getStartTime());
+            } else if (request.newRoomId() == null) { //khóa phòng cũ và thời gian mới
+                iRoomService.acquireAdvisoryLockForRoomAndDate(request.roomId(), request.start());
+            } else { //khóa cả phòng mới và thời gian mới
                 iRoomService.acquireAdvisoryLockForRoomAndDate(request.newRoomId(), request.start());
             }
             BookingReservation bookingReservation = bookingReservationRepository
