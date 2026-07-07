@@ -32,6 +32,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -256,5 +257,13 @@ public class RoomServiceImpl implements IRoomService {
     @Override
     public Optional<Room> getRoomDetail(Long id) {
         return roomRepository.findById(id);
+    }
+
+    @Override
+    @Transactional
+    public void acquireAdvisoryLockForRoomAndDate(Long roomId, OffsetDateTime dateTime) {
+        int dateAsInt = dateTime.getYear() * 10000 + dateTime.getMonthValue() * 100 + dateTime.getDayOfMonth();
+        long key = roomId * 100000000L + dateAsInt;
+        roomRepository.acquireAdvisoryLock(key);
     }
 }

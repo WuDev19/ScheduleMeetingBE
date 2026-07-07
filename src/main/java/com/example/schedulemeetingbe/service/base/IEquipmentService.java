@@ -2,9 +2,9 @@ package com.example.schedulemeetingbe.service.base;
 
 import com.example.schedulemeetingbe.dto.request.equipment.CreateEquipmentRequest;
 import com.example.schedulemeetingbe.dto.request.equipment.UpdateEquipmentRequest;
+import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.equipment.EquipmentAndQuantityResponse;
 import com.example.schedulemeetingbe.dto.response.equipment.EquipmentResponse;
-import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.entity.Equipment;
 import org.springframework.data.domain.Pageable;
 

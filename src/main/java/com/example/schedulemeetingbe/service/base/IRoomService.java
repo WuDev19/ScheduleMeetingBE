@@ -10,6 +10,7 @@ import com.example.schedulemeetingbe.dto.response.RoomResponse;
 import com.example.schedulemeetingbe.entity.Room;
 import org.springframework.data.domain.Pageable;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -40,4 +41,7 @@ public interface IRoomService {
     PageResponse<RoomResponse> getRoomNotOverlapTime(StartEndTimeRequest request, Pageable pageable);
 
     Optional<Room> getRoomDetail(Long id);
+
+    // Sử dụng pg_advisory_xact_lock để lock room theo ngày
+    void acquireAdvisoryLockForRoomAndDate(Long roomId, OffsetDateTime dateTime);
 }
