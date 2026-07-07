@@ -9,6 +9,7 @@ import com.example.schedulemeetingbe.design_pattern.command.booking.rollback.Boo
 import com.example.schedulemeetingbe.dto.request.booking.*;
 import com.example.schedulemeetingbe.dto.response.booking.BookingResponse;
 import com.example.schedulemeetingbe.dto.response.booking.StatusBookingResponse;
+import com.example.schedulemeetingbe.dto.response.equipment.EquipmentAndQuantityResponse;
 import com.example.schedulemeetingbe.entity.*;
 import com.example.schedulemeetingbe.entity.composite_key.BookingAttendeeId;
 import com.example.schedulemeetingbe.exception.ErrorResponse;
@@ -271,6 +272,64 @@ class BookingServiceImplTest {
                 assertThat(response).isNotNull();
                 verify(bookingRepository).save(any(Booking.class));
                 verify(bookingHistoryRepository).save(any(BookingHistory.class));
+            }
+        }
+
+        @Test
+        @DisplayName("Tạo booking với thiết bị thành công")
+        void createBooking_WithEquipment_HappyPath_ShouldSaveBookingAndEquipments() {
+            CreateBookingEquipmentRequest equipReq = new CreateBookingEquipmentRequest(1L, 5);
+            CreateBookingRequest request = new CreateBookingRequest(
+                    ROOM_ID, "Họp nhóm", "Mô tả", FUTURE_START, FUTURE_END,
+                    5, List.of(equipReq), null
+            );
+
+            Equipment mockEquip = Equipment.builder().equipmentId(1L).equipmentName("Projector").totalQuantity(15).build();
+            EquipmentAndQuantityResponse eqQtyResp = new EquipmentAndQuantityResponse(1L, "Projector", 10);
+
+            try (MockedStatic<TimeUtils> timeUtilsMock = mockStatic(TimeUtils.class)) {
+                timeUtilsMock.when(TimeUtils::now).thenReturn(NOW);
+                when(iUserService.getDetail(USER_ID)).thenReturn(Optional.of(mockUser));
+                when(iRoomService.getRoomDetail(ROOM_ID)).thenReturn(Optional.of(mockRoom));
+                when(bookingRepository.checkOverlap(eq(ROOM_ID), any(String[].class))).thenReturn(Collections.emptyList());
+                when(bookingRepository.save(any(Booking.class))).thenReturn(mockBooking);
+                
+                when(iEquipmentService.findEquipmentAndRemainingQuantity(anyList())).thenReturn(List.of(eqQtyResp));
+                when(iEquipmentService.getEquipmentDetail(1L)).thenReturn(Optional.of(mockEquip));
+                when(iEquipmentService.findEquipmentIn(anyList())).thenReturn(List.of(mockEquip));
+
+                BookingResponse response = bookingService.createBooking(request, USER_ID);
+
+                assertThat(response).isNotNull();
+                verify(iEquipmentService).lockEquipment(anyList());
+                verify(bookingEquipmentRepository).saveAll(anyList());
+            }
+        }
+
+        @Test
+        @DisplayName("Ném ExceedEquipmentException khi số lượng thiết bị yêu cầu vượt quá số lượng trống")
+        void createBooking_WithEquipmentExceedsQuantity_ShouldThrowExceedEquipmentException() {
+            CreateBookingEquipmentRequest equipReq = new CreateBookingEquipmentRequest(1L, 12);
+            CreateBookingRequest request = new CreateBookingRequest(
+                    ROOM_ID, "Họp nhóm", "Mô tả", FUTURE_START, FUTURE_END,
+                    5, List.of(equipReq), null
+            );
+
+            Equipment mockEquip = Equipment.builder().equipmentId(1L).equipmentName("Projector").totalQuantity(15).build();
+            EquipmentAndQuantityResponse eqQtyResp = new EquipmentAndQuantityResponse(1L, "Projector", 10);
+
+            try (MockedStatic<TimeUtils> timeUtilsMock = mockStatic(TimeUtils.class)) {
+                timeUtilsMock.when(TimeUtils::now).thenReturn(NOW);
+                when(iUserService.getDetail(USER_ID)).thenReturn(Optional.of(mockUser));
+                when(iRoomService.getRoomDetail(ROOM_ID)).thenReturn(Optional.of(mockRoom));
+                when(bookingRepository.checkOverlap(eq(ROOM_ID), any(String[].class))).thenReturn(Collections.emptyList());
+                when(bookingRepository.save(any(Booking.class))).thenReturn(mockBooking);
+                
+                when(iEquipmentService.findEquipmentAndRemainingQuantity(anyList())).thenReturn(List.of(eqQtyResp));
+                when(iEquipmentService.getEquipmentDetail(1L)).thenReturn(Optional.of(mockEquip));
+
+                assertThatThrownBy(() -> bookingService.createBooking(request, USER_ID))
+                        .isInstanceOf(com.example.schedulemeetingbe.exception.custom_exception.ExceedEquipmentException.class);
             }
         }
     }
@@ -895,6 +954,54 @@ class BookingServiceImplTest {
                 verify(bookingHistoryRepository).save(any(BookingHistory.class));
                 assertThat(result).isNotNull();
             }
+        }
+    }
+
+    // =====================================================
+    //               ADD EQUIPMENT TO BOOKING
+    // =====================================================
+    @Nested
+    @DisplayName("addEquipmentBooking()")
+    class AddEquipmentBookingTests {
+
+        @Test
+        @DisplayName("Ném RESOURCE_NOT_FOUND khi booking không tồn tại")
+        void addEquipmentBooking_WhenBookingNotFound_ShouldThrow() {
+            when(bookingRepository.findById(BOOKING_ID)).thenReturn(Optional.empty());
+            List<UpdateEquipmentBookingRequest> request = List.of(
+                    new UpdateEquipmentBookingRequest(1L, 5, com.example.schedulemeetingbe.constant.enums.BookingEquipmentAction.ADD)
+            );
+
+            assertThatThrownBy(() -> bookingService.addEquipmentBooking(BOOKING_ID, request, USER_ID))
+                    .isInstanceOf(BusinessException.class)
+                    .satisfies(e -> assertThat(((BusinessException) e).getErrorResponse())
+                            .isEqualTo(ErrorResponse.RESOURCE_NOT_FOUND));
+        }
+
+        @Test
+        @DisplayName("Thêm thiết bị vào booking thành công")
+        void addEquipmentBooking_HappyPath_ShouldSucceed() {
+            List<UpdateEquipmentBookingRequest> request = List.of(
+                    new UpdateEquipmentBookingRequest(1L, 5, com.example.schedulemeetingbe.constant.enums.BookingEquipmentAction.ADD)
+            );
+
+            Equipment mockEquip = Equipment.builder().equipmentId(1L).equipmentName("Projector").totalQuantity(15).build();
+            EquipmentAndQuantityResponse eqQtyResp = new EquipmentAndQuantityResponse(1L, "Projector", 10);
+
+            when(bookingRepository.findById(BOOKING_ID)).thenReturn(Optional.of(mockBooking));
+            when(iUserService.getDetail(USER_ID)).thenReturn(Optional.of(mockUser));
+            when(iEquipmentService.findEquipmentAndRemainingQuantity(anyList())).thenReturn(List.of(eqQtyResp));
+            when(iEquipmentService.getEquipmentDetail(1L)).thenReturn(Optional.of(mockEquip));
+            when(iEquipmentService.findEquipmentIn(anyList())).thenReturn(List.of(mockEquip));
+            when(bookingEquipmentRepository.getBookingEquipments(BOOKING_ID)).thenReturn(Collections.emptyList());
+
+            Map<String, Long> result = bookingService.addEquipmentBooking(BOOKING_ID, request, USER_ID);
+
+            assertThat(result).containsKey("bookingId");
+            assertThat(result.get("bookingId")).isEqualTo(BOOKING_ID);
+            assertThat(mockBooking.getStatus()).isEqualTo(BookingStatus.PENDING);
+            verify(bookingEquipmentRepository).saveAll(anyList());
+            verify(bookingHistoryRepository).save(any(BookingHistory.class));
         }
     }
 }
