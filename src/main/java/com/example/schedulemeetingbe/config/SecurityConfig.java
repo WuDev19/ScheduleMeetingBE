@@ -75,13 +75,15 @@ public class SecurityConfig {
     public org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
 
-        // Sử dụng OriginPatterns thay cho AllowedOrigins khi dùng dấu *
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:5173",
+        configuration.setAllowedOriginPatterns(List.of(
+                "http://localhost:*",
+                "http://127.0.0.1:*",
+                "http://localhost",
+                "http://127.0.0.1",
+                "https://*.ngrok-free.dev",
                 "https://meeting-frontend.vercel.app"
         ));
 
-        // Bổ sung thêm phương thức "PATCH"
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
