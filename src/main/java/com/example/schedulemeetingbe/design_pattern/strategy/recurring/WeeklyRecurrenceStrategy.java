@@ -10,6 +10,7 @@ import com.example.schedulemeetingbe.exception.ErrorResponse;
 import com.example.schedulemeetingbe.exception.custom_exception.BusinessException;
 import com.example.schedulemeetingbe.helper.RecurrenceHelper;
 import com.example.schedulemeetingbe.repository.BookingRepository;
+import com.example.schedulemeetingbe.service.base.IRoomService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WeeklyRecurrenceStrategy implements RecurrencePatternStrategy {
     private final BookingRepository bookingRepository;
+    private final IRoomService iRoomService;
 
     @Override
     public RecurrenceType getType() {
@@ -56,6 +58,7 @@ public class WeeklyRecurrenceStrategy implements RecurrencePatternStrategy {
                 .collect(Collectors.toSet());
 
         LocalDate weekCursor = startDate.with(DayOfWeek.MONDAY);
+        List<OffsetDateTime> dateTimesForLock = new ArrayList<>();
 
         while (!weekCursor.isAfter(endDate)) {
             for (DayOfWeek day : days) {
@@ -82,13 +85,13 @@ public class WeeklyRecurrenceStrategy implements RecurrencePatternStrategy {
                         .recurringPattern(recurringPattern)
                         .build()
                 );
-
+                dateTimesForLock.add(startTime);
                 String rangeStr = String.format("[%s, %s)", startTime, endTime);
                 rangesTime.add(rangeStr);
             }
             weekCursor = weekCursor.plusWeeks(interval);
         }
-        RecurrenceHelper.validateAndSaveBooking(room, bookings, rangesTime, bookingRepository);
+        RecurrenceHelper.validateAndSaveBooking(request.roomId(), bookings, rangesTime, bookingRepository, iRoomService, dateTimesForLock);
     }
 
 }

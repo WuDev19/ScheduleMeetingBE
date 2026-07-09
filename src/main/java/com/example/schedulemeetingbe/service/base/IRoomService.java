@@ -42,6 +42,7 @@ public interface IRoomService {
 
     Optional<Room> getRoomDetail(Long id);
 
-    // Sử dụng pg_advisory_xact_lock để lock room theo ngày
     void acquireAdvisoryLockForRoomAndDate(Long roomId, OffsetDateTime dateTime);
+
+    void acquireAdvisoryLockForRoomAndDate(long[] keys);
 }
