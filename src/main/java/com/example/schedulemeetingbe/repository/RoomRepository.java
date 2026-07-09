@@ -20,11 +20,14 @@ public interface RoomRepository extends JpaRepository<Room, Long>, JpaSpecificat
     void acquireAdvisoryLock(@Param("key") long key);
 
     @Query(value = """
-        SELECT pg_advisory_xact_lock(k)
-        FROM unnest(:keys) WITH ORDINALITY AS t(k, ord)
-        ORDER BY ord
-        """, nativeQuery = true)
-    void advisoryLockBatch(@Param("keys") long[] keys);
+            SELECT count(*)
+            FROM (
+                SELECT pg_advisory_xact_lock(k)
+                FROM unnest(:keys) WITH ORDINALITY AS t(k, ord)
+                ORDER BY ord
+            ) s
+            """, nativeQuery = true)
+    long advisoryLockBatch(@Param("keys") long[] keys);
 
     Page<Room> findByIsActiveIsTrue(Pageable pageable);
 
