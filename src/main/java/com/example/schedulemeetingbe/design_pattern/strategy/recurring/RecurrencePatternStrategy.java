@@ -9,4 +9,5 @@ import com.example.schedulemeetingbe.entity.User;
 public interface RecurrencePatternStrategy {
     RecurrenceType getType();
     void create(RecurringPattern recurringPattern, RecurringPatternCreateRequest request, User register, Room room);
+    java.util.List<java.time.OffsetDateTime> calculateDates(RecurringPatternCreateRequest request);
 }

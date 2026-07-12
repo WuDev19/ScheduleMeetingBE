@@ -29,12 +29,13 @@ import com.example.schedulemeetingbe.repository.specification.BookingSpecificati
 import com.example.schedulemeetingbe.service.base.*;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RLock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
-
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -45,6 +46,7 @@ import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -70,11 +72,11 @@ public class BookingServiceImpl implements IBookingService {
     private final JsonMapper jsonMapper;
     private final BookingRollbackCommandFactory rollbackFactory;
     private final BookingApproveCommandFactory approveFactory;
+    private final TransactionTemplate transactionTemplate;
 
     private static final String BOOKING_ID = "bookingId";
 
     //đã có gửi notification/email cho người tham gia
-    @Transactional
     @Override
     public BookingResponse createBooking(CreateBookingRequest request, Long userId) {
         long start = System.currentTimeMillis();
@@ -103,204 +105,239 @@ public class BookingServiceImpl implements IBookingService {
         if (startTime.isBefore(officeStart) || endTime.isAfter(officeEnd)) {
             throw new BusinessException(ErrorResponse.OFFICE_HOURS_ERROR);
         }
-        //kiểm tra người dùng có thật sự tồn tại ko
-        User user = iUserService.getDetail(userId).orElseThrow(() ->
-                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
 
-        // Lock room theo ngày bằng Redis Distributed Lock
-        iRoomService.acquireDistributedLockForRoomAndDate(request.roomId(), request.start());
-
-        Room room = iRoomService.getRoomDetail(request.roomId()).orElseThrow(() ->
-                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        //kiểm tra sức chứa của phòng hiện tại
-        if (request.attendee() > room.getCapacity()) {
-            throw new BusinessException(ErrorResponse.EXCEED_ATTENDEE);
+        // Lock room theo ngày bằng Redis Distributed Lock (trước khi start transaction) tối ưu connection pool
+        RLock lock = iRoomService.getRoomDateLock(request.roomId(), request.start());
+        boolean acquired = false;
+        try {
+            acquired = lock.tryLock(10000, 60000, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException(ErrorResponse.SYSTEM_ERROR);
         }
-        //kiểm tra có bị trùng lịch trong Unavailability Room hay Bookings ko (dưới db có constraint nhưng vẫn check bên be để có thể hiện lỗi thân thiện hơn)
-        checkOverlap(null, request.roomId(), request.start(), request.end(), true);
+        if (!acquired) {
+            throw new BusinessException(ErrorResponse.LOCK_ACQUISITION_TIMEOUT);
+        }
+        try {
+            return transactionTemplate.execute(status -> {
+                //kiểm tra người dùng có thật sự tồn tại ko
+                User user = iUserService.getDetail(userId).orElseThrow(() ->
+                        new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+                Room room = iRoomService.getRoomDetail(request.roomId()).orElseThrow(() ->
+                        new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+                //kiểm tra sức chứa của phòng hiện tại
+                if (request.attendee() > room.getCapacity()) {
+                    throw new BusinessException(ErrorResponse.EXCEED_ATTENDEE);
+                }
+                //kiểm tra có bị trùng lịch trong Unavailability Room hay Bookings ko (dưới db có constraint nhưng vẫn check bên be để có thể hiện lỗi thân thiện hơn)
+                checkOverlap(null, request.roomId(), request.start(), request.end(), true);
+                //booking mới thì ko cần lưu vào booking_reservation
+                Booking booking = Booking.builder()
+                        .bookedBy(user)
+                        .attendeeCount(request.attendee())
+                        .description(request.description())
+                        .title(request.title())
+                        .startTime(request.start())
+                        .endTime(request.end())
+                        .room(room)
+                        .build();
+                Booking saved = bookingRepository.save(booking);
+                System.out.println("Vượt qua được và chạy xuống đây");
+                // người dùng đặt lịch và có chọn thêm thiết bị khi đặt lịch
+                addEquipmentToBooking(request, saved);
 
-        //booking mới thì ko cần lưu vào booking_reservation
-        Booking booking = Booking.builder()
-                .bookedBy(user)
-                .attendeeCount(request.attendee())
-                .description(request.description())
-                .title(request.title())
-                .startTime(request.start())
-                .endTime(request.end())
-                .room(room)
-                .build();
-        Booking saved = bookingRepository.save(booking);
-        System.out.println("Vượt qua được và chạy xuống đây");
-        // người dùng đặt lịch và có chọn thêm thiết bị khi đặt lịch
-        addEquipmentToBooking(request, saved);
+                CreateBookingPayload payload = CreatePayloadHelper.create(
+                        booking,
+                        user.getUserId(),
+                        room.getRoomId(),
+                        request.receivers() != null ? request.receivers() : List.of(),
+                        request.equipments() != null ? request.equipments() : List.of()
+                );
 
-        CreateBookingPayload payload = CreatePayloadHelper.create(
-                booking,
-                user.getUserId(),
-                room.getRoomId(),
-                request.receivers() != null ? request.receivers() : List.of(),
-                request.equipments() != null ? request.equipments() : List.of()
-        );
-
-        //lưu vết lịch sử đặt phòng, thay đổi phòng phục vụ cho APPROVER so sánh trực quan để dễ phê duyệt
-        BookingHistory bookingHistory = BookingHistory.builder()
-                .booking(saved)
-                .actionType(BookingActionType.CREATED)
-                .changedBy(user)
-                .newData(jsonMapper.valueToTree(payload))
-                .build();
-        bookingHistoryRepository.save(bookingHistory);
-        System.out.println("Tốc độ tạo booking: " + (System.currentTimeMillis() - start));
-        return BookingMapper.mapToBookingResponse(saved, user, room);
+                //lưu vết lịch sử đặt phòng, thay đổi phòng phục vụ cho APPROVER so sánh trực quan để dễ phê duyệt
+                BookingHistory bookingHistory = BookingHistory.builder()
+                        .booking(saved)
+                        .actionType(BookingActionType.CREATED)
+                        .changedBy(user)
+                        .newData(jsonMapper.valueToTree(payload))
+                        .build();
+                bookingHistoryRepository.save(bookingHistory);
+                System.out.println("Tốc độ tạo booking: " + (System.currentTimeMillis() - start));
+                return BookingMapper.mapToBookingResponse(saved, user, room);
+            });
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
     }
 
-    @Transactional
     @Override
     public Map<String, Long> updateBooking(Long bookingId, UpdateBookingRequest request, Long userId, List<String> roles) {
         User userChange = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
 
-        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
+        Booking bookingForLock = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        Room oldRoom = booking.getRoom();
 
-        if (!booking.getBookedBy().equals(userChange) && !roles.contains(StringCommon.ADMIN)) {
-            throw new BusinessException(ErrorResponse.UPDATE_BOOKING_AUTH_ERROR);
-        }
-
-        if (booking.getStatus() == BookingStatus.REJECTED || booking.getStatus() == BookingStatus.CANCELLED) {
-            throw new BusinessException(ErrorResponse.BOOKING_STATUS_ERROR);
-        }
-        //còn dưới 1 tiếng thì ko cho sửa nữa
-//        if (ChronoUnit.HOURS.between(TimeUtils.now(), booking.getStartTime()) < 1) {
-//            throw new BusinessException(ErrorResponse.UPDATE_BOOKING_ERROR);
-//        }
-        List<String> emailParticipants = bookingAttendeeRepository.getAttendeeOfBooking(bookingId)
-                .stream()
-                .map(User::getEmail)
-                .toList();
-        UpdateFocusRoomOrTimePayload oldPayload = CreatePayloadHelper.createUpdateRoomOrTime(
-                booking,
-                booking.getBookedBy().getUserId(),
-                oldRoom.getRoomId(),
-                emailParticipants
-        );
-        if (request.isCompleted() != null) {
-            if (TimeUtils.now().isBefore(booking.getStartTime())) {
-                throw new BusinessException(ErrorResponse.COMPLETED_UPDATE_BOOKING_ERROR);
-            }
-            booking.setStatus(BookingStatus.COMPLETED);
-        }
-        if (request.title() != null) booking.setTitle(request.title());
-        if (request.description() != null) booking.setDescription(request.description());
-        if (request.attendeeCount() != null && request.newRoomId() == null) {
-            if (request.attendeeCount() > oldRoom.getCapacity()) {
-                throw new BusinessException(ErrorResponse.EXCEED_ATTENDEE);
-            }
-            booking.setAttendeeCount(request.attendeeCount());
-        }
-        /* bao trọn được trường hợp chỉ đổi room hoặc chỉ đổi start-end hoặc đổi cả hai
-            (room sẽ được lọc ra những room nào thỏa mãn trước dựa vào start-end)
-         */
-        boolean isChangeRoom = false;
-        boolean isChangeTime = false;
+        RLock lock = null;
         if (request.newRoomId() != null || (request.start() != null && request.end() != null)) {
-            //lock theo từng trường hợp
+            //lock theo từng trường hợp (trước khi start transaction)
             if (request.newRoomId() != null && request.start() == null) { //khóa phòng mới và thời gian cũ
-                iRoomService.acquireDistributedLockForRoomAndDate(request.newRoomId(), booking.getStartTime());
+                lock = iRoomService.getRoomDateLock(request.newRoomId(), bookingForLock.getStartTime());
             } else if (request.newRoomId() == null) { //khóa phòng cũ và thời gian mới
-                iRoomService.acquireDistributedLockForRoomAndDate(request.roomId(), request.start());
+                lock = iRoomService.getRoomDateLock(request.roomId(), request.start());
             } else { //khóa cả phòng mới và thời gian mới
-                iRoomService.acquireDistributedLockForRoomAndDate(request.newRoomId(), request.start());
+                lock = iRoomService.getRoomDateLock(request.newRoomId(), request.start());
             }
-            BookingReservation bookingReservation = bookingReservationRepository
-                    .findBookingReservationsByBooking_BookingId(bookingId)
-                    .orElseGet(() -> {
-                        BookingReservation newReservation = new BookingReservation();
-                        newReservation.setBooking(booking);
-                        return newReservation;
-                    });
-            bookingReservation.setStatus(ReservationStatus.AWAIT_APPROVE);
-            bookingReservation.setOldRoom(oldRoom);
-            bookingReservation.setOldStartTime(booking.getStartTime());
-            bookingReservation.setOldEndTime(booking.getEndTime());
+        }
 
-            if (request.newRoomId() != null) {
-                isChangeRoom = true;
-                //lưu lại để có thể rollback từ cập nhật nếu approver reject
-                Room newRoom = iRoomService.getRoomDetail(request.newRoomId()).orElseThrow(() ->
+        if (lock != null) {
+            boolean acquired = false;
+            try {
+                acquired = lock.tryLock(10000, 60000, TimeUnit.MILLISECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new BusinessException(ErrorResponse.SYSTEM_ERROR);
+            }
+            if (!acquired) {
+                throw new BusinessException(ErrorResponse.LOCK_ACQUISITION_TIMEOUT);
+            }
+        }
+
+        try {
+            return transactionTemplate.execute(status -> {
+                Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                         new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-                if (request.attendeeCount() != null && request.attendeeCount() > newRoom.getCapacity()) {
-                    throw new BusinessException(ErrorResponse.EXCEED_ATTENDEE);
+                Room oldRoom = booking.getRoom();
+
+                if (!booking.getBookedBy().equals(userChange) && !roles.contains(StringCommon.ADMIN)) {
+                    throw new BusinessException(ErrorResponse.UPDATE_BOOKING_AUTH_ERROR);
                 }
-                checkOverlap(bookingId, request.newRoomId(), booking.getStartTime(), booking.getEndTime(), false);
-                booking.setRoom(newRoom);
-                booking.setStatus(BookingStatus.PENDING);
-            }
-            if (request.start() != null && request.end() != null) {
-                if (request.start().isBefore(TimeUtils.now())) {
-                    throw new BusinessException(ErrorResponse.START_END_DATE_BEFORE_NOW_ERROR);
-                } else if (request.start().isAfter(request.end())) {
-                    throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
-                } else {
-                    OffsetDateTime startTimeVn = request.start().withOffsetSameInstant(TimeUtils.ZONE_OFFSET);
-                    OffsetDateTime endTimeVn = request.end().withOffsetSameInstant(TimeUtils.ZONE_OFFSET);
-                    if (!startTimeVn.toLocalDate().isEqual(endTimeVn.toLocalDate())) {
-                        throw new BusinessException(ErrorResponse.OVERNIGHT_BOOKING_ERROR);
-                    }
-                    LocalTime officeStart = LocalTime.of(8, 0);
-                    LocalTime officeEnd = LocalTime.of(17, 30);
-                    LocalTime startTime = startTimeVn.toLocalTime();
-                    LocalTime endTime = endTimeVn.toLocalTime();
-                    if (startTime.isBefore(officeStart) || endTime.isAfter(officeEnd)) {
-                        throw new BusinessException(ErrorResponse.OFFICE_HOURS_ERROR);
-                    }
-                    checkOverlap(bookingId, request.roomId(), request.start(), request.end(), false);
-                    isChangeTime = true;
-                    booking.setStartTime(request.start());
-                    booking.setEndTime(request.end());
-                    booking.setStatus(BookingStatus.PENDING);
+
+                if (booking.getStatus() == BookingStatus.REJECTED || booking.getStatus() == BookingStatus.CANCELLED) {
+                    throw new BusinessException(ErrorResponse.BOOKING_STATUS_ERROR);
                 }
+
+                List<String> emailParticipants = bookingAttendeeRepository.getAttendeeOfBooking(bookingId)
+                        .stream()
+                        .map(User::getEmail)
+                        .toList();
+                UpdateFocusRoomOrTimePayload oldPayload = CreatePayloadHelper.createUpdateRoomOrTime(
+                        booking,
+                        booking.getBookedBy().getUserId(),
+                        oldRoom.getRoomId(),
+                        emailParticipants
+                );
+                if (request.isCompleted() != null) {
+                    if (TimeUtils.now().isBefore(booking.getStartTime())) {
+                        throw new BusinessException(ErrorResponse.COMPLETED_UPDATE_BOOKING_ERROR);
+                    }
+                    booking.setStatus(BookingStatus.COMPLETED);
+                }
+                if (request.title() != null) booking.setTitle(request.title());
+                if (request.description() != null) booking.setDescription(request.description());
+                if (request.attendeeCount() != null && request.newRoomId() == null) {
+                    if (request.attendeeCount() > oldRoom.getCapacity()) {
+                        throw new BusinessException(ErrorResponse.EXCEED_ATTENDEE);
+                    }
+                    booking.setAttendeeCount(request.attendeeCount());
+                }
+                /* bao trọn được trường hợp chỉ đổi room hoặc chỉ đổi start-end hoặc đổi cả hai
+                    (room sẽ được lọc ra những room nào thỏa mãn trước dựa vào start-end)
+                 */
+                boolean isChangeRoom = false;
+                boolean isChangeTime = false;
+                if (request.newRoomId() != null || (request.start() != null && request.end() != null)) {
+                    BookingReservation bookingReservation = bookingReservationRepository
+                            .findBookingReservationsByBooking_BookingId(bookingId)
+                            .orElseGet(() -> {
+                                BookingReservation newReservation = new BookingReservation();
+                                newReservation.setBooking(booking);
+                                return newReservation;
+                            });
+                    bookingReservation.setStatus(ReservationStatus.AWAIT_APPROVE);
+                    bookingReservation.setOldRoom(oldRoom);
+                    bookingReservation.setOldStartTime(booking.getStartTime());
+                    bookingReservation.setOldEndTime(booking.getEndTime());
+
+                    if (request.newRoomId() != null) {
+                        isChangeRoom = true;
+                        //lưu lại để có thể rollback từ cập nhật nếu approver reject
+                        Room newRoom = iRoomService.getRoomDetail(request.newRoomId()).orElseThrow(() ->
+                                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+                        if (request.attendeeCount() != null && request.attendeeCount() > newRoom.getCapacity()) {
+                            throw new BusinessException(ErrorResponse.EXCEED_ATTENDEE);
+                        }
+                        checkOverlap(bookingId, request.newRoomId(), booking.getStartTime(), booking.getEndTime(), false);
+                        booking.setRoom(newRoom);
+                        booking.setStatus(BookingStatus.PENDING);
+                    }
+                    if (request.start() != null && request.end() != null) {
+                        if (request.start().isBefore(TimeUtils.now())) {
+                            throw new BusinessException(ErrorResponse.START_END_DATE_BEFORE_NOW_ERROR);
+                        } else if (request.start().isAfter(request.end())) {
+                            throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
+                        } else {
+                            OffsetDateTime startTimeVn = request.start().withOffsetSameInstant(TimeUtils.ZONE_OFFSET);
+                            OffsetDateTime endTimeVn = request.end().withOffsetSameInstant(TimeUtils.ZONE_OFFSET);
+                            if (!startTimeVn.toLocalDate().isEqual(endTimeVn.toLocalDate())) {
+                                throw new BusinessException(ErrorResponse.OVERNIGHT_BOOKING_ERROR);
+                            }
+                            LocalTime officeStart = LocalTime.of(8, 0);
+                            LocalTime officeEnd = LocalTime.of(17, 30);
+                            LocalTime startTime = startTimeVn.toLocalTime();
+                            LocalTime endTime = endTimeVn.toLocalTime();
+                            if (startTime.isBefore(officeStart) || endTime.isAfter(officeEnd)) {
+                                throw new BusinessException(ErrorResponse.OFFICE_HOURS_ERROR);
+                            }
+                            checkOverlap(bookingId, request.roomId(), request.start(), request.end(), false);
+                            isChangeTime = true;
+                            booking.setStartTime(request.start());
+                            booking.setEndTime(request.end());
+                            booking.setStatus(BookingStatus.PENDING);
+                        }
+                    }
+                    /*
+                     * tạo bảng booking_reservation để bảo toàn những lịch mình đặt trước khi bị thay đổi và
+                     * lịch mới chưa được APPROVER duyệt, khi đó người dùng khác cũng ko thể đặt được
+                     * lịch trùng với cả lịch mới cập nhật và lịch cũ đang đợi lịch mới đc duyệt
+                     */
+                    bookingReservationRepository.save(bookingReservation);
+                }
+
+                // nếu thay đổi room hoặc time thì thêm cái emails để có thể gửi thông báo cho những người tham gia
+                UpdateFocusRoomOrTimePayload newPayload = CreatePayloadHelper.createUpdateRoomOrTime(
+                        booking,
+                        booking.getBookedBy().getUserId(),
+                        booking.getRoom().getRoomId(), // lấy room mới vừa set()
+                        emailParticipants //empty là thay đổi bình thường
+                );
+                if (!isChangeRoom && !isChangeTime) {
+                    oldPayload.setEmails(List.of());
+                    newPayload.setEmails(List.of());
+                }
+
+                BookingHistory bookingHistory = BookingHistory.builder()
+                        .booking(booking)
+                        .actionType(
+                                (!isChangeRoom && !isChangeTime) ?
+                                        BookingActionType.UPDATE_NORMAL :
+                                        BookingActionType.UPDATED
+                        )
+                        .changedBy(userChange)
+                        .oldData(jsonMapper.valueToTree(oldPayload))
+                        .newData(jsonMapper.valueToTree(newPayload))
+                        .build();
+                bookingHistoryRepository.save(bookingHistory);
+
+                return Map.of(BOOKING_ID, bookingId);
+            });
+        } finally {
+            if (lock != null && lock.isHeldByCurrentThread()) {
+                lock.unlock();
             }
-            /*
-             * tạo bảng booking_reservation để bảo toàn những lịch mình đặt trước khi bị thay đổi và
-             * lịch mới chưa được APPROVER duyệt, khi đó người dùng khác cũng ko thể đặt được
-             * lịch trùng với cả lịch mới cập nhật và lịch cũ đang đợi lịch mới đc duyệt
-             * nếu ko có logic này thì
-             * Ví dụ như người dùng A đổi sang room A1
-             * người dùng B đăng kí vào room A1 có khoảng time overlap với giá trị cũ của A
-             * thì khi yêu cầu thay đổi của A ko đc APPROVER chấp thuận sẽ được rollback về giá trị cũ
-             * nhưng khi đó B đã đăng kí thành công vào lịch đó => lỗi ko mong muốn nên phải bảo toàn cả hai lịch cho A
-             */
-            bookingReservationRepository.save(bookingReservation);
         }
-
-        // nếu thay đổi room hoặc time thì thêm cái emails để có thể gửi thông báo cho những người tham gia
-        UpdateFocusRoomOrTimePayload newPayload = CreatePayloadHelper.createUpdateRoomOrTime(
-                booking,
-                booking.getBookedBy().getUserId(),
-                booking.getRoom().getRoomId(), // lấy room mới vừa set()
-                emailParticipants //empty là thay đổi bình thường
-        );
-        if (!isChangeRoom && !isChangeTime) {
-            oldPayload.setEmails(List.of());
-            newPayload.setEmails(List.of());
-        }
-
-        BookingHistory bookingHistory = BookingHistory.builder()
-                .booking(booking)
-                .actionType(
-                        (!isChangeRoom && !isChangeTime) ?
-                                BookingActionType.UPDATE_NORMAL :
-                                BookingActionType.UPDATED
-                )
-                .changedBy(userChange)
-                .oldData(jsonMapper.valueToTree(oldPayload))
-                .newData(jsonMapper.valueToTree(newPayload))
-                .build();
-        bookingHistoryRepository.save(bookingHistory);
-
-        return Map.of(BOOKING_ID, bookingId);
     }
 
     @Transactional

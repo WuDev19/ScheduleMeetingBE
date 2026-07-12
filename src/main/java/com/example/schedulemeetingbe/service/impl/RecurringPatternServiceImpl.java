@@ -1,14 +1,18 @@
 package com.example.schedulemeetingbe.service.impl;
 
 import com.example.schedulemeetingbe.constant.enums.BookingStatus;
+import com.example.schedulemeetingbe.design_pattern.strategy.recurring.RecurrencePatternStrategy;
 import com.example.schedulemeetingbe.design_pattern.strategy.recurring.RecurrenceStrategyFactory;
-import com.example.schedulemeetingbe.dto.request.recurrence.RecurringPatternCreateRequest;
 import com.example.schedulemeetingbe.dto.request.recurrence.ApproveRejectRecurringRequest;
 import com.example.schedulemeetingbe.dto.request.recurrence.CancelRecurringPatternRequest;
+import com.example.schedulemeetingbe.dto.request.recurrence.RecurringPatternCreateRequest;
 import com.example.schedulemeetingbe.dto.request.recurrence.RecurringPatternFilterRequest;
 import com.example.schedulemeetingbe.dto.response.PageResponse;
 import com.example.schedulemeetingbe.dto.response.booking.BookingRecurrenceResponse;
-import com.example.schedulemeetingbe.dto.response.recurrence.*;
+import com.example.schedulemeetingbe.dto.response.recurrence.ApproveRejectRecurrenceResponse;
+import com.example.schedulemeetingbe.dto.response.recurrence.CancelRecurrenceResponse;
+import com.example.schedulemeetingbe.dto.response.recurrence.RecurrenceUserResponse;
+import com.example.schedulemeetingbe.dto.response.recurrence.RecurringPatternResponse;
 import com.example.schedulemeetingbe.entity.RecurringPattern;
 import com.example.schedulemeetingbe.entity.Room;
 import com.example.schedulemeetingbe.entity.User;
@@ -24,12 +28,15 @@ import com.example.schedulemeetingbe.service.base.INotificationService;
 import com.example.schedulemeetingbe.service.base.IRecurringPatternService;
 import com.example.schedulemeetingbe.service.base.IRoomService;
 import com.example.schedulemeetingbe.service.base.IUserService;
+import com.example.schedulemeetingbe.utils.LockKeyUtils;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
+import org.redisson.api.RLock;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalTime;
@@ -38,6 +45,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -55,8 +63,8 @@ public class RecurringPatternServiceImpl implements IRecurringPatternService {
 
     private final RecurrenceStrategyFactory factory;
     private final JsonMapper jsonMapper;
+    private final TransactionTemplate transactionTemplate;
 
-    @Transactional
     @Override
     public RecurringPatternResponse createRecurring(RecurringPatternCreateRequest request, Long userId) {
         if (request.startDate().isBefore(TimeUtils.localDateNow())) {
@@ -80,14 +88,41 @@ public class RecurringPatternServiceImpl implements IRecurringPatternService {
         if (request.meetingStartTime().isBefore(officeStart) || request.meetingEndTime().isAfter(officeEnd)) {
             throw new BusinessException(ErrorResponse.OFFICE_HOURS_ERROR);
         }
-        User register = iUserService.getDetail(userId).orElseThrow(() ->
-                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        Room room = iRoomService.getRoomDetail(request.roomId())
-                .orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        RecurringPattern recurringPattern = RecurringPatternMapper.mapToRecurringPattern(request, register);
-        RecurringPattern recurSaved = recurringPatternRepository.save(recurringPattern);
-        factory.getStrategy(request.type()).create(recurSaved, request, register, room);
-        return RecurringPatternMapper.mapToRecurringPatternResponse(recurSaved, userId, register.getFullName());
+
+        // Get strategy first to compute lock dates
+        RecurrencePatternStrategy strategy = factory.getStrategy(request.type());
+        List<OffsetDateTime> dates = strategy.calculateDates(request);
+        long[] keys = LockKeyUtils.forRoomAndDates(request.roomId(), dates);
+
+        // Lock outside the database transaction
+        RLock lock = iRoomService.getRoomDatesLock(keys);
+        boolean acquired = false;
+        try {
+            acquired = lock.tryLock(10000, 60000, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException(ErrorResponse.SYSTEM_ERROR);
+        }
+        if (!acquired) {
+            throw new BusinessException(ErrorResponse.LOCK_ACQUISITION_TIMEOUT);
+        }
+
+        try {
+            return transactionTemplate.execute(status -> {
+                User register = iUserService.getDetail(userId).orElseThrow(() ->
+                        new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+                Room room = iRoomService.getRoomDetail(request.roomId())
+                        .orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+                RecurringPattern recurringPattern = RecurringPatternMapper.mapToRecurringPattern(request, register);
+                RecurringPattern recurSaved = recurringPatternRepository.save(recurringPattern);
+                strategy.create(recurSaved, request, register, room);
+                return RecurringPatternMapper.mapToRecurringPatternResponse(recurSaved, userId, register.getFullName());
+            });
+        } finally {
+            if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+        }
     }
 
     @Transactional

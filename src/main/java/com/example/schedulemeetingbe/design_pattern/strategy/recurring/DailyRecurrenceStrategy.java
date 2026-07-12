@@ -25,7 +25,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DailyRecurrenceStrategy implements RecurrencePatternStrategy {
     private final BookingRepository bookingRepository;
-    private final IRoomService iRoomService;
 
     @Override
     public RecurrenceType getType() {
@@ -46,9 +45,6 @@ public class DailyRecurrenceStrategy implements RecurrencePatternStrategy {
 
         List<Booking> bookings = new ArrayList<>();
         List<String> rangesTime = new ArrayList<>();
-        List<OffsetDateTime> dateTimesForLock = new ArrayList<>();
-        // hiện tại thì sẽ cho đặt lịch họp hôm thứ 7, chủ nhật,
-        // sau tùy theo logic thì có thể chỉ cho họp trong ngày giờ hành chính
         while (!startDate.isAfter(endDate)) {
             Booking booking = Booking.builder()
                     .title(request.title())
@@ -61,13 +57,30 @@ public class DailyRecurrenceStrategy implements RecurrencePatternStrategy {
                     .recurringPattern(recurringPattern)
                     .build();
             bookings.add(booking);
-            dateTimesForLock.add(startTime);
             String rangeStr = String.format("[%s, %s)", startTime, endTime);
             rangesTime.add(rangeStr);
             startDate = startDate.plusDays(interval);
             startTime = startTime.plusDays(interval);
             endTime = startTime.plusMinutes(gapInMinutes);
         }
-        RecurrenceHelper.validateAndSaveBooking(request.roomId(), bookings, rangesTime, bookingRepository, iRoomService, dateTimesForLock);
+        RecurrenceHelper.validateAndSaveBooking(request.roomId(), bookings, rangesTime, bookingRepository);
+    }
+
+    @Override
+    public List<OffsetDateTime> calculateDates(RecurringPatternCreateRequest request) {
+        if (RecurrenceHelper.checkLimitRecurrence(request.startDate(), request.endDate())) {
+            throw new BusinessException(ErrorResponse.EXCEED_PERIODIC);
+        }
+        int interval = request.interval() != null ? request.interval() : 1;
+        LocalDate startDate = request.startDate();
+        LocalDate endDate = request.endDate();
+        OffsetDateTime startTime = OffsetDateTime.of(startDate, request.meetingStartTime(), TimeUtils.ZONE_OFFSET);
+        List<OffsetDateTime> dateTimesForLock = new ArrayList<>();
+        while (!startDate.isAfter(endDate)) {
+            dateTimesForLock.add(startTime);
+            startDate = startDate.plusDays(interval);
+            startTime = startTime.plusDays(interval);
+        }
+        return dateTimesForLock;
     }
 }

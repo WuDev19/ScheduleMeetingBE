@@ -41,7 +41,8 @@ public enum ErrorResponse {
     START_END_DATE_BEFORE_NOW_ERROR("Bạn không được dặt lịch trong quá khứ", 1034),
     LOCK_ACQUISITION_TIMEOUT("Hệ thống đang bận xử lý, vui lòng thử lại sau", 1035),
     OVERNIGHT_BOOKING_ERROR("Thời gian họp không được kéo dài xuyên đêm (phải kết thúc trong cùng ngày bắt đầu)", 1036),
-    OFFICE_HOURS_ERROR("Thời gian họp phải nằm trong giờ hành chính (từ 08:00 đến 17:30)", 1037);
+    OFFICE_HOURS_ERROR("Thời gian họp phải nằm trong giờ hành chính (từ 08:00 đến 17:30)", 1037),
+    SYSTEM_ERROR("Lỗi hệ thống", 1038);
 
     private final String message;
     private final int code;

@@ -42,7 +42,7 @@ public interface IRoomService {
 
     Optional<Room> getRoomDetail(Long id);
 
-    void acquireDistributedLockForRoomAndDate(Long roomId, OffsetDateTime dateTime);
+    org.redisson.api.RLock getRoomDateLock(Long roomId, OffsetDateTime dateTime);
 
-    void acquireDistributedLockForRoomAndDate(long[] keys);
+    org.redisson.api.RLock getRoomDatesLock(long[] keys);
 }

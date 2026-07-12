@@ -24,6 +24,7 @@ import com.example.schedulemeetingbe.repository.specification.RoomSpecification;
 import com.example.schedulemeetingbe.service.base.IRoomService;
 import com.example.schedulemeetingbe.utils.LockKeyUtils;
 import com.example.schedulemeetingbe.utils.RedisLockManager;
+import org.redisson.api.RLock;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
@@ -263,15 +264,13 @@ public class RoomServiceImpl implements IRoomService {
     }
 
     @Override
-    @Transactional
-    public void acquireDistributedLockForRoomAndDate(Long roomId, OffsetDateTime dateTime) {
-        redisLockManager.acquireLock(LockKeyUtils.createKey(roomId, dateTime));
+    public RLock getRoomDateLock(Long roomId, OffsetDateTime dateTime) {
+        return redisLockManager.getLock(LockKeyUtils.createKey(roomId, dateTime));
     }
 
     @Override
-    @Transactional
-    public void acquireDistributedLockForRoomAndDate(long[] keys) {
-        redisLockManager.acquireLocks(keys);
+    public RLock getRoomDatesLock(long[] keys) {
+        return redisLockManager.getLocks(keys);
     }
 
 }

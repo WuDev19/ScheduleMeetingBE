@@ -66,6 +66,8 @@ class BookingServiceImplTest {
     @Mock JsonMapper jsonMapper;
     @Mock BookingRollbackCommandFactory rollbackFactory;
     @Mock BookingApproveCommandFactory approveFactory;
+    @Mock org.redisson.api.RLock mockLock;
+    @Mock org.springframework.transaction.support.TransactionTemplate transactionTemplate;
 
     @InjectMocks
     BookingServiceImpl bookingService;
@@ -119,6 +121,20 @@ class BookingServiceImplTest {
                 .attendeeCount(5)
                 .status(BookingStatus.PENDING)
                 .build();
+
+        lenient().when(transactionTemplate.execute(any())).thenAnswer(invocation -> {
+            org.springframework.transaction.support.TransactionCallback<?> callback = invocation.getArgument(0);
+            return callback.doInTransaction(null);
+        });
+
+        lenient().when(iRoomService.getRoomDateLock(anyLong(), any())).thenReturn(mockLock);
+        lenient().when(iRoomService.getRoomDatesLock(any())).thenReturn(mockLock);
+        try {
+            lenient().when(mockLock.tryLock(anyLong(), anyLong(), any())).thenReturn(true);
+        } catch (InterruptedException e) {
+            // ignore
+        }
+        lenient().when(mockLock.isHeldByCurrentThread()).thenReturn(true);
     }
 
     // =====================================================
