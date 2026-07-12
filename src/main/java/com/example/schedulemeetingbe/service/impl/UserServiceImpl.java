@@ -27,8 +27,6 @@ import com.example.schedulemeetingbe.service.base.IRedisService;
 import com.example.schedulemeetingbe.service.base.IUserService;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -42,8 +40,6 @@ import java.util.concurrent.TimeUnit;
 
 import static com.example.schedulemeetingbe.constant.Constants.COOLDOWN_UPDATE_EMAIL;
 
-//xem xét đổi repo -> service
-//thếu cái tự đổi mật khẩu
 @Service
 @RequiredArgsConstructor
 public class UserServiceImpl implements IUserService {
@@ -92,7 +88,6 @@ public class UserServiceImpl implements IUserService {
         return CRUDResponseHelper.createSuccess();
     }
 
-    @Cacheable(value = "user-detail", key = "#id")
     @Override
     public UserDetailResponse getUserDetail(Long id) {
         User user = userRepository.findById(id).orElseThrow(() ->
@@ -100,7 +95,6 @@ public class UserServiceImpl implements IUserService {
         return UserMapper.mapToUserDetailResponse(user);
     }
 
-    @CacheEvict(value = "user-detail", key = "#id")
     @Transactional
     @Override
     public UserDetailResponse updateUser(Long id, UpdateUserRequest request) {
@@ -125,7 +119,6 @@ public class UserServiceImpl implements IUserService {
         return UserMapper.mapToUserDetailResponse(user);
     }
 
-    @CacheEvict(value = "user-detail", key = "#id")
     @Transactional
     @Override
     public Map<String, Object> updateEmail(Long id, String newEmail) {
