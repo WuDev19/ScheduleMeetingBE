@@ -24,6 +24,7 @@ import com.example.schedulemeetingbe.service.base.INotificationService;
 import com.example.schedulemeetingbe.service.base.IRecurringPatternService;
 import com.example.schedulemeetingbe.service.base.IRoomService;
 import com.example.schedulemeetingbe.service.base.IUserService;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -57,6 +58,18 @@ public class RecurringPatternServiceImpl implements IRecurringPatternService {
     @Transactional
     @Override
     public RecurringPatternResponse createRecurring(RecurringPatternCreateRequest request, Long userId) {
+        if (request.startDate().isBefore(TimeUtils.localDateNow())) {
+            throw new BusinessException(ErrorResponse.START_END_DATE_BEFORE_NOW_ERROR);
+        }
+        if (request.startDate().isAfter(request.endDate())) {
+            throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
+        }
+        if (request.meetingStartTime().isBefore(TimeUtils.localTimeNow())) {
+            throw new BusinessException(ErrorResponse.START_END_DATE_BEFORE_NOW_ERROR);
+        }
+        if (request.meetingStartTime().isAfter(request.meetingEndTime())) {
+            throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
+        }
         User register = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         Room room = iRoomService.getRoomDetail(request.roomId())

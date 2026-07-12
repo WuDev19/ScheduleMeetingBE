@@ -2,10 +2,7 @@ package com.example.schedulemeetingbe.utils;
 
 import com.example.schedulemeetingbe.constant.StringCommon;
 
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 
 public class TimeUtils {
@@ -20,11 +17,19 @@ public class TimeUtils {
         return OffsetDateTime.now(ZONE_ID);
     }
 
+    public static LocalDate localDateNow() {
+        return LocalDate.now(ZONE_ID);
+    }
+
+    public static LocalTime localTimeNow(){
+        return LocalTime.now(ZONE_ID);
+    }
+
     public static String dateTimeFormat() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ));
     }
 
-    public static String dateTimeFormat(OffsetDateTime time){
+    public static String dateTimeFormat(OffsetDateTime time) {
         return time.format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ));
     }
 
