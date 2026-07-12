@@ -39,6 +39,7 @@ public final class RecurringPatternMapper {
                 .userCreatedId(userId)
                 .userCreatedName(userCreated)
                 .daysOfWeek(recurringPattern.getDaysOfWeek())
+                .recurrenceType(recurringPattern.getRecurrenceType())
                 .build();
     }
 
@@ -62,31 +63,33 @@ public final class RecurringPatternMapper {
     }
 
     public static RecurringPatternResponse mapToRecurringPatternResponse(RecurringPatternProjection projection, List<BookingRecurrenceResponse> bookings) {
-        return new RecurringPatternResponse(
-                projection.getRecurringId(),
-                projection.getInterval(),
-                projection.getDaysOfWeek(),
-                projection.getStartDate(),
-                projection.getEndDate(),
-                projection.getStatus(),
-                projection.getUserCreatedId(),
-                projection.getUserCreatedName(),
-                bookings
-        );
+        return RecurringPatternResponse.builder()
+                .recurringId(projection.getRecurringId())
+                .interval(projection.getInterval())
+                .daysOfWeek(projection.getDaysOfWeek())
+                .startDate(projection.getStartDate())
+                .endDate(projection.getEndDate())
+                .status(projection.getStatus())
+                .userCreatedId(projection.getUserCreatedId())
+                .userCreatedName(projection.getUserCreatedName())
+                .bookings(bookings)
+                .recurrenceType(projection.getRecurrenceType())
+                .build();
     }
 
     public static RecurringPatternResponse mapToRecurringPatternResponse(RecurringPattern recurringPattern, RecurrenceUserResponse userResponse, List<BookingRecurrenceResponse> bookings) {
-        return new RecurringPatternResponse(
-                recurringPattern.getRecurringId(),
-                recurringPattern.getIntervalValue(),
-                recurringPattern.getDaysOfWeek(),
-                recurringPattern.getStartDate(),
-                recurringPattern.getEndDate(),
-                recurringPattern.getStatus(),
-                userResponse.userId(),
-                userResponse.fullName(),
-                bookings
-        );
+        return RecurringPatternResponse.builder()
+                .recurringId(recurringPattern.getRecurringId())
+                .interval(recurringPattern.getIntervalValue())
+                .daysOfWeek(recurringPattern.getDaysOfWeek())
+                .startDate(recurringPattern.getStartDate())
+                .endDate(recurringPattern.getEndDate())
+                .status(recurringPattern.getStatus())
+                .userCreatedId(userResponse.userId())
+                .userCreatedName(userResponse.fullName())
+                .bookings(bookings)
+                .recurrenceType(recurringPattern.getRecurrenceType())
+                .build();
     }
 
 }

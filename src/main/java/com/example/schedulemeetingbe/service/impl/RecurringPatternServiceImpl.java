@@ -32,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
 
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -64,11 +65,20 @@ public class RecurringPatternServiceImpl implements IRecurringPatternService {
         if (request.startDate().isAfter(request.endDate())) {
             throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
         }
-        if (request.meetingStartTime().isBefore(TimeUtils.localTimeNow())) {
+        if (request.startDate().isEqual(TimeUtils.localDateNow()) &&
+                request.meetingStartTime().isBefore(TimeUtils.localTimeNow())
+        ) {
             throw new BusinessException(ErrorResponse.START_END_DATE_BEFORE_NOW_ERROR);
         }
-        if (request.meetingStartTime().isAfter(request.meetingEndTime())) {
-            throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
+        if (request.meetingStartTime().isAfter(request.meetingEndTime()) ||
+                request.meetingStartTime().equals(request.meetingEndTime())
+        ) {
+            throw new BusinessException(ErrorResponse.OVERNIGHT_BOOKING_ERROR);
+        }
+        LocalTime officeStart = LocalTime.of(8, 0);
+        LocalTime officeEnd = LocalTime.of(17, 30);
+        if (request.meetingStartTime().isBefore(officeStart) || request.meetingEndTime().isAfter(officeEnd)) {
+            throw new BusinessException(ErrorResponse.OFFICE_HOURS_ERROR);
         }
         User register = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));

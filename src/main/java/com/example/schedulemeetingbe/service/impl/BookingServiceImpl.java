@@ -91,6 +91,18 @@ public class BookingServiceImpl implements IBookingService {
         if (request.start().isAfter(request.end())) {
             throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
         }
+        OffsetDateTime startTimeVn = request.start().withOffsetSameInstant(TimeUtils.ZONE_OFFSET);
+        OffsetDateTime endTimeVn = request.end().withOffsetSameInstant(TimeUtils.ZONE_OFFSET);
+        if (!startTimeVn.toLocalDate().isEqual(endTimeVn.toLocalDate())) {
+            throw new BusinessException(ErrorResponse.OVERNIGHT_BOOKING_ERROR);
+        }
+        LocalTime officeStart = LocalTime.of(8, 0);
+        LocalTime officeEnd = LocalTime.of(17, 30);
+        LocalTime startTime = startTimeVn.toLocalTime();
+        LocalTime endTime = endTimeVn.toLocalTime();
+        if (startTime.isBefore(officeStart) || endTime.isAfter(officeEnd)) {
+            throw new BusinessException(ErrorResponse.OFFICE_HOURS_ERROR);
+        }
         //kiểm tra người dùng có thật sự tồn tại ko
         User user = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
@@ -231,6 +243,18 @@ public class BookingServiceImpl implements IBookingService {
                 } else if (request.start().isAfter(request.end())) {
                     throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
                 } else {
+                    OffsetDateTime startTimeVn = request.start().withOffsetSameInstant(TimeUtils.ZONE_OFFSET);
+                    OffsetDateTime endTimeVn = request.end().withOffsetSameInstant(TimeUtils.ZONE_OFFSET);
+                    if (!startTimeVn.toLocalDate().isEqual(endTimeVn.toLocalDate())) {
+                        throw new BusinessException(ErrorResponse.OVERNIGHT_BOOKING_ERROR);
+                    }
+                    LocalTime officeStart = LocalTime.of(8, 0);
+                    LocalTime officeEnd = LocalTime.of(17, 30);
+                    LocalTime startTime = startTimeVn.toLocalTime();
+                    LocalTime endTime = endTimeVn.toLocalTime();
+                    if (startTime.isBefore(officeStart) || endTime.isAfter(officeEnd)) {
+                        throw new BusinessException(ErrorResponse.OFFICE_HOURS_ERROR);
+                    }
                     checkOverlap(bookingId, request.roomId(), request.start(), request.end(), false);
                     isChangeTime = true;
                     booking.setStartTime(request.start());

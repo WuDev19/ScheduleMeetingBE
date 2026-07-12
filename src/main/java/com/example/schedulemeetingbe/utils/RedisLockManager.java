@@ -21,8 +21,8 @@ public class RedisLockManager {
     private final RedissonClient redissonClient;
 
     private static final String LOCK_PREFIX = "lock:room_date:";
-    private static final long ACQUIRE_TIMEOUT_MS = 10000; // 10 seconds
-    private static final long LEASE_TIME_MS = 60000; // 60 seconds lease time to prevent deadlock if app crashes
+    private static final long ACQUIRE_TIMEOUT_MS = 10000;
+    private static final long LEASE_TIME_MS = 60000;
 
     public void acquireLock(long key) {
         acquireLocks(new long[]{key});
@@ -32,37 +32,29 @@ public class RedisLockManager {
         if (keys == null || keys.length == 0) {
             return;
         }
-
-        // Sort keys to prevent deadlock
         long[] sortedKeys = Arrays.copyOf(keys, keys.length);
         Arrays.sort(sortedKeys);
-
         List<RLock> locks = new ArrayList<>();
         for (long key : sortedKeys) {
             locks.add(redissonClient.getLock(LOCK_PREFIX + key));
         }
-
         RLock lock;
         if (locks.size() == 1) {
             lock = locks.get(0);
         } else {
             lock = redissonClient.getMultiLock(locks.toArray(new RLock[0]));
         }
-
-        boolean acquired = false;
+        boolean acquired;
         try {
             acquired = lock.tryLock(ACQUIRE_TIMEOUT_MS, LEASE_TIME_MS, TimeUnit.MILLISECONDS);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new BusinessException(ErrorResponse.SYSTEM_UNKNOWN_ERROR);
         }
-
         if (!acquired) {
             log.warn("Failed to acquire lock for keys: {}", Arrays.toString(keys));
             throw new BusinessException(ErrorResponse.LOCK_ACQUISITION_TIMEOUT);
         }
-
-        // Register synchronization to release lock after transaction completion
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
