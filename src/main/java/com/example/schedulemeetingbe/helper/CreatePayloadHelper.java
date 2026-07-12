@@ -9,6 +9,7 @@ import com.example.schedulemeetingbe.entity.payload.CreateBookingPayload;
 import com.example.schedulemeetingbe.entity.payload.ReceiverEmailPayload;
 import com.example.schedulemeetingbe.entity.payload.UpdateBookingChangePayload;
 import com.example.schedulemeetingbe.entity.payload.UpdateFocusRoomOrTimePayload;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -86,8 +87,8 @@ public class CreatePayloadHelper {
                 booking.getDescription(),
                 "Tòa nhà " + building.getBuildingName() + ", " + building.getAddress(),
                 "Tầng " + room.getFloorNumber() + ", phòng " + room.getRoomName(),
-                booking.getStartTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ)),
-                booking.getEndTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ)),
+                TimeUtils.dateTimeFormat(booking.getStartTime()),
+                TimeUtils.dateTimeFormat(booking.getEndTime()),
                 emails
         );
     }

@@ -26,11 +26,14 @@ public class TimeUtils {
     }
 
     public static String dateTimeFormat() {
-        return LocalDateTime.now().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ));
+        return LocalDateTime.now(ZONE_ID).format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ));
     }
 
     public static String dateTimeFormat(OffsetDateTime time) {
-        return time.format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ));
+        if (time == null) {
+            return null;
+        }
+        return time.withOffsetSameInstant(ZONE_OFFSET).format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ));
     }
 
     public static OffsetDateTime parseOffsetDateTime(String dateTime) {

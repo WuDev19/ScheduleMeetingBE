@@ -11,6 +11,7 @@ import com.example.schedulemeetingbe.service.base.IExcelService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.time.format.DateTimeFormatter;
@@ -54,8 +55,8 @@ public class ExcelServiceImpl implements IExcelService {
                 .email(booking.getBookedBy().getEmail())
                 .phone(booking.getBookedBy().getPhone() != null ? booking.getBookedBy().getPhone() : "")
                 .status(booking.getStatus().name())
-                .startTime(booking.getStartTime().format(FORMATTER))
-                .endTime(booking.getEndTime().format(FORMATTER))
+                .startTime(booking.getStartTime().withOffsetSameInstant(TimeUtils.ZONE_OFFSET).format(FORMATTER))
+                .endTime(booking.getEndTime().withOffsetSameInstant(TimeUtils.ZONE_OFFSET).format(FORMATTER))
                 .attendeeCount(booking.getAttendeeCount())
                 .build();
     }

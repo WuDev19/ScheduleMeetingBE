@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import tools.jackson.databind.json.JsonMapper;
+import com.example.schedulemeetingbe.utils.TimeUtils;
 
 import java.time.format.DateTimeFormatter;
 
@@ -39,9 +40,8 @@ public abstract class BookingRollbackCommand {
     ) {
 
         StringBuilder message = new StringBuilder();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ);
-        String startTimeStr = booking.getStartTime().format(formatter);
-        String endTimeStr = booking.getEndTime().format(formatter);
+        String startTimeStr = TimeUtils.dateTimeFormat(booking.getStartTime());
+        String endTimeStr = TimeUtils.dateTimeFormat(booking.getEndTime());
         String timeRange = "từ " + startTimeStr + " đến " + endTimeStr;
         String roomName = booking.getRoom().getRoomName();
         User bookedBy = booking.getBookedBy();

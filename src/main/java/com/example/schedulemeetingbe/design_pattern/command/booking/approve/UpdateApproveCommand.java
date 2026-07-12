@@ -64,8 +64,8 @@ public class UpdateApproveCommand extends BookingApproveCommand {
                 booking.getDescription(),
                 "Tòa nhà " + building.getBuildingName() + ", " + building.getAddress(),
                 "Tầng " + room.getFloorNumber() + ", phòng " + room.getRoomName(),
-                booking.getStartTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ)),
-                booking.getEndTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT_NO_TZ)),
+                TimeUtils.dateTimeFormat(booking.getStartTime()),
+                TimeUtils.dateTimeFormat(booking.getEndTime()),
                 receivers
         );
         OutboxEvent event = OutboxEvent.builder()

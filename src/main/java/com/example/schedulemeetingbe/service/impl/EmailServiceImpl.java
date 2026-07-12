@@ -191,8 +191,8 @@ public class EmailServiceImpl implements IEmailService {
     }
 
     private String generateContentBookingCancelledByMaintain(User user, Room room, Booking booking, String reason) {
-        String startTimeStr = booking.getStartTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT));
-        String endTimeStr = booking.getEndTime().format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT));
+        String startTimeStr = booking.getStartTime().withOffsetSameInstant(TimeUtils.ZONE_OFFSET).format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT));
+        String endTimeStr = booking.getEndTime().withOffsetSameInstant(TimeUtils.ZONE_OFFSET).format(DateTimeFormatter.ofPattern(StringCommon.DATE_TIME_FORMAT));
         return """
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eee; border-radius: 5px;">
                     <h2 style="color: #d9534f;">Thông Báo Hủy Lịch Họp Đột Xuất</h2>
