@@ -42,7 +42,7 @@ public interface IRoomService {
 
     Optional<Room> getRoomDetail(Long id);
 
-    void acquireAdvisoryLockForRoomAndDate(Long roomId, OffsetDateTime dateTime);
+    void acquireDistributedLockForRoomAndDate(Long roomId, OffsetDateTime dateTime);
 
-    void acquireAdvisoryLockForRoomAndDate(long[] keys);
+    void acquireDistributedLockForRoomAndDate(long[] keys);
 }

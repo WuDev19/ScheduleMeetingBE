@@ -22,7 +22,8 @@ import com.example.schedulemeetingbe.repository.RoomEquipmentRepository;
 import com.example.schedulemeetingbe.repository.RoomRepository;
 import com.example.schedulemeetingbe.repository.specification.RoomSpecification;
 import com.example.schedulemeetingbe.service.base.IRoomService;
-import com.example.schedulemeetingbe.utils.AdvisoryLockKeyUtils;
+import com.example.schedulemeetingbe.utils.LockKeyUtils;
+import com.example.schedulemeetingbe.utils.RedisLockManager;
 import com.example.schedulemeetingbe.utils.TimeUtils;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
@@ -48,6 +49,7 @@ public class RoomServiceImpl implements IRoomService {
     private final RoomRepository roomRepository;
     private final EquipmentRepository equipmentRepository;
     private final RoomEquipmentRepository roomEquipmentRepository;
+    private final RedisLockManager redisLockManager;
     private static final String ROOM_ID = "roomId";
 
     @Override
@@ -262,14 +264,14 @@ public class RoomServiceImpl implements IRoomService {
 
     @Override
     @Transactional
-    public void acquireAdvisoryLockForRoomAndDate(Long roomId, OffsetDateTime dateTime) {
-        roomRepository.acquireAdvisoryLock(AdvisoryLockKeyUtils.createKey(roomId, dateTime));
+    public void acquireDistributedLockForRoomAndDate(Long roomId, OffsetDateTime dateTime) {
+        redisLockManager.acquireLock(LockKeyUtils.createKey(roomId, dateTime));
     }
 
     @Override
     @Transactional
-    public void acquireAdvisoryLockForRoomAndDate(long[] keys) {
-        roomRepository.advisoryLockBatch(keys);
+    public void acquireDistributedLockForRoomAndDate(long[] keys) {
+        redisLockManager.acquireLocks(keys);
     }
 
 }

@@ -12,7 +12,7 @@ import com.example.schedulemeetingbe.repository.BookingRepository;
 import com.example.schedulemeetingbe.repository.OutboxEventRepository;
 import com.example.schedulemeetingbe.service.base.INotificationService;
 import com.example.schedulemeetingbe.service.base.IRoomService;
-import com.example.schedulemeetingbe.utils.AdvisoryLockKeyUtils;
+import com.example.schedulemeetingbe.utils.LockKeyUtils;
 import tools.jackson.databind.json.JsonMapper;
 
 import java.time.LocalDate;
@@ -36,7 +36,7 @@ public class RecurrenceHelper {
             IRoomService iRoomService,
             List<OffsetDateTime> dateTimes
     ) {
-        iRoomService.acquireAdvisoryLockForRoomAndDate(AdvisoryLockKeyUtils.forRoomAndDates(roomId, dateTimes));
+        iRoomService.acquireDistributedLockForRoomAndDate(LockKeyUtils.forRoomAndDates(roomId, dateTimes));
         List<String> reasons = bookingRepository.checkOverlap(roomId, rangesTime.toArray(new String[0]));
         if (!reasons.isEmpty()) {
             throw new OverlapBookingException(reasons);

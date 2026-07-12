@@ -3,8 +3,8 @@ package com.example.schedulemeetingbe.utils;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public class AdvisoryLockKeyUtils {
-    private AdvisoryLockKeyUtils() {}
+public class LockKeyUtils {
+    private LockKeyUtils() {}
 
     public static long createKey(Long roomId, OffsetDateTime dateTime){
         int dateAsInt = dateTime.getYear() * 10000 + dateTime.getMonthValue() * 100 + dateTime.getDayOfMonth();
@@ -17,5 +17,4 @@ public class AdvisoryLockKeyUtils {
                 .sorted()
                 .toArray();
     }
-
 }

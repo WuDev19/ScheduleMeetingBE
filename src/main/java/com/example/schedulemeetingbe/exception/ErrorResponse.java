@@ -38,7 +38,8 @@ public enum ErrorResponse {
     BOOKING_CANCEL_ERROR("Bạn chỉ có thể hủy lịch đang chờ hoặc đã được duyệt khi chưa bắt đầu", 1031),
     UPDATE_BOOKING_AUTH_ERROR("Bạn không có quyền chỉnh sửa lịch họp này", 1032),
     COMPLETED_UPDATE_BOOKING_ERROR("Bạn không thể kết thúc cuộc họp khi nó chưa diễn ra", 1033),
-    START_END_DATE_BEFORE_NOW_ERROR("Bạn không được dặt lịch trong quá khứ", 1034);
+    START_END_DATE_BEFORE_NOW_ERROR("Bạn không được dặt lịch trong quá khứ", 1034),
+    LOCK_ACQUISITION_TIMEOUT("Hệ thống đang bận xử lý, vui lòng thử lại sau", 1035);
 
     private final String message;
     private final int code;

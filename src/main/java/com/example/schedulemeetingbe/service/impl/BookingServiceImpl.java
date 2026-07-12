@@ -95,8 +95,8 @@ public class BookingServiceImpl implements IBookingService {
         User user = iUserService.getDetail(userId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
 
-        // Lock room theo ngày bằng Advisory Lock
-        iRoomService.acquireAdvisoryLockForRoomAndDate(request.roomId(), request.start());
+        // Lock room theo ngày bằng Redis Distributed Lock
+        iRoomService.acquireDistributedLockForRoomAndDate(request.roomId(), request.start());
 
         Room room = iRoomService.getRoomDetail(request.roomId()).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
@@ -195,11 +195,11 @@ public class BookingServiceImpl implements IBookingService {
         if (request.newRoomId() != null || (request.start() != null && request.end() != null)) {
             //lock theo từng trường hợp
             if (request.newRoomId() != null && request.start() == null) { //khóa phòng mới và thời gian cũ
-                iRoomService.acquireAdvisoryLockForRoomAndDate(request.newRoomId(), booking.getStartTime());
+                iRoomService.acquireDistributedLockForRoomAndDate(request.newRoomId(), booking.getStartTime());
             } else if (request.newRoomId() == null) { //khóa phòng cũ và thời gian mới
-                iRoomService.acquireAdvisoryLockForRoomAndDate(request.roomId(), request.start());
+                iRoomService.acquireDistributedLockForRoomAndDate(request.roomId(), request.start());
             } else { //khóa cả phòng mới và thời gian mới
-                iRoomService.acquireAdvisoryLockForRoomAndDate(request.newRoomId(), request.start());
+                iRoomService.acquireDistributedLockForRoomAndDate(request.newRoomId(), request.start());
             }
             BookingReservation bookingReservation = bookingReservationRepository
                     .findBookingReservationsByBooking_BookingId(bookingId)
