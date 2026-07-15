@@ -249,12 +249,16 @@ public class EmailServiceImpl implements IEmailService {
         List<Notification> notifications = new ArrayList<>();
         List<VerificationToken> verificationTokens = new ArrayList<>();
         payload.receivers().forEach(email -> {
+            User receiver = userMap.get(email);
+            if (receiver == null) {
+                return;
+            }
             String token = UUID.randomUUID().toString();
             VerificationToken verificationToken = VerificationToken
                     .builder()
                     .token(token)
                     .expiresAt(TimeUtils.now().plusHours(5))
-                    .user(userMap.get(email))
+                    .user(receiver)
                     .build();
             String mess = """
                     Bạn được mời tham gia cuộc họp "%s".
@@ -270,7 +274,7 @@ public class EmailServiceImpl implements IEmailService {
                     payload.endTime()
             );
             Notification notification = Notification.builder()
-                    .user(userMap.get(email))
+                    .user(receiver)
                     .title(StringCommon.TITLE_NOTIFICATION)
                     .message(mess)
                     .booking(booking)

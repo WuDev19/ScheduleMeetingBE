@@ -51,4 +51,6 @@ public interface IUserService {
     Set<User> getUserUserIdIn(List<Long> ids);
 
     Set<User> getUserInDepartment(Long departmentId);
+
+    List<String> getEmailUserInDepartment(Long departmentId);
 }

@@ -147,17 +147,17 @@ class BookingServiceImplTest {
 
         // Record fields: roomId, title, description, start, end, attendee, equipments, receivers
         private CreateBookingRequest buildRequest(OffsetDateTime start, OffsetDateTime end,
-                                                  int attendee, List<String> receivers) {
+                                                  List<String> receivers) {
             return new CreateBookingRequest(
                     ROOM_ID, "Họp nhóm", "Mô tả", start, end,
-                    attendee, null, receivers
+                    null, receivers, null
             );
         }
 
         @Test
         @DisplayName("Ném START_END_DATE_BEFORE_NOW_ERROR khi start trước thời điểm hiện tại")
         void createBooking_WhenStartBeforeNow_ShouldThrowBusinessException() {
-            CreateBookingRequest request = buildRequest(PAST, FUTURE_END, 1, null);
+            CreateBookingRequest request = buildRequest(PAST, FUTURE_END, null);
 
             try (MockedStatic<TimeUtils> timeUtilsMock = mockStatic(TimeUtils.class)) {
                 timeUtilsMock.when(TimeUtils::now).thenReturn(NOW);
@@ -169,27 +169,13 @@ class BookingServiceImplTest {
             }
         }
 
-        @Test
-        @DisplayName("Ném INCONSISTENCY_ATTENDEE khi receivers.size() != attendee")
-        void createBooking_WhenReceiversSizeMismatch_ShouldThrowBusinessException() {
-            // attendee = 2, nhưng chỉ có 1 receiver
-            CreateBookingRequest request = buildRequest(FUTURE_START, FUTURE_END, 2, List.of("other@example.com"));
 
-            try (MockedStatic<TimeUtils> timeUtilsMock = mockStatic(TimeUtils.class)) {
-                timeUtilsMock.when(TimeUtils::now).thenReturn(NOW);
-
-                assertThatThrownBy(() -> bookingService.createBooking(request, USER_ID))
-                        .isInstanceOf(BusinessException.class)
-                        .satisfies(e -> assertThat(((BusinessException) e).getErrorResponse())
-                                .isEqualTo(ErrorResponse.INCONSISTENCY_ATTENDEE));
-            }
-        }
 
         @Test
         @DisplayName("Ném START_END_DATE_ERROR khi start sau end")
         void createBooking_WhenStartAfterEnd_ShouldThrowBusinessException() {
             // start > end
-            CreateBookingRequest request = buildRequest(FUTURE_END, FUTURE_START, 1, null);
+            CreateBookingRequest request = buildRequest(FUTURE_END, FUTURE_START, null);
 
             try (MockedStatic<TimeUtils> timeUtilsMock = mockStatic(TimeUtils.class)) {
                 timeUtilsMock.when(TimeUtils::now).thenReturn(NOW);
@@ -204,7 +190,7 @@ class BookingServiceImplTest {
         @Test
         @DisplayName("Ném RESOURCE_NOT_FOUND khi user không tồn tại")
         void createBooking_WhenUserNotFound_ShouldThrowBusinessException() {
-            CreateBookingRequest request = buildRequest(FUTURE_START, FUTURE_END, 1, null);
+            CreateBookingRequest request = buildRequest(FUTURE_START, FUTURE_END, null);
 
             try (MockedStatic<TimeUtils> timeUtilsMock = mockStatic(TimeUtils.class)) {
                 timeUtilsMock.when(TimeUtils::now).thenReturn(NOW);
@@ -220,7 +206,7 @@ class BookingServiceImplTest {
         @Test
         @DisplayName("Ném RESOURCE_NOT_FOUND khi room không tồn tại")
         void createBooking_WhenRoomNotFound_ShouldThrowBusinessException() {
-            CreateBookingRequest request = buildRequest(FUTURE_START, FUTURE_END, 1, null);
+            CreateBookingRequest request = buildRequest(FUTURE_START, FUTURE_END, null);
 
             try (MockedStatic<TimeUtils> timeUtilsMock = mockStatic(TimeUtils.class)) {
                 timeUtilsMock.when(TimeUtils::now).thenReturn(NOW);
@@ -237,8 +223,11 @@ class BookingServiceImplTest {
         @Test
         @DisplayName("Ném EXCEED_ATTENDEE khi attendee vượt capacity phòng")
         void createBooking_WhenAttendeesExceedCapacity_ShouldThrowBusinessException() {
-            // attendee = 15, capacity = 10
-            CreateBookingRequest request = buildRequest(FUTURE_START, FUTURE_END, 15, null);
+            // mockRoom capacity is 10. We invite 11 additional emails to exceed capacity.
+            List<String> largeReceivers = java.util.stream.IntStream.range(1, 12)
+                    .mapToObj(i -> "user" + i + "@example.com")
+                    .toList();
+            CreateBookingRequest request = buildRequest(FUTURE_START, FUTURE_END, largeReceivers);
 
             try (MockedStatic<TimeUtils> timeUtilsMock = mockStatic(TimeUtils.class)) {
                 timeUtilsMock.when(TimeUtils::now).thenReturn(NOW);
@@ -255,7 +244,7 @@ class BookingServiceImplTest {
         @Test
         @DisplayName("Ném OverlapBookingException khi lịch bị trùng")
         void createBooking_WhenTimeOverlaps_ShouldThrowOverlapBookingException() {
-            CreateBookingRequest request = buildRequest(FUTURE_START, FUTURE_END, 5, null);
+            CreateBookingRequest request = buildRequest(FUTURE_START, FUTURE_END, null);
 
             try (MockedStatic<TimeUtils> timeUtilsMock = mockStatic(TimeUtils.class)) {
                 timeUtilsMock.when(TimeUtils::now).thenReturn(NOW);
@@ -272,7 +261,7 @@ class BookingServiceImplTest {
         @Test
         @DisplayName("Tạo booking thành công và lưu vào repository")
         void createBooking_HappyPath_ShouldSaveAndReturnResponse() {
-            CreateBookingRequest request = buildRequest(FUTURE_START, FUTURE_END, 5, null);
+            CreateBookingRequest request = buildRequest(FUTURE_START, FUTURE_END, null);
 
             try (MockedStatic<TimeUtils> timeUtilsMock = mockStatic(TimeUtils.class)) {
                 timeUtilsMock.when(TimeUtils::now).thenReturn(NOW);
@@ -297,7 +286,7 @@ class BookingServiceImplTest {
             CreateBookingEquipmentRequest equipReq = new CreateBookingEquipmentRequest(1L, 5);
             CreateBookingRequest request = new CreateBookingRequest(
                     ROOM_ID, "Họp nhóm", "Mô tả", FUTURE_START, FUTURE_END,
-                    5, List.of(equipReq), null
+                    List.of(equipReq), null, null
             );
 
             Equipment mockEquip = Equipment.builder().equipmentId(1L).equipmentName("Projector").totalQuantity(15).build();
@@ -328,7 +317,7 @@ class BookingServiceImplTest {
             CreateBookingEquipmentRequest equipReq = new CreateBookingEquipmentRequest(1L, 12);
             CreateBookingRequest request = new CreateBookingRequest(
                     ROOM_ID, "Họp nhóm", "Mô tả", FUTURE_START, FUTURE_END,
-                    5, List.of(equipReq), null
+                    List.of(equipReq), null, null
             );
 
             Equipment mockEquip = Equipment.builder().equipmentId(1L).equipmentName("Projector").totalQuantity(15).build();
@@ -360,7 +349,7 @@ class BookingServiceImplTest {
 
         // Record fields: title, description, attendeeCount, start, end, isCompleted, roomId, newRoomId
         private UpdateBookingRequest buildRequest(String title, OffsetDateTime start, OffsetDateTime end) {
-            return new UpdateBookingRequest(title, null, null, start, end, null, null, null);
+            return new UpdateBookingRequest(title, null, start, end, null, null, null);
         }
 
         @Test
@@ -410,7 +399,7 @@ class BookingServiceImplTest {
         @DisplayName("Ném COMPLETED_UPDATE_BOOKING_ERROR khi kết thúc cuộc họp chưa diễn ra")
         void updateBooking_WhenMarkCompletedButNotStartedYet_ShouldThrowBusinessException() {
             // isCompleted=true, other fields null → (title=null, desc=null, attendeeCount=null, start=null, end=null, isCompleted=true, roomId=null, newRoomId=null)
-            UpdateBookingRequest request = new UpdateBookingRequest(null, null, null, null, null, true, null, null);
+            UpdateBookingRequest request = new UpdateBookingRequest(null, null, null, null, true, null, null);
             when(iUserService.getDetail(USER_ID)).thenReturn(Optional.of(mockUser));
             when(bookingRepository.findById(BOOKING_ID)).thenReturn(Optional.of(mockBooking));
             when(bookingAttendeeRepository.getAttendeeOfBooking(BOOKING_ID)).thenReturn(List.of());
@@ -432,7 +421,7 @@ class BookingServiceImplTest {
         @DisplayName("Ném START_END_DATE_BEFORE_NOW_ERROR khi đổi time nhưng start trong quá khứ")
         void updateBooking_WhenNewStartIsInPast_ShouldThrowBusinessException() {
             // start=PAST, end=FUTURE_END → (title=null, desc=null, attendeeCount=null, start=PAST, end=FUTURE_END, isCompleted=null, roomId=null, newRoomId=null)
-            UpdateBookingRequest request = new UpdateBookingRequest(null, null, null, PAST, FUTURE_END, null, null, null);
+            UpdateBookingRequest request = new UpdateBookingRequest(null, null, PAST, FUTURE_END, null, null, null);
             when(iUserService.getDetail(USER_ID)).thenReturn(Optional.of(mockUser));
             when(bookingRepository.findById(BOOKING_ID)).thenReturn(Optional.of(mockBooking));
             when(bookingAttendeeRepository.getAttendeeOfBooking(BOOKING_ID)).thenReturn(List.of());
@@ -453,7 +442,7 @@ class BookingServiceImplTest {
         void updateBooking_WhenNewStartAfterEnd_ShouldThrowBusinessException() {
             // start > end
             // start=FUTURE_END > end=FUTURE_START → (title=null, desc=null, attendeeCount=null, start=FUTURE_END, end=FUTURE_START, isCompleted=null, roomId=null, newRoomId=null)
-            UpdateBookingRequest request = new UpdateBookingRequest(null, null, null, FUTURE_END, FUTURE_START, null, null, null);
+            UpdateBookingRequest request = new UpdateBookingRequest(null, null, FUTURE_END, FUTURE_START, null, null, null);
             when(iUserService.getDetail(USER_ID)).thenReturn(Optional.of(mockUser));
             when(bookingRepository.findById(BOOKING_ID)).thenReturn(Optional.of(mockBooking));
             when(bookingAttendeeRepository.getAttendeeOfBooking(BOOKING_ID)).thenReturn(List.of());
@@ -472,7 +461,7 @@ class BookingServiceImplTest {
         @Test
         @DisplayName("Update chỉ title thành công (không đổi room/time)")
         void updateBooking_WhenOnlyTitleChanged_ShouldSucceed() {
-            UpdateBookingRequest request = new UpdateBookingRequest("New Title", null, null, null, null, null, null, null);
+            UpdateBookingRequest request = new UpdateBookingRequest("New Title", null, null, null, null, null, null);
             when(iUserService.getDetail(USER_ID)).thenReturn(Optional.of(mockUser));
             when(bookingRepository.findById(BOOKING_ID)).thenReturn(Optional.of(mockBooking));
             when(bookingAttendeeRepository.getAttendeeOfBooking(BOOKING_ID)).thenReturn(List.of());
@@ -725,7 +714,7 @@ class BookingServiceImplTest {
             mockBooking.setStatus(BookingStatus.CANCELLED);
             when(bookingRepository.findById(BOOKING_ID)).thenReturn(Optional.of(mockBooking));
 
-            assertThatThrownBy(() -> bookingService.addParticipants(BOOKING_ID, List.of("a@b.com")))
+            assertThatThrownBy(() -> bookingService.addParticipants(BOOKING_ID, new AddParticipantRequest(null, List.of("a@b.com"))))
                     .isInstanceOf(BusinessException.class)
                     .satisfies(e -> assertThat(((BusinessException) e).getErrorResponse())
                             .isEqualTo(ErrorResponse.BOOKING_STATUS_ERROR));
@@ -737,7 +726,7 @@ class BookingServiceImplTest {
             mockBooking.setStatus(BookingStatus.COMPLETED);
             when(bookingRepository.findById(BOOKING_ID)).thenReturn(Optional.of(mockBooking));
 
-            assertThatThrownBy(() -> bookingService.addParticipants(BOOKING_ID, List.of("a@b.com")))
+            assertThatThrownBy(() -> bookingService.addParticipants(BOOKING_ID, new AddParticipantRequest(null, List.of("a@b.com"))))
                     .isInstanceOf(BusinessException.class)
                     .satisfies(e -> assertThat(((BusinessException) e).getErrorResponse())
                             .isEqualTo(ErrorResponse.BOOKING_STATUS_ERROR));
@@ -750,7 +739,7 @@ class BookingServiceImplTest {
             when(bookingRepository.findById(BOOKING_ID)).thenReturn(Optional.of(mockBooking));
             when(jsonMapper.valueToTree(any())).thenReturn(null);
 
-            bookingService.addParticipants(BOOKING_ID, List.of("participant@example.com"));
+            bookingService.addParticipants(BOOKING_ID, new AddParticipantRequest(null, List.of("participant@example.com")));
 
             verify(outboxEventRepository).save(any(OutboxEvent.class));
         }
@@ -761,7 +750,7 @@ class BookingServiceImplTest {
             mockBooking.setStatus(BookingStatus.REJECTED);
             when(bookingRepository.findById(BOOKING_ID)).thenReturn(Optional.of(mockBooking));
 
-            assertThatThrownBy(() -> bookingService.addParticipants(BOOKING_ID, List.of("a@b.com")))
+            assertThatThrownBy(() -> bookingService.addParticipants(BOOKING_ID, new AddParticipantRequest(null, List.of("a@b.com"))))
                     .isInstanceOf(BusinessException.class)
                     .satisfies(e -> assertThat(((BusinessException) e).getErrorResponse())
                             .isEqualTo(ErrorResponse.BOOKING_STATUS_ERROR));

@@ -30,19 +30,18 @@ public enum ErrorResponse {
     UPDATE_BOOKING_ERROR("Thời gian cập nhật thông tin lịch đặt phải trước 1 tiếng để APPROVER có thể duyệt kịp", 1023),
     BOOKING_DETAIL_ERROR("Bạn không thể xem được chi tiết lịch họp của người khác", 1024),
     EXCEED_ATTENDEE("Vượt quá sức chứa của phòng hiện tại", 1025),
-    INCONSISTENCY_ATTENDEE("Số lượng người tham gia và số lượng email gửi đi ko đồng nhất", 1026),
-    EMAIL_LINK_UNAVAILABILITY("Link xác nhận không còn khả dụng, vui lòng đợi hệ thống gửi lại", 1027),
-    NOT_MATCH_DATE_ERROR("Thời gian gửi lên khi tạo lịch lặp không trùng khớp", 1028),
-    EXCEED_PERIODIC("Đăng ký lịch định kỳ tối đa được 30 lịch trong 1 lần", 1029),
-    BOOKING_STATUS_ERROR("Bạn không thể sửa lịch đã bị từ chối hoặc đã bị hủy", 1030),
-    BOOKING_CANCEL_ERROR("Bạn chỉ có thể hủy lịch đang chờ hoặc đã được duyệt khi chưa bắt đầu", 1031),
-    UPDATE_BOOKING_AUTH_ERROR("Bạn không có quyền chỉnh sửa lịch họp này", 1032),
-    COMPLETED_UPDATE_BOOKING_ERROR("Bạn không thể kết thúc cuộc họp khi nó chưa diễn ra", 1033),
-    START_END_DATE_BEFORE_NOW_ERROR("Bạn không được dặt lịch trong quá khứ", 1034),
-    LOCK_ACQUISITION_TIMEOUT("Hệ thống đang bận xử lý, vui lòng thử lại sau", 1035),
-    OVERNIGHT_BOOKING_ERROR("Thời gian họp không được kéo dài xuyên đêm (phải kết thúc trong cùng ngày bắt đầu)", 1036),
-    OFFICE_HOURS_ERROR("Thời gian họp phải nằm trong giờ hành chính (từ 08:00 đến 17:30)", 1037),
-    SYSTEM_ERROR("Lỗi hệ thống", 1038);
+    EMAIL_LINK_UNAVAILABILITY("Link xác nhận không còn khả dụng, vui lòng đợi hệ thống gửi lại", 1026),
+    NOT_MATCH_DATE_ERROR("Thời gian gửi lên khi tạo lịch lặp không trùng khớp", 1027),
+    EXCEED_PERIODIC("Đăng ký lịch định kỳ tối đa được 30 lịch trong 1 lần", 1028),
+    BOOKING_STATUS_ERROR("Bạn không thể sửa lịch đã bị từ chối hoặc đã bị hủy", 1029),
+    BOOKING_CANCEL_ERROR("Bạn chỉ có thể hủy lịch đang chờ hoặc đã được duyệt khi chưa bắt đầu", 1030),
+    UPDATE_BOOKING_AUTH_ERROR("Bạn không có quyền chỉnh sửa lịch họp này", 1031),
+    COMPLETED_UPDATE_BOOKING_ERROR("Bạn không thể kết thúc cuộc họp khi nó chưa diễn ra", 1032),
+    START_END_DATE_BEFORE_NOW_ERROR("Bạn không được dặt lịch trong quá khứ", 1033),
+    LOCK_ACQUISITION_TIMEOUT("Hệ thống đang bận xử lý, vui lòng thử lại sau", 1034),
+    OVERNIGHT_BOOKING_ERROR("Thời gian họp không được kéo dài xuyên đêm (phải kết thúc trong cùng ngày bắt đầu)", 1035),
+    OFFICE_HOURS_ERROR("Thời gian họp phải nằm trong giờ hành chính (từ 08:00 đến 17:30)", 1036),
+    SYSTEM_ERROR("Lỗi hệ thống", 1037);
 
     private final String message;
     private final int code;

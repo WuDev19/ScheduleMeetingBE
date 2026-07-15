@@ -155,10 +155,10 @@ public class BookingController {
     @PreAuthorize("hasAuthority('BOOKING:UPDATE')")
     public ResponseEntity<ApiResult<Map<String, Object>>> addParticipants(
             @PathVariable Long bookingId,
-            @RequestBody List<String> emails
+            @RequestBody AddParticipantRequest request
     ) {
         return ApiResponse.success(
-                iBookingService.addParticipants(bookingId, emails),
+                iBookingService.addParticipants(bookingId, request),
                 "Gửi yêu cầu thành công",
                 Constants.SUCCESS_CODE
         );

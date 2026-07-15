@@ -29,6 +29,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Set<User> findByDepartment_DepartmentId(Long departmentId);
 
     @Query("""
+            SELECT u.email
+            FROM User u
+            WHERE u.department.departmentId = :departmentId
+            """)
+    List<String> getEmailUserByDepartmentId(@Param("departmentId") Long departmentId);
+
+    @Query("""
             SELECT u
             FROM User u
             WHERE u.email LIKE CONCAT(:keyword, '%')

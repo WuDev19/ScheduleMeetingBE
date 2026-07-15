@@ -8,7 +8,6 @@ import java.time.OffsetDateTime;
 public record UpdateBookingRequest(
         String title,
         String description,
-        Integer attendeeCount,
 
         @JsonFormat(
                 pattern = StringCommon.OFFSET_FORMAT

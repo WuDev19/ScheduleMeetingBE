@@ -29,11 +29,10 @@ public record CreateBookingRequest(
         )
         OffsetDateTime end,
 
-        @NotNull(message = StringCommon.NOT_NULL + "attendee")
-        Integer attendee,
-
         List<CreateBookingEquipmentRequest> equipments,
 
-        List<String> receivers
+        List<String> receivers,
+
+        Long departmentId
 ) {
 }

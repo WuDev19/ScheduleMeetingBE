@@ -83,12 +83,6 @@ public class BookingServiceImpl implements IBookingService {
         if (request.start().isBefore(TimeUtils.now())) {
             throw new BusinessException(ErrorResponse.START_END_DATE_BEFORE_NOW_ERROR);
         }
-        if (request.receivers() != null &&
-                !request.receivers().isEmpty() &&
-                !request.attendee().equals(request.receivers().size())
-        ) {
-            throw new BusinessException(ErrorResponse.INCONSISTENCY_ATTENDEE);
-        }
         //kiểm tra ngày bắt đầu phải nhỏ hơn ngày kết thúc
         if (request.start().isAfter(request.end())) {
             throw new BusinessException(ErrorResponse.START_END_DATE_ERROR);
@@ -125,16 +119,24 @@ public class BookingServiceImpl implements IBookingService {
                         new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
                 Room room = iRoomService.getRoomDetail(request.roomId()).orElseThrow(() ->
                         new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+                Set<String> receivers = new HashSet<>();
+                if (request.departmentId() != null) {
+                    receivers.addAll(iUserService.getEmailUserInDepartment(request.departmentId()));
+                }
+                if (request.receivers() != null) {
+                    receivers.addAll(request.receivers());
+                }
                 //kiểm tra sức chứa của phòng hiện tại
-                if (request.attendee() > room.getCapacity()) {
+                if (receivers.size() > room.getCapacity()) {
                     throw new BusinessException(ErrorResponse.EXCEED_ATTENDEE);
                 }
                 //kiểm tra có bị trùng lịch trong Unavailability Room hay Bookings ko (dưới db có constraint nhưng vẫn check bên be để có thể hiện lỗi thân thiện hơn)
                 checkOverlap(null, request.roomId(), request.start(), request.end(), true);
+
                 //booking mới thì ko cần lưu vào booking_reservation
                 Booking booking = Booking.builder()
                         .bookedBy(user)
-                        .attendeeCount(request.attendee())
+                        .attendeeCount(1)
                         .description(request.description())
                         .title(request.title())
                         .startTime(request.start())
@@ -142,7 +144,14 @@ public class BookingServiceImpl implements IBookingService {
                         .room(room)
                         .build();
                 Booking saved = bookingRepository.save(booking);
-                System.out.println("Vượt qua được và chạy xuống đây");
+
+                BookingAttendee bookingAttendee = BookingAttendee.builder()
+                        .id(new BookingAttendeeId(saved.getBookingId(), userId))
+                        .user(user)
+                        .booking(saved)
+                        .joinedAt(TimeUtils.now())
+                        .build();
+                bookingAttendeeRepository.save(bookingAttendee);
                 // người dùng đặt lịch và có chọn thêm thiết bị khi đặt lịch
                 addEquipmentToBooking(request, saved);
 
@@ -150,7 +159,7 @@ public class BookingServiceImpl implements IBookingService {
                         booking,
                         user.getUserId(),
                         room.getRoomId(),
-                        request.receivers() != null ? request.receivers() : List.of(),
+                        receivers.stream().toList(),
                         request.equipments() != null ? request.equipments() : List.of()
                 );
 
@@ -237,12 +246,7 @@ public class BookingServiceImpl implements IBookingService {
                 }
                 if (request.title() != null) booking.setTitle(request.title());
                 if (request.description() != null) booking.setDescription(request.description());
-                if (request.attendeeCount() != null && request.newRoomId() == null) {
-                    if (request.attendeeCount() > oldRoom.getCapacity()) {
-                        throw new BusinessException(ErrorResponse.EXCEED_ATTENDEE);
-                    }
-                    booking.setAttendeeCount(request.attendeeCount());
-                }
+
                 /* bao trọn được trường hợp chỉ đổi room hoặc chỉ đổi start-end hoặc đổi cả hai
                     (room sẽ được lọc ra những room nào thỏa mãn trước dựa vào start-end)
                  */
@@ -266,7 +270,7 @@ public class BookingServiceImpl implements IBookingService {
                         //lưu lại để có thể rollback từ cập nhật nếu approver reject
                         Room newRoom = iRoomService.getRoomDetail(request.newRoomId()).orElseThrow(() ->
                                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-                        if (request.attendeeCount() != null && request.attendeeCount() > newRoom.getCapacity()) {
+                        if (booking.getAttendeeCount() > newRoom.getCapacity()) {
                             throw new BusinessException(ErrorResponse.EXCEED_ATTENDEE);
                         }
                         checkOverlap(bookingId, request.newRoomId(), booking.getStartTime(), booking.getEndTime(), false);
@@ -557,13 +561,20 @@ public class BookingServiceImpl implements IBookingService {
 
     @Transactional
     @Override
-    public Map<String, Object> addParticipants(Long bookingId, List<String> emails) {
+    public Map<String, Object> addParticipants(Long bookingId, AddParticipantRequest request) {
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
                 new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
         if (booking.getStatus() != BookingStatus.APPROVED &&
                 booking.getStatus() != BookingStatus.PENDING
         ) {
             throw new BusinessException(ErrorResponse.BOOKING_STATUS_ERROR);
+        }
+        Set<String> emails = new HashSet<>();
+        if(request.emails() != null){
+            emails.addAll(request.emails());
+        }
+        if(request.departmentId() != null){
+            emails.addAll(iUserService.getEmailUserInDepartment(request.departmentId()));
         }
         Room room = booking.getRoom();
         Building building = room.getBuilding();
@@ -575,7 +586,7 @@ public class BookingServiceImpl implements IBookingService {
                                 booking,
                                 building,
                                 room,
-                                emails
+                                emails.stream().toList()
                         ))
                 )
                 .build();
@@ -682,8 +693,11 @@ public class BookingServiceImpl implements IBookingService {
             throw new BusinessException(ErrorResponse.VERIFY_TOKEN_EXPIRED);
         }
         User user = verificationToken.getUser();
+        boolean exist = bookingAttendeeRepository.existsById(new BookingAttendeeId(bookingId, user.getUserId()));
+        if (exist) return;
         Booking booking = bookingRepository.findById(bookingId)
                 .orElseThrow(() -> new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        booking.setAttendeeCount(booking.getAttendeeCount() + 1);
         BookingAttendee bookingAttendee = BookingAttendee.builder()
                 .id(new BookingAttendeeId(bookingId, user.getUserId()))
                 .booking(booking)
@@ -692,6 +706,25 @@ public class BookingServiceImpl implements IBookingService {
                 .build();
         verificationToken.setVerified(true);
         verificationToken.setRevoked(true);
+        bookingAttendeeRepository.save(bookingAttendee);
+    }
+
+    @Transactional
+    @Override
+    public void confirmParticipateIn(Long bookingId, Long userId) {
+        boolean exist = bookingAttendeeRepository.existsById(new BookingAttendeeId(bookingId, userId));
+        if (exist) return;
+        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        booking.setAttendeeCount(booking.getAttendeeCount() + 1);
+        User participant = iUserService.getDetail(userId).orElseThrow(() ->
+                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
+        BookingAttendee bookingAttendee = BookingAttendee.builder()
+                .id(new BookingAttendeeId(bookingId, userId))
+                .user(participant)
+                .booking(booking)
+                .joinedAt(TimeUtils.now())
+                .build();
         bookingAttendeeRepository.save(bookingAttendee);
     }
 
@@ -820,24 +853,6 @@ public class BookingServiceImpl implements IBookingService {
                 }
             }
         }
-    }
-
-    @Transactional
-    @Override
-    public void confirmParticipateIn(Long bookingId, Long userId) {
-        boolean exist = bookingAttendeeRepository.existsById(new BookingAttendeeId(bookingId, userId));
-        if (exist) return;
-        Booking booking = bookingRepository.findById(bookingId).orElseThrow(() ->
-                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        User participant = iUserService.getDetail(userId).orElseThrow(() ->
-                new BusinessException(ErrorResponse.RESOURCE_NOT_FOUND));
-        BookingAttendee bookingAttendee = BookingAttendee.builder()
-                .id(new BookingAttendeeId(bookingId, userId))
-                .user(participant)
-                .booking(booking)
-                .joinedAt(TimeUtils.now())
-                .build();
-        bookingAttendeeRepository.save(bookingAttendee);
     }
 
     @Override

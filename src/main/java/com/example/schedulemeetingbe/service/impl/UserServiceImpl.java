@@ -270,4 +270,9 @@ public class UserServiceImpl implements IUserService {
     public Set<String> getMyRole(Long userId) {
         return roleRepository.findMyRole(userId);
     }
+
+    @Override
+    public List<String> getEmailUserInDepartment(Long departmentId) {
+        return userRepository.getEmailUserByDepartmentId(departmentId);
+    }
 }
